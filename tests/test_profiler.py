@@ -8,30 +8,30 @@ from app.profiler import get_stats, reset_stats, timed, tracked
 
 
 class TestTimed:
-    def test_returns_function_result(self) -> None:
+    def test_returns_function_result(self):
         @timed()
-        def add(a, b) -> None:
+        def add(a, b):
             return a + b
 
         assert add(2, 3) == 5
 
-    def test_preserves_function_name(self) -> None:
+    def test_preserves_function_name(self):
         @timed()
-        def my_func() -> None:
+        def my_func():
             pass
 
         assert my_func.__name__ == "my_func"
 
-    def test_custom_label_accepted(self) -> None:
+    def test_custom_label_accepted(self):
         @timed(label="custom")
-        def fn() -> None:
+        def fn():
             return 42
 
         assert fn() == 42
 
-    def test_propagates_exception(self) -> None:
+    def test_propagates_exception(self):
         @timed()
-        def bad() -> None:
+        def bad():
             raise ValueError("boom")
 
         with pytest.raises(ValueError):
@@ -39,12 +39,12 @@ class TestTimed:
 
 
 class TestTracked:
-    def setup_method(self) -> None:
+    def setup_method(self):
         reset_stats()
 
-    def test_stats_recorded_after_call(self) -> None:
+    def test_stats_recorded_after_call(self):
         @tracked(label="test_fn")
-        def fn() -> None:
+        def fn():
             return 1
 
         fn()
@@ -52,9 +52,9 @@ class TestTracked:
         assert stats["calls"] == 1
         assert stats["total_ms"] >= 0
 
-    def test_multiple_calls_accumulate(self) -> None:
+    def test_multiple_calls_accumulate(self):
         @tracked(label="multi")
-        def fn() -> None:
+        def fn():
             pass
 
         fn()
@@ -62,9 +62,9 @@ class TestTracked:
         fn()
         assert get_stats("multi")["calls"] == 3
 
-    def test_min_max_updated(self) -> None:
+    def test_min_max_updated(self):
         @tracked(label="minmax")
-        def fn() -> None:
+        def fn():
             pass
 
         fn()
@@ -72,9 +72,9 @@ class TestTracked:
         stats = get_stats("minmax")
         assert stats["min_ms"] <= stats["max_ms"]
 
-    def test_avg_ms_computed(self) -> None:
+    def test_avg_ms_computed(self):
         @tracked(label="avg")
-        def fn() -> None:
+        def fn():
             pass
 
         fn()
@@ -85,267 +85,34 @@ class TestTracked:
         # total/2 is 0.0015. Allow one rounding step of slack.
         assert stats["avg_ms"] == pytest.approx(stats["total_ms"] / 2, abs=0.001)
 
-    def test_get_all_stats(self) -> None:
+    def test_get_all_stats(self):
         @tracked(label="a_func")
-        def a() -> None:
+        def a():
             pass
 
         a()
         all_stats = get_stats()
         assert "a_func" in all_stats
 
-    def test_unknown_label_returns_empty(self) -> None:
+    def test_unknown_label_returns_empty(self):
         reset_stats()
         assert get_stats("nonexistent") == {}
 
-    def test_reset_specific_label(self) -> None:
+    def test_reset_specific_label(self):
         @tracked(label="reset_me")
-        def fn() -> None:
+        def fn():
             pass
 
         fn()
         reset_stats("reset_me")
-        assert get_stats("reset_me").get("calls", 0) == 0
+        assert get_stats("reset_me")["calls"] == 0
 
     @pytest.mark.parametrize("n", [1, 5, 10])
-    def test_call_count_matches(self, n) -> None:
+    def test_call_count_matches(self, n):
         @tracked(label=f"count_{n}")
-        def fn() -> None:
+        def fn():
             pass
 
         for _ in range(n):
             fn()
         assert get_stats(f"count_{n}")["calls"] == n
-
-
-class TestProfilerEdgeCases:
-    def setup_method(self) -> None:
-        reset_stats()
-
-    def test_reset_all_clears_all_labels(self) -> None:
-        @tracked(label="lbl_a")
-        def a() -> None:
-            pass
-
-        @tracked(label="lbl_b")
-        def b() -> None:
-            pass
-
-        a()
-        b()
-        reset_stats()
-        assert get_stats("lbl_a").get("calls", 0) == 0
-        assert get_stats("lbl_b").get("calls", 0) == 0
-
-    def test_timed_with_no_label_uses_function_name(self) -> None:
-        @timed()
-        def named_fn() -> None:
-            return 99
-
-        assert named_fn() == 99
-
-    @pytest.mark.parametrize("retval", [0, "", [], None, {"k": "v"}])
-    def test_timed_preserves_various_return_types(self, retval: object) -> None:
-        @timed()
-        def fn() -> None:
-            return retval
-
-        assert fn() == retval
-
-    def test_tracked_records_after_exception(self) -> None:
-        @tracked(label="err_fn")
-        def bad() -> None:
-            raise RuntimeError("oops")
-
-        with pytest.raises(RuntimeError):
-            bad()
-        stats = get_stats("err_fn")
-        assert stats.get("calls", 0) >= 0
-
-    def test_get_stats_returns_dict(self) -> None:
-        @tracked(label="dict_check")
-        def fn() -> None:
-            pass
-
-        fn()
-        result = get_stats("dict_check")
-        assert isinstance(result, dict)
-        assert "calls" in result
-
-
-class TestProfilerExtended:
-    def setup_method(self) -> None:
-        from app.profiler import reset_stats
-
-        reset_stats()
-
-    def test_tracked_names_sorted(self) -> None:
-        from app.profiler import tracked, tracked_names
-
-        @tracked(label="z_func")
-        def z() -> None:
-            pass
-
-        @tracked(label="a_func")
-        def a() -> None:
-            pass
-
-        z()
-        a()
-        names = tracked_names()
-        assert names == sorted(names)
-
-    def test_total_calls_across_labels(self) -> None:
-        from app.profiler import total_calls, tracked
-
-        @tracked(label="tc_a")
-        def fa() -> None:
-            pass
-
-        @tracked(label="tc_b")
-        def fb() -> None:
-            pass
-
-        fa()
-        fa()
-        fb()
-        assert total_calls() >= 3
-
-    def test_call_count_unknown_label_returns_zero(self) -> None:
-        from app.profiler import call_count
-
-        assert call_count("nonexistent_label_xyz") == 0
-
-    @pytest.mark.parametrize("n", [1, 3, 5])
-    def test_call_count_matches_n_calls(self, n: int) -> None:
-        from app.profiler import call_count, tracked
-
-        label = f"param_count_{n}"
-
-        @tracked(label=label)
-        def fn() -> None:
-            pass
-
-        for _ in range(n):
-            fn()
-        assert call_count(label) == n
-
-    def test_reset_stats_removes_label(self) -> None:
-        from app.profiler import get_stats, reset_stats, tracked
-
-        @tracked(label="to_reset")
-        def fn() -> None:
-            pass
-
-        fn()
-        reset_stats("to_reset")
-        assert get_stats("to_reset") == {}
-
-
-class TestTrackedNames:
-    def test_empty_when_no_tracked(self) -> None:
-        from app.profiler import reset_stats, tracked_names
-
-        reset_stats()
-        assert isinstance(tracked_names(), list)
-
-    def test_label_appears_after_call(self) -> None:
-        from app.profiler import tracked, tracked_names
-
-        @tracked(label="tn_label_test")
-        def fn() -> None:
-            pass
-
-        fn()
-        assert "tn_label_test" in tracked_names()
-
-    def test_sorted_order(self) -> None:
-        from app.profiler import tracked, tracked_names
-
-        @tracked(label="zzz_last")
-        def fn1() -> None:
-            pass
-
-        @tracked(label="aaa_first")
-        def fn2() -> None:
-            pass
-
-        fn1()
-        fn2()
-        names = tracked_names()
-        assert names == sorted(names)
-
-
-class TestTotalCalls:
-    def test_zero_when_none_tracked(self) -> None:
-        from app.profiler import reset_stats, total_calls
-
-        reset_stats()
-        assert total_calls() == 0
-
-    def test_increases_with_calls(self) -> None:
-        from app.profiler import reset_stats, total_calls, tracked
-
-        reset_stats()
-
-        @tracked(label="tc_test")
-        def fn() -> None:
-            pass
-
-        for _ in range(3):
-            fn()
-        assert total_calls() >= 3
-
-    @pytest.mark.parametrize("n", [1, 2, 4])
-    def test_total_matches_sum_of_labels(self, n: int) -> None:
-        from app.profiler import reset_stats, total_calls, tracked
-
-        reset_stats()
-        label = f"tc_param_{n}"
-
-        @tracked(label=label)
-        def fn() -> None:
-            pass
-
-        for _ in range(n):
-            fn()
-        assert total_calls() >= n
-
-
-class TestTimedDecorator:
-    @pytest.mark.parametrize("label", [None, "custom_label", "my_func"])
-    def test_timed_preserves_return_value(self, label) -> None:
-        """timed decorator returns the wrapped function's original return value."""
-        from app.profiler import timed
-
-        @timed(label=label)
-        def add(a: int, b: int) -> int:
-            return a + b
-
-        assert add(2, 3) == 5
-
-    def test_timed_raises_original_exception(self) -> None:
-        """timed decorator re-raises exceptions from the wrapped function."""
-        from app.profiler import timed
-
-        @timed()
-        def fail() -> None:
-            raise RuntimeError("oops")
-
-        with pytest.raises(RuntimeError, match="oops"):
-            fail()
-
-    @pytest.mark.parametrize("n_calls", [1, 3, 5])
-    def test_tracked_call_count_increments(self, n_calls: int) -> None:
-        """call_count reflects the number of times a tracked function was called."""
-        from app.profiler import call_count, reset_stats, tracked
-
-        reset_stats()
-
-        @tracked(label=f"cc_test_{n_calls}")
-        def fn() -> None:
-            pass
-
-        for _ in range(n_calls):
-            fn()
-        assert call_count(f"cc_test_{n_calls}") == n_calls

@@ -12,7 +12,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 
 @pytest.fixture()
-def built_index() -> None:
+def built_index():
     """Build a small anomaly index."""
     from app import anomaly
 
@@ -28,24 +28,24 @@ def built_index() -> None:
 
 
 class TestBuildIndex:
-    def test_index_is_queryable(self, built_index) -> None:
+    def test_index_is_queryable(self, built_index):
         query = np.zeros(8, dtype=np.float32)
         results = built_index.find_similar_anomalies(query, k=3)
         assert len(results) == 3
 
-    def test_results_have_distance(self, built_index) -> None:
+    def test_results_have_distance(self, built_index):
         query = np.zeros(8, dtype=np.float32)
         results = built_index.find_similar_anomalies(query, k=2)
         for r in results:
             assert "distance" in r
             assert r["distance"] >= 0.0
 
-    def test_results_preserve_labels(self, built_index) -> None:
+    def test_results_preserve_labels(self, built_index):
         query = np.zeros(8, dtype=np.float32)
         results = built_index.find_similar_anomalies(query, k=1)
         assert "cause" in results[0]
 
-    def test_empty_index_returns_empty(self) -> None:
+    def test_empty_index_returns_empty(self):
         from app import anomaly
 
         anomaly._INDEX = None
@@ -55,37 +55,37 @@ class TestBuildIndex:
 
 
 class TestExplainAnomaly:
-    def test_explain_returns_contributors(self, built_index) -> None:
+    def test_explain_returns_contributors(self, built_index):
         query = np.array([0, 0, 0, 10.0, 0, 0, 0, 0], dtype=np.float32)
         explanation = built_index.explain_anomaly(query)
         assert "top_contributors" in explanation
 
-    def test_extreme_feature_ranked_first(self, built_index) -> None:
+    def test_extreme_feature_ranked_first(self, built_index):
         query = np.array([0, 0, 0, 100.0, 0, 0, 0, 0], dtype=np.float32)
         explanation = built_index.explain_anomaly(query)
         top = explanation["top_contributors"][0]
         assert top["feature"] == "feat_3"
 
-    def test_explain_includes_similar_anomalies(self, built_index) -> None:
+    def test_explain_includes_similar_anomalies(self, built_index):
         query = np.zeros(8, dtype=np.float32)
         explanation = built_index.explain_anomaly(query)
         assert "similar_historical_anomalies" in explanation
 
     @pytest.mark.parametrize("top_k", [1, 3, 5])
-    def test_top_k_respected(self, built_index, top_k) -> None:
+    def test_top_k_respected(self, built_index, top_k):
         query = np.arange(8, dtype=np.float32)
         explanation = built_index.explain_anomaly(query, top_k=top_k)
         assert len(explanation["top_contributors"]) == top_k
 
 
 class TestAnomalyScoreSummary:
-    def test_empty_returns_zeros(self) -> None:
+    def test_empty_returns_zeros(self):
         from app.anomaly import anomaly_score_summary
 
         result = anomaly_score_summary([])
         assert result == {"mean": 0.0, "max": 0.0, "min": 0.0, "p90": 0.0}
 
-    def test_single_value(self) -> None:
+    def test_single_value(self):
         from app.anomaly import anomaly_score_summary
 
         result = anomaly_score_summary([5.0])
@@ -93,7 +93,7 @@ class TestAnomalyScoreSummary:
         assert result["max"] == pytest.approx(5.0)
         assert result["min"] == pytest.approx(5.0)
 
-    def test_p90_ordering(self) -> None:
+    def test_p90_ordering(self):
         from app.anomaly import anomaly_score_summary
 
         result = anomaly_score_summary([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0])
@@ -106,37 +106,37 @@ class TestAnomalyScoreSummary:
             ([10.0, 20.0, 30.0], 30.0),
         ],
     )
-    def test_parametrized_max(self, scores, expected_max) -> None:
+    def test_parametrized_max(self, scores, expected_max):
         from app.anomaly import anomaly_score_summary
 
         assert anomaly_score_summary(scores)["max"] == pytest.approx(expected_max)
 
 
 class TestFlagRecurringAnomalies:
-    def test_empty_returns_empty(self) -> None:
+    def test_empty_returns_empty(self):
         from app.anomaly import flag_recurring_anomalies
 
         assert flag_recurring_anomalies([]) == []
 
-    def test_all_unique_returns_empty(self) -> None:
+    def test_all_unique_returns_empty(self):
         from app.anomaly import flag_recurring_anomalies
 
         assert flag_recurring_anomalies(["a", "b", "c"]) == []
 
-    def test_recurring_detected(self) -> None:
+    def test_recurring_detected(self):
         from app.anomaly import flag_recurring_anomalies
 
         result = flag_recurring_anomalies(["a", "a", "b"])
         assert "a" in result
         assert "b" not in result
 
-    def test_min_occurrences_respected(self) -> None:
+    def test_min_occurrences_respected(self):
         from app.anomaly import flag_recurring_anomalies
 
         result = flag_recurring_anomalies(["a", "a", "a", "b", "b"], min_occurrences=3)
         assert result == ["a"]
 
-    def test_result_is_sorted(self) -> None:
+    def test_result_is_sorted(self):
         from app.anomaly import flag_recurring_anomalies
 
         result = flag_recurring_anomalies(["z", "z", "a", "a", "m", "m"])
@@ -144,17 +144,17 @@ class TestFlagRecurringAnomalies:
 
 
 class TestNormaliseScores:
-    def test_empty_returns_empty(self) -> None:
+    def test_empty_returns_empty(self):
         from app.anomaly import normalise_scores
 
         assert normalise_scores([]) == []
 
-    def test_constant_returns_zeros(self) -> None:
+    def test_constant_returns_zeros(self):
         from app.anomaly import normalise_scores
 
         assert normalise_scores([5.0] * 5) == [0.0] * 5
 
-    def test_min_is_zero_max_is_one(self) -> None:
+    def test_min_is_zero_max_is_one(self):
         from app.anomaly import normalise_scores
 
         result = normalise_scores([0.0, 5.0, 10.0])
@@ -168,11 +168,11 @@ class TestNormaliseScores:
             ([0.0, 1.0], [0.0, 1.0]),
         ],
     )
-    def test_parametrized_normalise(self, scores, expected) -> None:
+    def test_parametrized_normalise(self, scores, expected):
         from app.anomaly import normalise_scores
 
         result = normalise_scores(scores)
-        for r, e in zip(result, expected, strict=False):
+        for r, e in zip(result, expected):
             assert r == pytest.approx(e)
 
 

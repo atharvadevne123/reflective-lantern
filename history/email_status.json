@@ -102,7 +102,7 @@
     "date": "2026-08-14",
     "repo": "reflective-lantern",
     "email_to": "devneatharva@gmail.com",
-    "subject": "[Reflective Lantern] IMPROVEMENT Report \u2014 2026-08-14",
+    "subject": "[Reflective Lantern] IMPROVEMENT Report — 2026-08-14",
     "smtp_587": "failed - OSError: [Errno 97] Address family not supported by protocol",
     "smtp_465": "failed - OSError: [Errno 97] Address family not supported by protocol",
     "status": "SMTP_BLOCKED",
@@ -111,36 +111,5 @@
     "commits": 61,
     "push_status": "SUCCESS",
     "note": "61 commits pushed to main. 100+ new parametrized tests across 30 files. PDF saved to history/reports/."
-  },
-  {
-    "date": "2026-09-14",
-    "to": "devneatharva@gmail.com",
-    "subject": "[Reflective Lantern] Improvement Report \u2014 2026-09-14 \u2014 60 commits",
-    "status": "blocked",
-    "session": "https://claude.ai/code/session_018Y7jEbJZCBaeRFmKnbMTjX",
-    "reason": "SMTP outbound blocked by sandbox network policy (only HTTPS is proxied)"
-  },
-  {
-    "date": "2026-09-24",
-    "repo": "Automated-json-pipeline-snowflake-streams-tasks",
-    "to": "devneatharva@gmail.com",
-    "subject": "[Reflective Lantern] Daily Run 2026-09-24 \u2014 IMPROVEMENT \u2014 60/60 commits, 676 tests",
-    "smtp_465": "timed out (port blocked)",
-    "smtp_587": "Address family not supported / timed out",
-    "status": "SMTP_BLOCKED",
-    "reason": "SMTP outbound blocked in CCR remote execution environment (no raw socket egress)",
-    "commits": 60,
-    "tests_passing": 676,
-    "push_status": "BLOCKED \u2014 git proxy only authorizes reflective-lantern; Automated-json-pipeline repo denied",
-    "session": "https://claude.ai/code/session_01QVp6q2ZwrYjyZYEjTQy6A1",
-    "note": "60 commits in repo ready locally. Push manually: git push origin main from /tmp/lantern-work/Automated-json-pipeline-snowflake-streams-tasks"
-  },
-  {
-    "date": "2026-10-20",
-    "attempted": true,
-    "sent": false,
-    "reason": "SMTP outbound blocked by remote execution network policy (DNS: Name or service not known)",
-    "report_pdf_path": "/tmp/reflective-lantern-report-2026-10-20.pdf",
-    "commits": 61
   }
 ]

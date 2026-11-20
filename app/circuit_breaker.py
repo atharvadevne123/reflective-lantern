@@ -1,31 +1,4 @@
-"""Circuit breaker implementation for protecting downstream calls.
-
-Implements the classic three-state circuit breaker pattern:
-
-- **CLOSED** — calls pass through; consecutive failures are counted.
-- **OPEN** — calls are rejected immediately with :class:`CircuitOpenError`
-  after the failure threshold is reached.
-- **HALF_OPEN** — after the recovery timeout, one probe call is allowed;
-  success closes the circuit, failure re-opens it.
-
-Public API:
-
-- :class:`CircuitBreaker` — the breaker itself; can be used directly via
-  :meth:`~CircuitBreaker.call` or as a decorator (``@cb``).
-- :class:`CircuitOpenError` — raised when calls are blocked.
-- :class:`CircuitState` — enum of the three circuit states.
-
-Example::
-
-    from app.circuit_breaker import CircuitBreaker, CircuitOpenError
-
-    cb = CircuitBreaker(failure_threshold=3, recovery_timeout=30.0)
-
-    try:
-        result = cb.call(my_downstream_fn, arg1, arg2)
-    except CircuitOpenError:
-        result = fallback_value
-"""
+"""Circuit breaker implementation for protecting downstream calls."""
 
 from __future__ import annotations
 
@@ -42,13 +15,8 @@ class CircuitState(Enum):
     """Possible states of a circuit breaker."""
 
     CLOSED = "closed"
-    """Normal operating state; calls are forwarded to the protected function."""
-
     OPEN = "open"
-    """Tripped state; all calls are rejected immediately with CircuitOpenError."""
-
     HALF_OPEN = "half_open"
-    """Probe state; a single call is allowed through to test service recovery."""
 
 
 class CircuitOpenError(Exception):
@@ -64,28 +32,12 @@ class CircuitBreaker:
         expected_exceptions: Exception types that count as failures.
     """
 
-    __slots__ = (
-        "_failure_count",
-        "_opened_at",
-        "_state",
-        "expected_exceptions",
-        "failure_threshold",
-        "recovery_timeout",
-    )
-
     def __init__(
         self,
         failure_threshold: int = 5,
         recovery_timeout: float = 30.0,
         expected_exceptions: Sequence[type[Exception]] = (Exception,),
     ) -> None:
-        """Initialise the circuit breaker.
-
-        Args:
-            failure_threshold: Consecutive failures before opening the circuit.
-            recovery_timeout: Seconds to wait in OPEN state before probing.
-            expected_exceptions: Exception types that count as failures.
-        """
         self.failure_threshold = failure_threshold
         self.recovery_timeout = recovery_timeout
         self.expected_exceptions = tuple(expected_exceptions)
@@ -103,16 +55,13 @@ class CircuitBreaker:
                 self._state = CircuitState.HALF_OPEN
         return self._state
 
-    def call(self, func: Callable, *args, **kwargs) -> object:
+    def call(self, func: Callable, *args, **kwargs):
         """Execute func through the circuit breaker.
 
         Args:
             func: The callable to protect.
             *args: Positional arguments forwarded to func.
             **kwargs: Keyword arguments forwarded to func.
-
-        Returns:
-            Whatever func returns on success.
 
         Raises:
             CircuitOpenError: When the circuit is OPEN.
@@ -129,7 +78,6 @@ class CircuitBreaker:
             raise exc
 
     def _on_success(self) -> None:
-        """Record a successful call and close the circuit if half-open."""
         if self._state is CircuitState.HALF_OPEN:
             logger.info("Circuit CLOSED after successful probe")
         self._state = CircuitState.CLOSED
@@ -137,75 +85,20 @@ class CircuitBreaker:
         self._opened_at = None
 
     def _on_failure(self) -> None:
-        """Record a failed call and open the circuit if threshold reached."""
         self._failure_count += 1
         if self._state is CircuitState.HALF_OPEN or self._failure_count >= self.failure_threshold:
             logger.warning("Circuit OPEN after %d failures", self._failure_count)
             self._state = CircuitState.OPEN
             self._opened_at = time.monotonic()
 
-    def reset(self) -> None:
-        """Force the circuit back to CLOSED state and clear failure counters.
-
-        Useful in tests or manual recovery scenarios.
-        """
-        logger.info("Circuit manually reset to CLOSED")
-        self._state = CircuitState.CLOSED
-        self._failure_count = 0
-        self._opened_at = None
-
-    @property
-    def failure_count(self) -> int:
-        """Current consecutive failure count."""
-        return self._failure_count
-
-    @property
-    def is_open(self) -> bool:
-        """Return True when the circuit is currently open (rejecting calls)."""
-        return self.state == CircuitState.OPEN
-
-    @property
-    def is_closed(self) -> bool:
-        """Return True when the circuit is CLOSED (normal operation)."""
-        return self.state == CircuitState.CLOSED
-
-    @property
-    def is_half_open(self) -> bool:
-        """Return True when the circuit is in HALF_OPEN (probe) state."""
-        return self.state == CircuitState.HALF_OPEN
-
     def __call__(self, func: Callable) -> Callable:
-        """Use as a decorator to wrap *func* with circuit-breaker protection."""
+        """Use as a decorator."""
 
         @functools.wraps(func)
-        def wrapper(*args, **kwargs) -> object:
-            """Forward call through the circuit breaker."""
+        def wrapper(*args, **kwargs):
             return self.call(func, *args, **kwargs)
 
         return wrapper
 
 
-def protected(
-    failure_threshold: int = 5,
-    recovery_timeout: float = 30.0,
-    expected_exceptions: tuple[type[Exception], ...] = (Exception,),
-) -> Callable[[Callable], Callable]:
-    """Convenience decorator that wraps a function with a new CircuitBreaker.
-
-    Args:
-        failure_threshold: Consecutive failures before opening the circuit.
-        recovery_timeout: Seconds to wait in OPEN state before probing.
-        expected_exceptions: Exception types that count as failures.
-
-    Returns:
-        Decorator that attaches a CircuitBreaker to the wrapped function.
-    """
-    cb = CircuitBreaker(
-        failure_threshold=failure_threshold,
-        recovery_timeout=recovery_timeout,
-        expected_exceptions=expected_exceptions,
-    )
-    return cb
-
-
-__all__ = ["CircuitBreaker", "CircuitOpenError", "CircuitState", "protected"]
+__all__ = ["CircuitBreaker", "CircuitOpenError", "CircuitState"]

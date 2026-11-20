@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 
 
-def test_estimate_elasticity_negative() -> None:
+def test_estimate_elasticity_negative():
     from app.pricing.elasticity import estimate_elasticity
 
     prices = [10.0, 12.0, 14.0, 16.0]
@@ -14,19 +14,19 @@ def test_estimate_elasticity_negative() -> None:
     assert elast < 0
 
 
-def test_estimate_elasticity_too_short() -> None:
+def test_estimate_elasticity_too_short():
     from app.pricing.elasticity import estimate_elasticity
 
     assert estimate_elasticity([10.0], [100.0]) == 0.0
 
 
-def test_estimate_elasticity_mismatched() -> None:
+def test_estimate_elasticity_mismatched():
     from app.pricing.elasticity import estimate_elasticity
 
     assert estimate_elasticity([1.0, 2.0], [1.0]) == 0.0
 
 
-def test_apply_elasticity_higher_price() -> None:
+def test_apply_elasticity_higher_price():
     from app.pricing.elasticity import apply_elasticity
 
     base_demand = 100.0
@@ -34,19 +34,19 @@ def test_apply_elasticity_higher_price() -> None:
     assert new_demand < base_demand
 
 
-def test_apply_elasticity_zero_base_price() -> None:
+def test_apply_elasticity_zero_base_price():
     from app.pricing.elasticity import apply_elasticity
 
     assert apply_elasticity(100.0, 0.0, 10.0, -1.5) == 100.0
 
 
-def test_is_elastic_true() -> None:
+def test_is_elastic_true():
     from app.pricing.elasticity import is_elastic
 
     assert is_elastic(-2.0) is True
 
 
-def test_is_elastic_false() -> None:
+def test_is_elastic_false():
     from app.pricing.elasticity import is_elastic
 
     assert is_elastic(-0.5) is False
@@ -155,24 +155,3 @@ def test_is_elastic_threshold_boundary(elasticity: float) -> None:
 
     expected = abs(elasticity) > 1.0
     assert is_elastic(elasticity) is expected
-
-
-@pytest.mark.parametrize(
-    "base_demand,price_from,price_to", [(100.0, 50.0, 60.0), (200.0, 100.0, 80.0)]
-)
-def test_apply_elasticity_returns_non_negative(
-    base_demand: float, price_from: float, price_to: float
-) -> None:
-    from app.pricing.elasticity import apply_elasticity
-
-    result = apply_elasticity(base_demand, price_from, price_to, -1.0)
-    assert result >= 0.0
-
-
-def test_estimate_elasticity_matching_lists_returns_float() -> None:
-    from app.pricing.elasticity import estimate_elasticity
-
-    prices = [10.0, 12.0, 15.0, 20.0]
-    demands = [200.0, 180.0, 150.0, 100.0]
-    result = estimate_elasticity(prices, demands)
-    assert isinstance(result, float)

@@ -9,11 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app import __version__
 from app.api.v1.routes import router as v1_router
 from app.config import get_settings
-from app.middleware import (
-    CorrelationIdMiddleware,
-    RateLimitMiddleware,
-    RequestSizeLimitMiddleware,
-)
+from app.middleware import CorrelationIdMiddleware, RateLimitMiddleware
 
 logging.basicConfig(
     level=os.environ.get("LOG_LEVEL", "INFO"),
@@ -43,7 +39,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-app.add_middleware(RequestSizeLimitMiddleware)
 app.add_middleware(CorrelationIdMiddleware)
 app.add_middleware(
     RateLimitMiddleware,
@@ -81,7 +76,7 @@ async def shutdown_event() -> None:
 
 
 @app.get("/health", tags=["health"], summary="Root health check")
-def root_health() -> dict[str, str]:
+def root_health():
     """Lightweight liveness probe for load balancers.
 
     Returns:
@@ -91,29 +86,10 @@ def root_health() -> dict[str, str]:
 
 
 @app.get("/version", tags=["health"], summary="Application version")
-def version() -> dict[str, str]:
+def version():
     """Return the application version string.
 
     Returns:
         Dict with the semantic version.
     """
     return {"version": __version__}
-
-
-@app.get("/ready", tags=["health"], summary="Readiness probe")
-def ready() -> dict[str, str]:
-    """Kubernetes-style readiness check — fails if the model is not loaded.
-
-    Returns:
-        Dict with status 'ready' or raises 503 if the model is unavailable.
-    """
-    from fastapi import HTTPException
-
-    from app.api.v1.routes import _model
-
-    if _model is None:
-        raise HTTPException(status_code=503, detail="Model not yet loaded")
-    return {"status": "ready", "version": __version__}
-
-
-__all__ = ["app", "ready", "root_health", "version"]

@@ -3,16 +3,11 @@
 from __future__ import annotations
 
 import json
-import logging
 from pathlib import Path
 
 from config.constants import HISTORY_DIR, NON_RECORD_FILES
 
-logger = logging.getLogger(__name__)
-
-VALID_MODES: frozenset[str] = frozenset(
-    {"improvement", "IMPROVEMENT", "innovation", "INNOVATION", "user-requested"}
-)
+VALID_MODES: frozenset[str] = frozenset({"improvement", "IMPROVEMENT", "innovation", "INNOVATION", "user-requested"})
 VALID_EMAIL_STATUSES: frozenset[str] = frozenset(
     {"pending", "sent", "skipped", "failed_smtp", "network_blocked", "pdf_generated_ok", ""}
 )
@@ -26,7 +21,6 @@ VALID_EMAIL_STATUS_PREFIXES: tuple[str, ...] = (
     "network_blocked",
     "pdf_generated_ok",
     "smtp_",
-    "blocked_by_",
 )
 
 
@@ -37,15 +31,13 @@ def validate_entry(entry: object, filename: str, index: int) -> list[str]:
 
     errors: list[str] = []
 
-    if "date" not in entry and "last_run" not in entry and "run_date" not in entry:
+    if "date" not in entry and "last_run" not in entry:
         errors.append(f"{filename}[{index}]: missing 'date' or 'last_run' field")
 
     commits = entry.get("commits")
     if commits is not None:
         if not isinstance(commits, int):
-            errors.append(
-                f"{filename}[{index}]: commits must be an int, got {type(commits).__name__}"
-            )
+            errors.append(f"{filename}[{index}]: commits must be an int, got {type(commits).__name__}")
         elif commits < 0:
             errors.append(f"{filename}[{index}]: negative commits value ({commits})")
 
@@ -88,8 +80,8 @@ def validate_files(paths: list[Path]) -> dict[str, list[str]]:
 
 
 def main() -> int:
-    """Validate all history JSON files and report errors or success."""
     import argparse
+    import sys
 
     parser = argparse.ArgumentParser(description="Validate history JSON files.")
     parser.add_argument("--verbose", action="store_true")
@@ -105,7 +97,7 @@ def main() -> int:
         for f in files:
             errs = validate_file(f)
             results.append({"file": f.name, "errors": errs})
-        logger.info(json.dumps(results, indent=2))
+        print(json.dumps(results, indent=2))
         has_errors = any(r["errors"] for r in results)
         return 1 if has_errors else 0
 
@@ -113,18 +105,18 @@ def main() -> int:
     for f in files:
         errs = validate_file(f)
         if errs:
-            logger.error("  FAIL %s:", f.name)
+            print(f"  FAIL {f.name}:")
             for e in errs:
-                logger.error("    %s", e)
+                print(f"    {e}")
             all_errors.extend(errs)
         else:
             if args.verbose:
-                logger.info("  OK   %s", f.name)
+                print(f"  OK   {f.name}")
     if all_errors:
-        logger.error("\n%d error(s) found.", len(all_errors))
+        print(f"\n{len(all_errors)} error(s) found.", file=sys.stderr)
         return 1
     if not args.verbose:
-        logger.info("All %d files valid.", len(files))
+        print(f"All {len(files)} files valid.")
     return 0
 
 

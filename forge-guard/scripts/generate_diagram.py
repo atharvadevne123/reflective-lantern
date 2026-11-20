@@ -2,13 +2,10 @@
 
 from __future__ import annotations
 
-import logging
 import os
 
 import matplotlib.pyplot as plt
 from matplotlib.patches import FancyBboxPatch
-
-logger = logging.getLogger(__name__)
 
 os.makedirs("screenshots", exist_ok=True)
 
@@ -33,17 +30,7 @@ COLORS = {
 }
 
 
-def box(
-    ax,
-    x: float,
-    y: float,
-    w: float,
-    h: float,
-    color: str,
-    label: str,
-    sublabel: str = "",
-    fontsize: int = 9,
-) -> None:
+def box(ax, x, y, w, h, color, label, sublabel="", fontsize=9):
     rect = FancyBboxPatch(
         (x, y),
         w,
@@ -80,7 +67,7 @@ def box(
         )
 
 
-def arrow(ax, x1: float, y1: float, x2: float, y2: float) -> None:
+def arrow(ax, x1, y1, x2, y2):
     ax.annotate(
         "",
         xy=(x2, y2),
@@ -236,4 +223,4 @@ plt.tight_layout(pad=0.3)
 plt.savefig(
     "screenshots/architecture.png", dpi=150, bbox_inches="tight", facecolor=fig.get_facecolor()
 )
-logger.info("Architecture diagram saved to screenshots/architecture.png")
+print("Architecture diagram saved to screenshots/architecture.png")

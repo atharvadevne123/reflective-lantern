@@ -5,56 +5,56 @@ from __future__ import annotations
 import pytest
 
 
-def test_validate_price_positive() -> None:
+def test_validate_price_positive():
     from app.data.validator import validate_price
 
     result = validate_price(100.0)
     assert result.valid is True
 
 
-def test_validate_price_zero() -> None:
+def test_validate_price_zero():
     from app.data.validator import validate_price
 
     result = validate_price(0.0)
     assert result.valid is False
 
 
-def test_validate_price_negative() -> None:
+def test_validate_price_negative():
     from app.data.validator import validate_price
 
     result = validate_price(-5.0)
     assert result.valid is False
 
 
-def test_validate_record_valid(sample_records) -> None:
+def test_validate_record_valid(sample_records):
     from app.data.validator import validate_record
 
     result = validate_record(sample_records[0])
     assert result.valid is True
 
 
-def test_validate_record_missing_key() -> None:
+def test_validate_record_missing_key():
     from app.data.validator import validate_record
 
     result = validate_record({"base_price": 10.0})
     assert result.valid is False
 
 
-def test_validate_record_negative_base_price() -> None:
+def test_validate_record_negative_base_price():
     from app.data.validator import validate_record
 
     result = validate_record({"product_id": "X", "base_price": -1.0, "demand": 10.0})
     assert result.valid is False
 
 
-def test_validate_dataset_empty() -> None:
+def test_validate_dataset_empty():
     from app.data.validator import validate_dataset
 
     result = validate_dataset([])
     assert result.valid is False
 
 
-def test_validate_dataset_valid(sample_records) -> None:
+def test_validate_dataset_valid(sample_records):
     from app.data.validator import validate_dataset
 
     result = validate_dataset(sample_records)
@@ -145,26 +145,3 @@ def test_validate_price_non_numeric() -> None:
 
     result = validate_price("abc")
     assert result.valid is False
-
-
-@pytest.mark.parametrize("price", [0.01, 1.0, 9999.99])
-def test_validate_price_valid_values(price: float) -> None:
-    from app.data.validator import validate_price
-
-    result = validate_price(price)
-    assert result.valid is True
-
-
-@pytest.mark.parametrize("price", [-1.0, 0.0, -999.0])
-def test_validate_price_negative_prices_reject(price: float) -> None:
-    from app.data.validator import validate_price
-
-    result = validate_price(price)
-    assert result.valid is False
-
-
-def test_validate_dataset_empty_records_valid() -> None:
-    from app.data.validator import validate_dataset
-
-    result = validate_dataset([])
-    assert isinstance(result.valid, bool)

@@ -1,56 +1,91 @@
-# Contributing to Logistics-Flow
+# Contributing to Watt-Guard
 
-## Getting started
+## Setup
 
 ```bash
-python -m venv .venv && source .venv/bin/activate
+git clone https://github.com/atharvadevne123/reflective-lantern
+cd reflective-lantern
 pip install -r requirements.txt
-pre-commit install
+cp .env.example .env   # fill in values
 ```
 
-## Before you open a pull request
-
-Run the same checks CI runs:
+## Running Tests
 
 ```bash
-make lint     # ruff check .
-make test     # pytest tests/
+make test          # run full pytest suite
+make coverage      # run with HTML coverage report (htmlcov/index.html)
 ```
 
-Both must pass. CI additionally enforces `ruff format --check`.
-
-## Code style
-
-- Ruff handles linting and formatting; line length is 100
-- Type annotations on all public functions
-- Google-style docstrings on modules and public functions
-- Use `logger`, never `print`, in `app/`
-
-Before committing, always run:
+## Linting & Type Checking
 
 ```bash
-python -m ruff check .       # catch lint errors
-python -m ruff format --check .  # verify formatting
-python -m mypy app/ --ignore-missing-imports  # optional type check
+make lint          # ruff check + ruff format --check
+make format        # auto-fix style issues
+make typecheck     # mypy on the app/ package
+make check         # lint + typecheck together (mirrors CI)
 ```
 
-All three must pass (mypy is advisory; ruff is required).
+## Database
 
-## Tests
+```bash
+make migrate       # create / update SQLite schema for local dev
+```
 
-Every behavioural change needs a test. Place tests in the file matching the
-module under test (`app/features.py` → `tests/test_features.py`). Prefer
-`pytest.mark.parametrize` over near-duplicate test bodies. External calls and
-the database are mocked or use the in-memory SQLite fixture from `conftest.py`.
+## Submitting Changes
 
-## Commits
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feat/my-feature`
+3. Write or update tests for your change
+4. Ensure `make check` and `make test` pass with no new failures
+5. Commit with [Conventional Commits](https://www.conventionalcommits.org/):
+   - `feat(api): add batch predict endpoint`
+   - `fix(model): prevent divide-by-zero in drift detector`
+   - `docs(readme): update quick-start section`
+6. Open a pull request against `main`
 
-Use Conventional Commits: `feat:`, `fix:`, `test:`, `docs:`, `chore:`, `ci:`.
-Keep each commit to a single logical change.
+## Commit Message Format
 
-## Adding a feature to the model
+```
+<type>(<scope>): <short summary>
 
-1. Add the transform to `app/features.py`
-2. Append the column name to `FEATURE_COLS`
-3. Add a test asserting the column exists and its invariants hold
-4. Retrain so `metrics.json` reflects the new feature count
+[optional body]
+```
+
+Types: `feat`, `fix`, `docs`, `test`, `refactor`, `chore`, `perf`
+
+## Code Style
+
+- **Python 3.11+** only — use modern syntax (`match`, `X | Y` unions, etc.)
+- **Ruff** for linting and formatting (line length 120)
+- **Google-style docstrings** on all public functions and classes
+- **Type annotations** on every public function signature
+- No bare `except` — always catch a specific exception type
+- Prefer `logger.info/warning/error` over `print`
+
+## Adding a New Endpoint
+
+1. Define the request/response schema in `app/schemas.py`
+2. Add the route handler in `app/main.py`
+3. Write at least one happy-path and one error-case test in `tests/test_api.py`
+4. Document the endpoint in `README.md`
+
+## Adding a New ML Feature
+
+1. Implement the transformer in `app/features.py` as an `sklearn` `BaseEstimator` + `TransformerMixin`
+2. Add the transformer to the pipeline in `app/model.py::build_pipeline`
+3. Update `tests/test_features.py` with a parametrized test
+
+## Environment Variables
+
+See `.env.example` for the full list. The minimum required for tests is:
+
+```bash
+DATABASE_URL=sqlite:///./test_watt_guard.db
+```
+
+## Docker
+
+```bash
+make docker-up    # build and start API + DB containers
+make docker-down  # tear down
+```

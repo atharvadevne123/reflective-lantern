@@ -18,15 +18,13 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from xgboost import XGBClassifier
 
-from app.features import generate_synthetic_data
-
 # sklearn >=1.9 uses get_tags().__sklearn_tags__().estimator_type to validate classifiers.
 # XGBClassifier 2.1.x doesn't set estimator_type in its __sklearn_tags__, causing
 # VotingClassifier to reject it.  Patch at class level so clones inherit the fix.
 _orig_xgb_tags = XGBClassifier.__sklearn_tags__  # type: ignore[attr-defined]
 
 
-def _patched_xgb_tags(self) -> object:  # type: ignore[no-untyped-def]
+def _patched_xgb_tags(self):  # type: ignore[no-untyped-def]
     tags = _orig_xgb_tags(self)
     tags.estimator_type = "classifier"
     return tags
@@ -34,6 +32,7 @@ def _patched_xgb_tags(self) -> object:  # type: ignore[no-untyped-def]
 
 XGBClassifier.__sklearn_tags__ = _patched_xgb_tags  # type: ignore[method-assign]
 
+from app.features import generate_synthetic_data  # noqa: E402
 
 logger = logging.getLogger(__name__)
 
@@ -184,12 +183,3 @@ def feature_importance(model: Pipeline) -> dict[str, float]:
     if FEATURE_NAMES and len(FEATURE_NAMES) == len(scores):
         return {name: round(float(s), 4) for name, s in zip(FEATURE_NAMES, scores, strict=False)}
     return {f"f{i}": round(float(s), 4) for i, s in enumerate(scores)}
-
-
-__all__ = [
-    "feature_importance",
-    "get_metrics",
-    "load_model",
-    "predict",
-    "train_model",
-]

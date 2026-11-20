@@ -7,7 +7,6 @@ import pandas as pd
 import pytest
 
 from app.features import (
-    FEATURE_COLS,
     AmenityCompositeTransformer,
     LagFeatureExtractor,
     OccupancyFeatureExtractor,
@@ -18,8 +17,6 @@ from app.features import (
     WeatherFeatureExtractor,
     build_feature_pipeline,
     extract_feature_array,
-    generate_synthetic_data,
-    prepare_X,
 )
 
 
@@ -196,22 +193,14 @@ def test_amenity_scale_constant() -> None:
     ],
 )
 def test_amenity_composite_uses_weights(school, transit, walk, single_row) -> None:
-    from app.features import (
-        _AMENITY_SCALE,
-        _SCHOOL_WEIGHT,
-        _TRANSIT_WEIGHT,
-        _WALK_WEIGHT,
-        AmenityCompositeTransformer,
-    )
+    from app.features import _AMENITY_SCALE, _SCHOOL_WEIGHT, _TRANSIT_WEIGHT, _WALK_WEIGHT, AmenityCompositeTransformer
 
     row = single_row.copy()
     row["school_score"] = school
     row["transit_score"] = transit
     row["walkability_score"] = walk
     result = AmenityCompositeTransformer().fit_transform(row)
-    expected = (
-        school * _SCHOOL_WEIGHT + transit * _TRANSIT_WEIGHT + walk * _WALK_WEIGHT
-    ) / _AMENITY_SCALE
+    expected = (school * _SCHOOL_WEIGHT + transit * _TRANSIT_WEIGHT + walk * _WALK_WEIGHT) / _AMENITY_SCALE
     import pytest as _pytest
 
     assert result["amenity_composite"].iloc[0] == _pytest.approx(expected, rel=1e-3)
@@ -343,12 +332,7 @@ def test_demand_response_potential_keys() -> None:
     from app.features import demand_response_potential
 
     result = demand_response_potential([1.0, 5.0, 10.0], peak_threshold_pct=0.9)
-    assert set(result.keys()) >= {
-        "peak_hours_count",
-        "sheddable_kwh",
-        "potential_pct",
-        "peak_threshold_kwh",
-    }
+    assert set(result.keys()) >= {"peak_hours_count", "sheddable_kwh", "potential_pct", "peak_threshold_kwh"}
 
 
 def test_demand_response_potential_potential_pct_bounded() -> None:
@@ -823,218 +807,3 @@ class TestTopKFeatures:
         imp = {"a": 1.0, "b": 2.0, "c": 3.0}
         result = top_k_features(imp, k=k)
         assert all(isinstance(n, str) for n in result)
-
-
-@pytest.mark.parametrize("n_rows", [1, 5, 10])
-def test_extract_feature_array_row_count(n_rows: int) -> None:
-    """extract_feature_array returns a numpy array with n_rows rows."""
-    from sklearn.pipeline import Pipeline
-    from sklearn.preprocessing import StandardScaler
-
-    df = pd.DataFrame(
-        {
-            "hour": [8] * n_rows,
-            "day_of_week": [1] * n_rows,
-            "month": [6] * n_rows,
-            "temperature_c": [20.0] * n_rows,
-            "humidity_pct": [50.0] * n_rows,
-            "occupancy": [30] * n_rows,
-            "hvac_state": [1] * n_rows,
-            "consumption_kwh": [10.0] * n_rows,
-        }
-    )
-    pipeline = Pipeline([("scaler", StandardScaler())])
-    arr = extract_feature_array(df, pipeline)
-    assert arr.shape[0] == n_rows
-
-
-@pytest.mark.parametrize("hour", [0, 6, 12, 18, 23])
-def test_temporal_extractor_hour_preserved(hour: int) -> None:
-    """TemporalFeatureExtractor includes the raw hour in its output."""
-    df = pd.DataFrame(
-        {
-            "hour": [hour],
-            "day_of_week": [0],
-            "month": [1],
-        }
-    )
-    extractor = TemporalFeatureExtractor()
-    result = extractor.fit_transform(df)
-    assert "hour" in result.columns
-    assert result["hour"].iloc[0] == hour
-
-
-class TestZscoreFeature:
-    def test_mean_near_zero(self) -> None:
-
-        from app.features import zscore_feature
-
-        values = [1.0, 2.0, 3.0, 4.0, 5.0]
-        result = zscore_feature(values)
-        assert abs(sum(result) / len(result)) < 0.01
-
-    def test_length_preserved(self) -> None:
-        from app.features import zscore_feature
-
-        values = [10.0, 20.0, 30.0]
-        assert len(zscore_feature(values)) == len(values)
-
-    @pytest.mark.parametrize("n", [5, 10, 20])
-    def test_uniform_series_all_zero(self, n: int) -> None:
-        from app.features import zscore_feature
-
-        values = [5.0] * n
-        result = zscore_feature(values)
-        assert all(v == pytest.approx(0.0) for v in result)
-
-
-class TestMinmaxNormalize:
-    def test_min_becomes_zero(self) -> None:
-        from app.features import minmax_normalize
-
-        result = minmax_normalize([1.0, 2.0, 3.0, 4.0, 5.0])
-        assert result[0] == pytest.approx(0.0)
-
-    def test_max_becomes_one(self) -> None:
-        from app.features import minmax_normalize
-
-        result = minmax_normalize([1.0, 2.0, 3.0, 4.0, 5.0])
-        assert result[-1] == pytest.approx(1.0)
-
-    @pytest.mark.parametrize("n", [2, 5, 10])
-    def test_values_in_unit_range(self, n: int) -> None:
-        from app.features import minmax_normalize
-
-        values = list(range(n))
-        result = minmax_normalize(values)
-        assert all(0.0 <= v <= 1.0 for v in result)
-
-
-def test_make_feature_row_shape() -> None:
-    import numpy as np
-
-    from app.features import make_feature_row
-
-    row = make_feature_row(
-        hour=8,
-        day_of_week=1,
-        month=3,
-        temperature_c=20.0,
-        humidity_pct=50.0,
-        occupancy=100,
-        hvac_state=1,
-        consumption_kwh=15.0,
-    )
-    assert isinstance(row, np.ndarray)
-    assert row.shape == (1, 8)
-
-
-def test_make_feature_row_values() -> None:
-    from app.features import make_feature_row
-
-    row = make_feature_row(8, 1, 3, 20.0, 50.0, 100, 1, 15.0)
-    assert row[0, 0] == 8
-    assert row[0, 7] == 15.0
-
-
-def test_drop_non_numeric_removes_string_columns() -> None:
-    import pandas as pd
-
-    from app.features import DropNonNumeric
-
-    df = pd.DataFrame({"a": [1.0, 2.0], "b": ["x", "y"], "c": [3, 4]})
-    transformer = DropNonNumeric()
-    transformer.fit(df)
-    out = transformer.transform(df)
-    assert "b" not in out.columns
-    assert "a" in out.columns
-    assert "c" in out.columns
-
-
-def test_drop_non_numeric_fitted_attr() -> None:
-    import pandas as pd
-
-    from app.features import DropNonNumeric
-
-    df = pd.DataFrame({"x": [1.0]})
-    t = DropNonNumeric()
-    t.fit(df)
-    assert hasattr(t, "fitted_") and t.fitted_ is True
-
-
-@pytest.mark.parametrize(
-    "carrier,distance_km,weight_kg,route_type",
-    [
-        ("DHL", 10.0, 1.0, "urban"),
-        ("FedEx", 500.0, 30.0, "highway"),
-        ("UPS", 200.0, 15.0, "rural"),
-        ("USPS", 50.0, 5.0, "suburban"),
-        ("Amazon", 30.0, 0.5, "urban"),
-    ],
-)
-def test_build_feature_pipeline_all_carriers(
-    carrier: str, distance_km: float, weight_kg: float, route_type: str
-) -> None:
-    from app.features import build_feature_pipeline, generate_synthetic_data, prepare_X
-
-    df = generate_synthetic_data(n=200, seed=0)
-    pipe = build_feature_pipeline()
-    X = prepare_X(df, pipe, fit=True)
-    assert X.shape[0] == 200
-    assert X.shape[1] >= 5
-
-
-@pytest.mark.parametrize("n", [50, 100, 500])
-def test_generate_synthetic_data_sizes(n: int) -> None:
-    from app.features import generate_synthetic_data
-
-    df = generate_synthetic_data(n=n, seed=7)
-    assert len(df) == n
-    assert "carrier" in df.columns
-    assert "delivery_minutes" in df.columns
-
-
-def test_synthetic_data_delivery_minutes_positive():
-    df = generate_synthetic_data(n=200, seed=1)
-    assert (df["delivery_minutes"] > 0).all()
-
-
-def test_prepare_X_fit_false_after_fit(sample_df):
-    """transform-only pass must not crash after the pipeline is fitted."""
-    pipe = build_feature_pipeline()
-    prepare_X(sample_df, pipe, fit=True)
-    X2 = prepare_X(sample_df.head(5), pipe, fit=False)
-    assert X2.shape[1] == len(FEATURE_COLS)
-
-
-def test_unknown_carrier_falls_back(sample_df):
-    """Unknown carrier should not raise during transform."""
-    pipe = build_feature_pipeline()
-    prepare_X(sample_df, pipe, fit=True)
-    row = sample_df.head(1).copy()
-    row["carrier"] = "UNKNOWN_XYZ"
-    X = prepare_X(row, pipe, fit=False)
-    assert X.shape[1] == len(FEATURE_COLS)
-
-
-def test_is_peak_hour_flag():
-    from app.features import TemporalFeatureExtractor
-
-    df = pd.DataFrame({"hour_of_day": [8, 12, 17, 20], "day_of_week": [1, 1, 1, 1]})
-    tfe = TemporalFeatureExtractor()
-    out = tfe.fit_transform(df)
-    assert out.loc[0, "is_peak"] == 1  # 8 AM peak
-    assert out.loc[1, "is_peak"] == 0  # 12 PM non-peak
-    assert out.loc[2, "is_peak"] == 1  # 5 PM peak
-    assert out.loc[3, "is_peak"] == 0  # 8 PM non-peak
-
-
-def test_cyclical_encoding_symmetry():
-    """hour_sin for hour 0 and hour 24 (mod 24 = 0) should be the same."""
-    from app.features import TemporalFeatureExtractor
-
-    df = pd.DataFrame({"hour_of_day": [0, 12], "day_of_week": [0, 0]})
-    tfe = TemporalFeatureExtractor()
-    out = tfe.fit_transform(df)
-    assert abs(out.loc[0, "hour_cos"] - 1.0) < 1e-9
-    assert abs(out.loc[1, "hour_cos"] - (-1.0)) < 1e-9

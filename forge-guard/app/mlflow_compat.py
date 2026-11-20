@@ -26,7 +26,7 @@ def log_run(metrics: dict[str, Any], params: dict[str, Any] | None = None) -> st
         import mlflow  # type: ignore[import]
 
         with mlflow.start_run():
-            mlflow.log_metrics({k: v for k, v in metrics.items() if isinstance(v, int | float)})
+            mlflow.log_metrics({k: v for k, v in metrics.items() if isinstance(v, (int, float))})
             if params:
                 mlflow.log_params(params)
             run_id = mlflow.active_run().info.run_id  # type: ignore[union-attr]
@@ -43,6 +43,3 @@ def log_run(metrics: dict[str, Any], params: dict[str, Any] | None = None) -> st
     (run_dir / "manifest.json").write_text(json.dumps(manifest, indent=2))
     logger.info("Fallback MLflow run written to %s", run_dir)
     return run_id
-
-
-__all__ = ["log_run"]

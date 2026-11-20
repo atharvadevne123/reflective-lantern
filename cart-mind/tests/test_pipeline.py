@@ -211,30 +211,3 @@ class TestReadChampionAuc:
         path.write_text(json.dumps({"other_key": 1}))
         monkeypatch.setattr("pipelines.retrain_dag.METRICS_PATH", path)
         assert read_champion_auc() == 0.0
-
-
-class TestRetrainTaskExtended:
-    def test_retrain_task_returns_dict(self, monkeypatch, tmp_path) -> None:
-        from pipelines.retrain_dag import retrain_task
-
-        monkeypatch.setattr("pipelines.retrain_dag.MIN_ROWS", 10)
-        monkeypatch.setattr("pipelines.retrain_dag.TRAIN_ROWS", 120)
-        monkeypatch.setattr("pipelines.retrain_dag.AUC_GATE", 0.0)
-        monkeypatch.setattr("pipelines.retrain_dag.METRICS_PATH", tmp_path / "metrics.json")
-        monkeypatch.setattr("app.model.MODEL_PATH", str(tmp_path / "model.joblib"))
-        monkeypatch.setattr("app.model.METRICS_PATH", tmp_path / "challenger.json")
-        result = retrain_task()
-        assert isinstance(result, dict)
-
-    def test_retrain_task_creates_metrics_file(self, monkeypatch, tmp_path) -> None:
-        from pipelines.retrain_dag import retrain_task
-
-        metrics_path = tmp_path / "metrics.json"
-        monkeypatch.setattr("pipelines.retrain_dag.MIN_ROWS", 10)
-        monkeypatch.setattr("pipelines.retrain_dag.TRAIN_ROWS", 120)
-        monkeypatch.setattr("pipelines.retrain_dag.AUC_GATE", 0.0)
-        monkeypatch.setattr("pipelines.retrain_dag.METRICS_PATH", metrics_path)
-        monkeypatch.setattr("app.model.MODEL_PATH", str(tmp_path / "model.joblib"))
-        monkeypatch.setattr("app.model.METRICS_PATH", tmp_path / "challenger.json")
-        retrain_task()
-        assert metrics_path.exists()

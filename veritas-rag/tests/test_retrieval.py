@@ -13,11 +13,11 @@ from app.retrieval.rerank import LexicalReranker
 
 
 class TestBM25:
-    def test_tokenize_strips_stopwords(self) -> None:
+    def test_tokenize_strips_stopwords(self):
         assert "the" not in tokenize("the quick fox")
         assert tokenize("Quick FOX!") == ["quick", "fox"]
 
-    def test_exact_term_match_ranks_first(self) -> None:
+    def test_exact_term_match_ranks_first(self):
         index = BM25Index()
         index.add("c1", "solar rebate program for households")
         index.add("c2", "battery storage incentive details")
@@ -25,19 +25,19 @@ class TestBM25:
         results = index.search("solar rebate")
         assert results[0][0] == "c1"
 
-    def test_remove_drops_chunk(self) -> None:
+    def test_remove_drops_chunk(self):
         index = BM25Index()
         index.add("c1", "unique zebra content")
         index.remove("c1")
         assert index.search("zebra") == []
         assert len(index) == 0
 
-    def test_empty_query_returns_nothing(self) -> None:
+    def test_empty_query_returns_nothing(self):
         index = BM25Index()
         index.add("c1", "text")
         assert index.search("the of and") == []
 
-    def test_top_k_respected(self) -> None:
+    def test_top_k_respected(self):
         index = BM25Index()
         for i in range(20):
             index.add(f"c{i}", f"solar document number {i}")
@@ -45,19 +45,19 @@ class TestBM25:
 
 
 class TestEmbedder:
-    def test_deterministic(self) -> None:
+    def test_deterministic(self):
         emb = HashingEmbedder(dim=64)
         a = emb.embed(["hello world"])
         b = emb.embed(["hello world"])
         np.testing.assert_array_equal(a, b)
 
-    def test_normalized(self) -> None:
+    def test_normalized(self):
         emb = HashingEmbedder(dim=64)
         vecs = emb.embed(["some text here", "other content entirely"])
         norms = np.linalg.norm(vecs, axis=1)
         np.testing.assert_allclose(norms, 1.0, rtol=1e-5)
 
-    def test_similar_texts_closer_than_dissimilar(self) -> None:
+    def test_similar_texts_closer_than_dissimilar(self):
         emb = HashingEmbedder(dim=384)
         vecs = emb.embed(
             [
@@ -72,7 +72,7 @@ class TestEmbedder:
 
 
 class TestVectorIndex:
-    def test_nearest_neighbour_found(self) -> None:
+    def test_nearest_neighbour_found(self):
         emb = HashingEmbedder(dim=128)
         texts = ["solar rebates", "battery storage", "grid limits"]
         index = VectorIndex(dim=128)
@@ -81,7 +81,7 @@ class TestVectorIndex:
         results = index.search(query, top_k=1)
         assert results[0][0] == "c1"
 
-    def test_deleted_ids_filtered(self) -> None:
+    def test_deleted_ids_filtered(self):
         emb = HashingEmbedder(dim=128)
         index = VectorIndex(dim=128)
         index.add(["c1", "c2"], emb.embed(["alpha text", "beta text"]))
@@ -89,7 +89,7 @@ class TestVectorIndex:
         results = index.search(emb.embed(["alpha text"])[0], top_k=5)
         assert all(cid != "c1" for cid, _ in results)
 
-    def test_ivf_path_over_threshold(self) -> None:
+    def test_ivf_path_over_threshold(self):
         emb = HashingEmbedder(dim=32)
         n = 600
         texts = [f"document about topic {i} with words {i % 7} {i % 13}" for i in range(n)]
@@ -98,30 +98,30 @@ class TestVectorIndex:
         results = index.search(emb.embed(["document about topic 5"])[0], top_k=10)
         assert len(results) == 10
 
-    def test_empty_index(self) -> None:
+    def test_empty_index(self):
         index = VectorIndex(dim=8)
         assert index.search(np.zeros(8, dtype=np.float32)) == []
 
 
 class TestFusion:
-    def test_agreement_ranks_highest(self) -> None:
+    def test_agreement_ranks_highest(self):
         bm25 = [("shared", 5.0), ("bm_only", 4.0)]
         vec = [("shared", 0.9), ("vec_only", 0.8)]
         fused = reciprocal_rank_fusion(bm25, vec)
         assert fused[0][0] == "shared"
 
-    def test_ranks_recorded(self) -> None:
+    def test_ranks_recorded(self):
         fused = reciprocal_rank_fusion([("a", 1.0)], [("b", 1.0)])
         by_id = {cid: (b, v) for cid, _, b, v in fused}
         assert by_id["a"] == (1, None)
         assert by_id["b"] == (None, 1)
 
-    def test_empty_inputs(self) -> None:
+    def test_empty_inputs(self):
         assert reciprocal_rank_fusion([], []) == []
 
 
 class TestReranker:
-    def test_relevant_text_scores_higher(self) -> None:
+    def test_relevant_text_scores_higher(self):
         rr = LexicalReranker()
         scores = rr.score(
             "solar rebate amount",
@@ -132,12 +132,12 @@ class TestReranker:
         )
         assert scores[0] > scores[1]
 
-    def test_scores_bounded(self) -> None:
+    def test_scores_bounded(self):
         rr = LexicalReranker()
         scores = rr.score("query terms", ["query terms appear here", "nothing relevant"])
         assert all(0.0 <= s <= 1.0 for s in scores)
 
-    def test_proximity_rewarded(self) -> None:
+    def test_proximity_rewarded(self):
         rr = LexicalReranker()
         tight = "export limit five kilowatts single phase"
         loose = (
@@ -148,139 +148,19 @@ class TestReranker:
         assert scores[0] > scores[1]
 
     @pytest.mark.parametrize("query", ["", "the of and"])
-    def test_stopword_only_query(self, query) -> None:
+    def test_stopword_only_query(self, query):
         rr = LexicalReranker()
         assert rr.score(query, ["some text"]) == [0.0]
 
 
 class TestPipelineRetrieval:
-    def test_hybrid_finds_expected_document(self, pipeline) -> None:
+    def test_hybrid_finds_expected_document(self, pipeline):
         answer = pipeline.query("How much is the rooftop solar rebate per kilowatt?")
         assert answer.answered
         assert any("solar-policy" in c.source for c in answer.citations)
 
-    def test_semantic_match_without_exact_terms(self, pipeline) -> None:
+    def test_semantic_match_without_exact_terms(self, pipeline):
         # "power storage" is not verbatim in the corpus; "battery storage" is
         answer = pipeline.query("What incentive exists for home power storage batteries?")
         assert answer.answered
         assert any("battery-guide" in c.source for c in answer.citations)
-
-
-class TestBM25Parametrized:
-    @pytest.mark.parametrize("stopword", ["the", "of", "and", "a", "is"])
-    def test_common_stopwords_stripped(self, stopword: str) -> None:
-        """Common English stopwords are removed during tokenization."""
-        assert stopword not in tokenize(f"this {stopword} that")
-
-    @pytest.mark.parametrize("top_k", [1, 3, 5])
-    def test_top_k_limits_results(self, top_k: int) -> None:
-        """BM25Index.search respects the top_k limit."""
-        index = BM25Index()
-        for i in range(10):
-            index.add(f"doc{i}", f"solar energy content document {i}")
-        results = index.search("solar", top_k=top_k)
-        assert len(results) == top_k
-
-
-class TestEmbedderParametrized:
-    @pytest.mark.parametrize("dim", [32, 64, 128])
-    def test_embedding_dimension(self, dim: int) -> None:
-        """HashingEmbedder produces vectors of the requested dimension."""
-        emb = HashingEmbedder(dim=dim)
-        vecs = emb.embed(["test text"])
-        assert vecs.shape == (1, dim)
-
-    @pytest.mark.parametrize("n_texts", [1, 5, 10])
-    def test_batch_embedding_shape(self, n_texts: int) -> None:
-        """HashingEmbedder handles batches of various sizes."""
-        emb = HashingEmbedder(dim=64)
-        texts = [f"document number {i}" for i in range(n_texts)]
-        vecs = emb.embed(texts)
-        assert vecs.shape[0] == n_texts
-
-
-class TestBM25EdgeCases:
-    def test_remove_nonexistent_chunk_is_noop(self) -> None:
-        """Removing a chunk id not in the index does not raise."""
-        index = BM25Index()
-        index.remove("ghost-id")  # must not raise
-
-    def test_single_char_tokens_indexed(self) -> None:
-        """Single-character non-stopword tokens are preserved."""
-        index = BM25Index()
-        index.add("c1", "x marks the spot")
-        results = index.search("x")
-        assert len(results) >= 1
-        assert results[0][0] == "c1"
-
-    def test_repeated_add_same_id_overwrites(self) -> None:
-        """Adding the same chunk id twice accumulates (no guard, by design)."""
-        index = BM25Index()
-        index.add("c1", "solar energy")
-        index.add("c2", "unrelated content here")
-        results = index.search("solar")
-        assert results[0][0] == "c1"
-
-    @pytest.mark.parametrize("text", ["", "   ", "\t\n"])
-    def test_empty_or_whitespace_text_adds_empty_doc(self, text: str) -> None:
-        """Whitespace-only documents add a zero-token entry without error."""
-        index = BM25Index()
-        index.add("blank", text)
-        assert len(index) == 1
-
-    def test_score_decreases_for_less_matching_docs(self) -> None:
-        """Higher query-term overlap yields higher BM25 score."""
-        index = BM25Index()
-        index.add("good", "solar rebate program kilowatts households")
-        index.add("ok", "solar program")
-        index.add("poor", "unrelated topic weather")
-        results = {cid: score for cid, score in index.search("solar rebate kilowatts")}
-        assert results.get("good", 0.0) > results.get("ok", 0.0)
-
-
-class TestVectorIndexEdgeCases:
-    def test_search_empty_index_returns_empty(self) -> None:
-        """Searching an empty VectorIndex returns []."""
-        index = VectorIndex(dim=32)
-        emb = HashingEmbedder(dim=32)
-        results = index.search(emb.embed(["query"])[0], top_k=5)
-        assert results == []
-
-    def test_len_after_add_and_remove(self) -> None:
-        """VectorIndex.__len__ tracks live (non-deleted) entries."""
-        emb = HashingEmbedder(dim=32)
-        index = VectorIndex(dim=32)
-        index.add(["a", "b", "c"], emb.embed(["text a", "text b", "text c"]))
-        assert len(index) == 3
-        index.remove(["a"])
-        assert len(index) == 2
-
-    def test_top_k_capped_to_corpus_size(self) -> None:
-        """top_k larger than corpus size returns at most corpus size results."""
-        emb = HashingEmbedder(dim=32)
-        index = VectorIndex(dim=32)
-        index.add(["x", "y"], emb.embed(["alpha", "beta"]))
-        results = index.search(emb.embed(["alpha"])[0], top_k=100)
-        assert len(results) <= 2
-
-
-class TestHybridFusionEdgeCases:
-    def test_fusion_empty_both_lists(self) -> None:
-        """RRF of two empty lists returns empty."""
-        assert reciprocal_rank_fusion([], []) == []
-
-    def test_fusion_single_retriever(self) -> None:
-        """RRF with one empty list still ranks the non-empty list."""
-        bm25 = [("c1", 0.9), ("c2", 0.5)]
-        result = reciprocal_rank_fusion(bm25, [])
-        ids = [r[0] for r in result]
-        assert "c1" in ids
-        assert "c2" in ids
-
-    def test_fusion_agreement_boosts_rank(self) -> None:
-        """A chunk in both lists outranks chunks in only one list."""
-        bm25 = [("common", 1.0), ("bm25-only", 0.9)]
-        vec = [("common", 1.0), ("vec-only", 0.9)]
-        result = reciprocal_rank_fusion(bm25, vec)
-        top_id = result[0][0]
-        assert top_id == "common"

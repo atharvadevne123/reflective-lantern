@@ -5,7 +5,7 @@ from __future__ import annotations
 import pandas as pd
 
 
-def test_task_engineer_features_shapes(synthetic_df: pd.DataFrame) -> None:
+def test_task_engineer_features_shapes(synthetic_df: pd.DataFrame):
     from pipelines.retrain_dag import task_engineer_features
 
     X, y = task_engineer_features(synthetic_df)
@@ -14,7 +14,7 @@ def test_task_engineer_features_shapes(synthetic_df: pd.DataFrame) -> None:
     assert len(y) == len(synthetic_df)
 
 
-def test_task_retrain_model_returns_comparison(synthetic_df, tmp_path, monkeypatch) -> None:
+def test_task_retrain_model_returns_comparison(synthetic_df, tmp_path, monkeypatch):
     from app import model as m
     from pipelines.retrain_dag import task_engineer_features, task_retrain_model
 
@@ -30,7 +30,7 @@ def test_task_retrain_model_returns_comparison(synthetic_df, tmp_path, monkeypat
     assert result["auc_after"] > 0.5
 
 
-def test_extract_falls_back_to_synthetic_on_empty_db(monkeypatch) -> None:
+def test_extract_falls_back_to_synthetic_on_empty_db(monkeypatch):
     from pipelines import retrain_dag
 
     # Point at a non-existent DB path — few/no records → empty DataFrame or synthetic fallback
@@ -40,23 +40,23 @@ def test_extract_falls_back_to_synthetic_on_empty_db(monkeypatch) -> None:
     assert isinstance(df, pd.DataFrame)
 
 
-def test_run_pipeline_aborts_gracefully_on_no_data(monkeypatch, caplog) -> None:
+def test_run_pipeline_aborts_gracefully_on_no_data(monkeypatch, caplog):
     from pipelines import retrain_dag
 
     monkeypatch.setattr(retrain_dag, "task_extract_training_data", lambda: pd.DataFrame())
     retrain_dag.run_pipeline(trigger="manual")  # must not raise
 
 
-def test_task_engineer_features_no_nan(synthetic_df: pd.DataFrame) -> None:
+def test_task_engineer_features_no_nan(synthetic_df: pd.DataFrame):
     import numpy as np
 
     from pipelines.retrain_dag import task_engineer_features
 
-    X, _y = task_engineer_features(synthetic_df)
+    X, y = task_engineer_features(synthetic_df)
     assert not np.isnan(X).any()
 
 
-def test_task_retrain_model_metrics_keys(synthetic_df, tmp_path, monkeypatch) -> None:
+def test_task_retrain_model_metrics_keys(synthetic_df, tmp_path, monkeypatch):
     from app import model as m
     from pipelines.retrain_dag import task_engineer_features, task_retrain_model
 
@@ -69,7 +69,7 @@ def test_task_retrain_model_metrics_keys(synthetic_df, tmp_path, monkeypatch) ->
         assert key in result
 
 
-def test_task_extract_returns_dataframe(monkeypatch) -> None:
+def test_task_extract_returns_dataframe(monkeypatch):
     from pipelines import retrain_dag
 
     df = retrain_dag.task_extract_training_data()

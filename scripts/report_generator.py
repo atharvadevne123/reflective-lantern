@@ -45,7 +45,6 @@ def total_commits(history: dict[str, list[dict]]) -> int:
 
 
 def _entry_date_str(entry: dict) -> str:
-    """Return the date string from a history entry, falling back to last_run or empty string."""
     return str(entry.get("date") or entry.get("last_run") or "")
 
 
@@ -109,7 +108,6 @@ def weekly_report(target: date, window_days: int = 7) -> str:
 
 
 def main() -> int:
-    """Parse CLI arguments and print (or write) a daily or weekly history report."""
     parser = argparse.ArgumentParser(description="Generate run history reports.")
     parser.add_argument("--mode", choices=["daily", "weekly"], default="daily")
     parser.add_argument("--date", default=format_date(date.today()))
@@ -117,7 +115,10 @@ def main() -> int:
     args = parser.parse_args()
 
     target = date.fromisoformat(args.date)
-    content = weekly_report(target) if args.mode == "weekly" else daily_report(target)
+    if args.mode == "weekly":
+        content = weekly_report(target)
+    else:
+        content = daily_report(target)
 
     if args.output:
         Path(args.output).write_text(content)

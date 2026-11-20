@@ -60,9 +60,7 @@ def test_update_notion_page_with_description() -> None:
     from scripts.notion_portfolio_update import update_notion_page
 
     mock_notion = MagicMock()
-    update_notion_page(
-        mock_notion, "page-456", "https://example.com/cover.svg", ["Python"], "A great project."
-    )
+    update_notion_page(mock_notion, "page-456", "https://example.com/cover.svg", ["Python"], "A great project.")
     call_kwargs = mock_notion.pages.update.call_args[1]
     props = call_kwargs["properties"]
     assert "Description" in props

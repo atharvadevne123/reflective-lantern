@@ -8,11 +8,8 @@ from __future__ import annotations
 
 import argparse
 import json
-import logging
 
 import httpx
-
-logger = logging.getLogger(__name__)
 
 DEMO_PAYLOAD: dict[str, object] = {
     "lead_time": 14,
@@ -42,12 +39,12 @@ def main() -> int:
     args = parser.parse_args()
 
     url = f"{args.host}/api/v1/predict"
-    logger.info("POST %s", url)
-    logger.debug("Payload: %s", json.dumps(DEMO_PAYLOAD, indent=2))
+    print(f"POST {url}")
+    print(json.dumps(DEMO_PAYLOAD, indent=2))
 
     resp = httpx.post(url, json=DEMO_PAYLOAD, timeout=30.0)
-    logger.info("HTTP %d", resp.status_code)
-    logger.debug("Response: %s", json.dumps(resp.json(), indent=2))
+    print(f"\nHTTP {resp.status_code}")
+    print(json.dumps(resp.json(), indent=2))
     return 0 if resp.status_code == 200 else 1
 
 

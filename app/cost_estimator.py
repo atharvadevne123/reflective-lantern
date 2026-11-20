@@ -1,9 +1,4 @@
-"""ML inference and training cost estimation utilities.
-
-Provides dataclasses and helper functions for estimating the monetary cost
-of running ML workloads on cloud compute, broken down by CPU, memory, and GPU.
-Default rates are illustrative and should be overridden for production use.
-"""
+"""ML inference and training cost estimation utilities."""
 
 from __future__ import annotations
 
@@ -34,11 +29,6 @@ class ResourceSpec:
     duration_hours: float = 1.0
 
     def __post_init__(self) -> None:
-        """Validate that all resource quantities are within acceptable ranges.
-
-        Raises:
-            ValueError: If any resource quantity is out of range.
-        """
         if self.cpu_cores <= 0:
             raise ValueError("cpu_cores must be positive")
         if self.memory_gb <= 0:
@@ -49,55 +39,26 @@ class ResourceSpec:
             raise ValueError("duration_hours must be positive")
 
 
-class CostBreakdown(float):
-    """Itemised cost estimate; also a float equal to total_usd for comparisons.
+@dataclass
+class CostBreakdown:
+    """Itemised cost estimate.
 
     Attributes:
         cpu_cost_usd: Cost attributed to CPU usage.
         memory_cost_usd: Cost attributed to memory usage.
         gpu_cost_usd: Cost attributed to GPU usage.
-        total_usd: Sum of all cost components (identical to float value).
+        total_usd: Sum of all cost components.
     """
 
     cpu_cost_usd: float
     memory_cost_usd: float
     gpu_cost_usd: float
 
-    def __new__(
-        cls,
-        cpu_cost_usd: float = 0.0,
-        memory_cost_usd: float = 0.0,
-        gpu_cost_usd: float = 0.0,
-    ) -> CostBreakdown:
-        total = cpu_cost_usd + memory_cost_usd + gpu_cost_usd
-        instance = super().__new__(cls, total)
-        instance.cpu_cost_usd = cpu_cost_usd
-        instance.memory_cost_usd = memory_cost_usd
-        instance.gpu_cost_usd = gpu_cost_usd
-        return instance
-
-    def __init__(
-        self,
-        cpu_cost_usd: float = 0.0,
-        memory_cost_usd: float = 0.0,
-        gpu_cost_usd: float = 0.0,
-    ) -> None:
-        super().__init__()
-
     @property
     def total_usd(self) -> float:
-        """Sum of all resource costs in USD."""
-        return float(self)
-
-    def __repr__(self) -> str:
-        return (
-            f"CostBreakdown(cpu_cost_usd={self.cpu_cost_usd!r}, "
-            f"memory_cost_usd={self.memory_cost_usd!r}, "
-            f"gpu_cost_usd={self.gpu_cost_usd!r})"
-        )
+        return self.cpu_cost_usd + self.memory_cost_usd + self.gpu_cost_usd
 
     def to_dict(self) -> dict[str, float]:
-        """Serialize costs to a plain dict, rounded to 6 decimal places."""
         return {
             "cpu_cost_usd": round(self.cpu_cost_usd, 6),
             "memory_cost_usd": round(self.memory_cost_usd, 6),
@@ -158,7 +119,7 @@ def monthly_estimate(
     Returns:
         :class:`CostBreakdown` for the full month.
     """
-    monthly_hours = hours_per_day * days_per_month * spec.duration_hours
+    monthly_hours = hours_per_day * days_per_month
     scaled = ResourceSpec(
         cpu_cores=spec.cpu_cores,
         memory_gb=spec.memory_gb,
@@ -193,49 +154,10 @@ def compare_specs(
     return results
 
 
-def cheapest_spec(specs: list[ResourceSpec], **rate_kwargs) -> ResourceSpec | None:
-    """Return the least expensive spec from *specs* at the given rates.
-
-    Args:
-        specs: List of resource specs to evaluate.
-        **rate_kwargs: Forwarded to :func:`estimate_cost`.
-
-    Returns:
-        The :class:`ResourceSpec` with the lowest total cost, or ``None``
-        when *specs* is empty.
-    """
-    if not specs:
-        return None
-    return min(specs, key=lambda s: estimate_cost(s, **rate_kwargs).total_usd)
-
-
-def cost_per_unit(breakdown: CostBreakdown, units: int) -> float:
-    """Return the cost per processed unit from a :class:`CostBreakdown`.
-
-    Args:
-        breakdown: A populated cost breakdown.
-        units: Number of units processed (e.g. requests, rows, samples).
-
-    Returns:
-        Cost per unit in USD, rounded to 8 decimal places. Returns 0.0
-        when *units* is zero.
-
-    Raises:
-        ValueError: If *units* is negative.
-    """
-    if units < 0:
-        raise ValueError(f"units must be non-negative, got {units}")
-    if units == 0:
-        return 0.0
-    return round(breakdown.total_usd / units, 8)
-
-
 __all__ = [
     "CostBreakdown",
     "ResourceSpec",
-    "cheapest_spec",
     "compare_specs",
-    "cost_per_unit",
     "estimate_cost",
     "monthly_estimate",
 ]

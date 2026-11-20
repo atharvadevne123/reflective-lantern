@@ -1,65 +1,138 @@
-![Python Package](https://github.com/atharvadevne123/reflective-lantern/actions/workflows/python-publish.yml/badge.svg) ![npm](https://github.com/atharvadevne123/reflective-lantern/actions/workflows/npm-publish.yml/badge.svg) ![Bump Version](https://github.com/atharvadevne123/reflective-lantern/actions/workflows/bump-version.yml/badge.svg)
-
 # Reflective Lantern
 
-Autonomous Mon–Fri code improvement agent powered by Claude Code Cloud Routines.
+A growing collection of production-quality Python utility modules for
+ML-serving platforms, API services, and data pipelines.
 
-Every weekday at 9 AM CST, Reflective Lantern wakes up, picks one of @atharvadevne123's
-GitHub repositories, implements 5+ improvements, runs tests, updates docs, pushes to main,
-and sends an email digest — all with zero human intervention.
+## Modules
 
-## What It Does
+### Infrastructure
+| Module | Description |
+|--------|-------------|
+| `app/retry.py` | Exponential-backoff retry decorator with jitter |
+| `app/circuit_breaker.py` | CLOSED / OPEN / HALF_OPEN state machine |
+| `app/token_bucket.py` | Thread-safe per-key rate limiter |
+| `app/task_queue.py` | Priority task queue with worker threads |
+| `app/webhook_handler.py` | HMAC-verified inbound webhook dispatcher |
+| `app/config_validator.py` | Schema-based configuration validation |
 
-Each daily run:
-1. **Discovers** all active GitHub repos (skips archived/forks)
-2. **Rotates** through repos on a deterministic weekly schedule
-3. **Analyzes** the codebase for improvement opportunities
-4. **Implements** 5+ changes across these priority tiers:
-   - Security & correctness (hardcoded secrets, missing error handling)
-   - Test coverage (creates pytest/jest suites from scratch if needed)
-   - Code quality (type hints, docstrings, logging)
-   - Developer experience (CI/CD, .env.example, Dockerfile)
-   - Performance (caching, N+1 queries)
-5. **Tests** all changes before pushing
-6. **Pushes** directly to `main`
-7. **Notifies** via Gmail digest to devneatharva@gmail.com
+### Observability
+| Module | Description |
+|--------|-------------|
+| `app/metrics_collector.py` | Counters, gauges, and histograms |
+| `app/alerting.py` | Threshold alert rules with cooldown |
+| `app/profiler.py` | Wall-clock timing and call-stats decorators |
+| `app/health_check.py` | Composable readiness/liveness probe registry |
+| `app/audit_log.py` | Immutable append-only structured audit trail |
+| `app/notification_dispatcher.py` | Multi-channel severity-routed notifications |
+| `app/correlation_id.py` | Thread-local request trace identifiers |
 
-## Structure
+### Data & ML
+| Module | Description |
+|--------|-------------|
+| `app/feature_store.py` | Versioned feature set storage |
+| `app/model_registry.py` | ML model lifecycle (staging / production / archived) |
+| `app/data_versioning.py` | SHA-256 checksummed snapshot lineage |
+| `app/data_augmentation.py` | Text and numeric training data augmentation |
+| `app/experiment_tracker.py` | Deterministic A/B variant assignment |
+| `app/batch_processor.py` | Chunked batch execution with callbacks |
+| `app/shadow_mode.py` | Parallel shadow traffic comparison |
+| `app/cost_estimator.py` | USD cost projection from resource specs |
 
+### Energy Analytics
+| Module | Description |
+|--------|-------------|
+| `app/tariff.py` | Flat, time-of-use and tiered electricity pricing |
+| `app/load_profile.py` | Base load, load factor, ramp rate, profile class |
+| `app/weather_normalization.py` | Degree-day adjustment separating weather from efficiency |
+| `app/demand_response.py` | Baseline load, curtailment and event settlement |
+| `app/power_quality.py` | Power factor, reactive power, voltage imbalance |
+| `app/solar.py` | PV generation, self-consumption split, payback |
+| `app/battery.py` | Storage dispatch, peak shaving, capacity sizing |
+
+See [docs/energy_analytics.md](docs/energy_analytics.md) for the full reference.
+
+### Utilities
+| Module | Description |
+|--------|-------------|
+| `app/pagination.py` | Offset and cursor-based pagination helpers |
+| `app/event_bus.py` | Synchronous pub/sub with wildcard subscriptions |
+| `app/geo_utils.py` | Haversine distance, bounding boxes, nearest neighbour |
+| `app/compression.py` | zlib / gzip compress/decompress with JSON helpers |
+
+## Quick Start
+
+```bash
+pip install -e ".[dev]"
+pytest -q
 ```
-reflective-lantern/
-├── .claude/settings.json     ← CCR tool permissions
-├── prompts/system_prompt.md  ← cached agent instructions (3000+ tokens)
-├── history/                  ← per-repo JSON run logs
-└── README.md
+
+## Common Patterns
+
+```python
+# Retry with exponential backoff
+from app.retry import retry
+
+
+@retry(max_attempts=3, delay=0.5)
+def fetch_data(url: str) -> dict: ...
+
+
+# Circuit breaker
+from app.circuit_breaker import CircuitBreaker
+
+cb = CircuitBreaker(failure_threshold=5, recovery_timeout=30)
+result = cb.call(fetch_data, url)
+
+# Per-request correlation IDs
+from app.correlation_id import correlation_context
+
+with correlation_context() as cid:
+    process_request()  # all logs carry cid
+
+# Rate limiting
+from app.token_bucket import PerKeyTokenBucket
+
+bucket = PerKeyTokenBucket(capacity=100, refill_rate=10)
+if bucket.consume(client_id):
+    handle_request()
 ```
 
-## Tech Stack
+## Developer Scripts
 
-- **Scheduler**: Claude Code Cloud Routine (cron `0 14 * * 1-5` = 9 AM CDT)
-- **AI**: Claude Sonnet 4.6 with prompt caching (~80% token reduction)
-- **Repo ops**: GitHub CLI (`gh`) + git
-- **Notifications**: Gmail MCP
-
-## Token Efficiency
-
-The `prompts/system_prompt.md` file exceeds Sonnet 4.6's 2048-token cache threshold,
-so it is cached on first use and subsequent runs hit the cache at ~10% of the original
-input cost. Combined with one-repo-per-day rotation, estimated cost is $0.15–0.25/run.
-
-## History
-
-The `history/` directory contains JSON logs of every run per repo, used to avoid
-repeating improvements across runs. Example entry:
-
-```json
-[
-  {
-    "date": "2026-04-21",
-    "improvements": ["added pytest suite", "fixed hardcoded API key"],
-    "tests_passed": true,
-    "commits": 3,
-    "notes": ""
-  }
-]
+```bash
+make benchmark   # micro-benchmark all modules
+make seed        # seed dev data fixtures
+make test-cov    # tests with coverage report
 ```
+
+## Testing
+
+```bash
+make test          # full suite
+make test-cov      # with coverage report
+make check         # lint + typecheck + tests, as CI runs them
+```
+
+The root suite holds 5767 tests and is green. Sub-project suites live under
+their own directories (`quake-net/tests/`, `veritas-rag/tests/`, and so on)
+and are run from within each project:
+
+```bash
+cd quake-net && pytest tests/ -q
+```
+
+Some sub-project suites have pre-existing failures — see
+[Known Issues](docs/known_issues.md) for the cause and suggested fix of each.
+
+## Docs
+
+- [Architecture](docs/architecture.md)
+- [API Reference](docs/api_reference.md)
+- [Energy Analytics](docs/energy_analytics.md)
+- [Deployment](docs/deployment.md)
+- [Monitoring](docs/monitoring.md)
+- [Known Issues](docs/known_issues.md)
+
+## License
+
+MIT

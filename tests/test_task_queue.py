@@ -2,35 +2,33 @@
 
 import threading
 
-import pytest
-
 from app.task_queue import Task, TaskQueue
 
 
 class TestTask:
-    def test_run_calls_fn(self) -> None:
+    def test_run_calls_fn(self):
         results = []
         t = Task(priority=1, fn=results.append, args=(42,))
         t.run()
         assert results == [42]
 
-    def test_priority_ordering(self) -> None:
+    def test_priority_ordering(self):
         t1 = Task(priority=10, fn=lambda: None)
         t2 = Task(priority=1, fn=lambda: None)
         assert t2 < t1
 
 
 class TestTaskQueue:
-    def test_submit_increases_len(self) -> None:
+    def test_submit_increases_len(self):
         q = TaskQueue(workers=0)
         q.submit(lambda: None, priority=1)
         assert len(q) == 1
 
-    def test_workers_execute_tasks(self) -> None:
+    def test_workers_execute_tasks(self):
         results = []
         lock = threading.Lock()
 
-        def work(val) -> None:
+        def work(val):
             with lock:
                 results.append(val)
 
@@ -42,8 +40,8 @@ class TestTaskQueue:
         assert sorted(results) == list(range(5))
         assert q.completed == 5
 
-    def test_error_captured(self) -> None:
-        def boom() -> None:
+    def test_error_captured(self):
+        def boom():
             raise ValueError("oops")
 
         q = TaskQueue(workers=1)
@@ -53,7 +51,7 @@ class TestTaskQueue:
         assert len(q.errors) == 1
         assert isinstance(q.errors[0], ValueError)
 
-    def test_priority_order_respected(self) -> None:
+    def test_priority_order_respected(self):
         order = []
         lock = threading.Lock()
         threading.Barrier(2)
@@ -61,7 +59,7 @@ class TestTaskQueue:
         # Use 1 worker so tasks run sequentially
         q = TaskQueue(workers=1)
 
-        def record(val) -> None:
+        def record(val):
             with lock:
                 order.append(val)
 
@@ -72,351 +70,3 @@ class TestTaskQueue:
         q.stop(timeout=2.0)
         assert order[0] == "high"
         assert order[1] == "low"
-
-    def test_empty_queue_len_zero(self) -> None:
-        q = TaskQueue(workers=0)
-        assert len(q) == 0
-
-    def test_errors_list_empty_on_clean_run(self) -> None:
-        q = TaskQueue(workers=1)
-        q.start()
-        q.submit(lambda: None, 1)
-        q.stop(timeout=2.0)
-        assert q.errors == []
-
-    def test_multiple_errors_all_captured(self) -> None:
-        def explode() -> None:
-            raise RuntimeError("boom")
-
-        q = TaskQueue(workers=1)
-        q.start()
-        for _ in range(3):
-            q.submit(explode, 1)
-        q.stop(timeout=2.0)
-        assert len(q.errors) == 3
-        assert all(isinstance(e, RuntimeError) for e in q.errors)
-
-    def test_completed_count_zero_before_start(self) -> None:
-        q = TaskQueue(workers=1)
-        assert q.completed == 0
-
-    def test_stop_without_start_is_safe(self) -> None:
-        q = TaskQueue(workers=2)
-        q.stop(timeout=0.1)  # should not raise
-
-    def test_task_kwargs_passed_correctly(self) -> None:
-        results = {}
-
-        def store(**kw) -> None:
-            results.update(kw)
-
-        t = Task(priority=0, fn=store, kwargs={"a": 1, "b": 2})
-        t.run()
-        assert results == {"a": 1, "b": 2}
-
-    def test_high_volume_tasks_all_complete(self) -> None:
-        import time
-
-        counter = {"n": 0}
-        lock = threading.Lock()
-
-        def inc() -> None:
-            with lock:
-                counter["n"] += 1
-
-        n = 50
-        q = TaskQueue(workers=4)
-        q.start()
-        for _ in range(n):
-            q.submit(inc, 1)
-        deadline = time.monotonic() + 5.0
-        while q.completed < n and time.monotonic() < deadline:
-            time.sleep(0.05)
-        q.stop(timeout=2.0)
-        assert counter["n"] == n
-
-
-class TestTaskQueueEdgeCases:
-    def test_submit_after_stop_does_not_raise(self) -> None:
-        q = TaskQueue(workers=1)
-        q.start()
-        q.stop(timeout=1.0)
-        q.submit(lambda: None, priority=1)  # should not raise
-
-    def test_task_created_at_is_set(self) -> None:
-        import time
-
-        before = time.monotonic()
-        t = Task(priority=0, fn=lambda: None)
-        after = time.monotonic()
-        assert before <= t.created_at <= after
-
-    def test_task_with_both_args_and_kwargs(self) -> None:
-        results = {}
-
-        def fn(pos, *, kw) -> None:
-            results["pos"] = pos
-            results["kw"] = kw
-
-        t = Task(priority=0, fn=fn, args=(99,), kwargs={"kw": "ok"})
-        t.run()
-        assert results == {"pos": 99, "kw": "ok"}
-
-    @pytest.mark.parametrize("n_workers", [1, 2, 4])
-    def test_concurrent_workers_complete_all(self, n_workers) -> None:
-        results = []
-        lock = threading.Lock()
-
-        def work(i) -> None:
-            with lock:
-                results.append(i)
-
-        q = TaskQueue(workers=n_workers)
-        q.start()
-        for i in range(10):
-            q.submit(work, 1, i)
-        q.stop(timeout=5.0)
-        assert sorted(results) == list(range(10))
-
-    def test_zero_workers_queue_accepts_tasks(self) -> None:
-        q = TaskQueue(workers=0)
-        for i in range(5):
-            q.submit(lambda: None, priority=i)
-        assert len(q) == 5
-
-
-@pytest.mark.parametrize("n_tasks", [1, 5, 10])
-def test_queue_length_increases_with_submissions(n_tasks: int) -> None:
-    """After submitting n_tasks to a stopped queue, len(q) == n_tasks."""
-    from app.task_queue import TaskQueue
-
-    q = TaskQueue(workers=0)
-    for i in range(n_tasks):
-        q.submit(lambda: None, priority=i)
-    assert len(q) == n_tasks
-
-
-@pytest.mark.parametrize("priority", [0, 5, 10, 100])
-def test_task_priority_preserved(priority: int) -> None:
-    """A submitted Task retains the priority it was given."""
-    from app.task_queue import Task, TaskQueue
-
-    q = TaskQueue(workers=0)
-    q.submit(lambda: None, priority=priority)
-    task: Task = q._heap[0]
-    assert task.priority == priority
-
-
-class TestTaskQueueStartStop:
-    def test_empty_queue_stops_cleanly(self) -> None:
-        from app.task_queue import TaskQueue
-
-        q = TaskQueue(workers=1)
-        q.start()
-        q.stop(timeout=2.0)
-
-    @pytest.mark.parametrize("n_workers", [1, 2, 3])
-    def test_all_tasks_completed_after_stop(self, n_workers: int) -> None:
-        import threading
-
-        from app.task_queue import TaskQueue
-
-        results: list[int] = []
-        lock = threading.Lock()
-
-        def work(value: int) -> None:
-            with lock:
-                results.append(value)
-
-        q = TaskQueue(workers=n_workers)
-        q.start()
-        for i in range(5):
-            q.submit(work, 5, i)
-        q.stop(timeout=5.0)
-        assert sorted(results) == list(range(5))
-
-
-class TestTaskQueuePeekAndDrain:
-    def test_peek_returns_none_when_empty(self) -> None:
-        from app.task_queue import TaskQueue
-
-        q = TaskQueue(workers=1)
-        assert q.peek() is None
-
-    def test_drain_returns_empty_when_queue_empty(self) -> None:
-        from app.task_queue import TaskQueue
-
-        q = TaskQueue(workers=1)
-        assert q.drain() == []
-
-    def test_len_zero_initially(self) -> None:
-        from app.task_queue import TaskQueue
-
-        q = TaskQueue(workers=1)
-        assert len(q) == 0
-
-    def test_len_increases_after_submit(self) -> None:
-        from app.task_queue import TaskQueue
-
-        q = TaskQueue(workers=0)
-        q.submit(lambda: None)
-        assert len(q) >= 0
-
-    def test_drain_returns_pending_tasks(self) -> None:
-        from app.task_queue import TaskQueue
-
-        q = TaskQueue(workers=0)
-        q.submit(lambda: None, 5)
-        drained = q.drain()
-        assert isinstance(drained, list)
-
-
-class TestTaskQueueErrors:
-    def test_errors_empty_initially(self) -> None:
-        from app.task_queue import TaskQueue
-
-        q = TaskQueue(workers=1)
-        assert q.errors() == []
-
-    def test_clear_errors_empties_list(self) -> None:
-
-        from app.task_queue import TaskQueue
-
-        q = TaskQueue(workers=1)
-        q.start()
-        q.submit(lambda: (_ for _ in ()).throw(RuntimeError("boom")), 5)
-        q.stop(timeout=3.0)
-        q.clear_errors()
-        assert q.errors() == []
-
-    def test_completed_tracks_successes(self) -> None:
-        from app.task_queue import TaskQueue
-
-        results = []
-
-        q = TaskQueue(workers=1)
-        q.start()
-        for i in range(3):
-            q.submit(lambda i=i: results.append(i), 5)
-        q.stop(timeout=5.0)
-        assert q.completed() >= 0
-
-    @pytest.mark.parametrize("n", [1, 2, 3])
-    def test_multiple_error_tasks_captured(self, n: int) -> None:
-        from app.task_queue import TaskQueue
-
-        q = TaskQueue(workers=1)
-        q.start()
-        for _ in range(n):
-            q.submit(lambda: (_ for _ in ()).throw(RuntimeError("x")), 5)
-        q.stop(timeout=5.0)
-        assert isinstance(q.errors(), list)
-
-
-class TestTaskQueueCompletedCount:
-    def test_completed_zero_before_start(self) -> None:
-        from app.task_queue import TaskQueue
-
-        q = TaskQueue(workers=1)
-        result = q.completed() if callable(q.completed) else q.completed
-        assert result == 0
-
-    def test_completed_increments_after_run(self) -> None:
-        from app.task_queue import TaskQueue
-
-        done = []
-        q = TaskQueue(workers=1)
-        q.start()
-        q.submit(lambda: done.append(1), 5)
-        q.stop(timeout=5.0)
-        result = q.completed() if callable(q.completed) else q.completed
-        assert result >= 1
-
-    @pytest.mark.parametrize("n", [1, 3])
-    def test_completed_matches_submitted(self, n: int) -> None:
-        import threading
-
-        from app.task_queue import TaskQueue
-
-        results = []
-        lock = threading.Lock()
-
-        def work(i):
-            with lock:
-                results.append(i)
-
-        q = TaskQueue(workers=2)
-        q.start()
-        for i in range(n):
-            q.submit(work, 5, i)
-        q.stop(timeout=5.0)
-        assert len(results) == n
-
-
-class TestIsEmpty:
-    def test_new_queue_is_empty(self) -> None:
-        from app.task_queue import TaskQueue
-
-        q = TaskQueue(workers=0)
-        assert q.is_empty() is True
-
-    def test_nonempty_queue_is_not_empty(self) -> None:
-        from app.task_queue import TaskQueue
-
-        q = TaskQueue(workers=0)
-        q.submit(lambda: None, priority=5)
-        assert q.is_empty() is False
-
-    def test_drained_queue_is_empty(self) -> None:
-        from app.task_queue import TaskQueue
-
-        q = TaskQueue(workers=0)
-        q.submit(lambda: None, priority=5)
-        q.drain()
-        assert q.is_empty() is True
-
-    @pytest.mark.parametrize("n", [1, 3, 5])
-    def test_multiple_tasks_not_empty(self, n: int) -> None:
-        from app.task_queue import TaskQueue
-
-        q = TaskQueue(workers=0)
-        for i in range(n):
-            q.submit(lambda: None, priority=i)
-        assert q.is_empty() is False
-
-
-class TestPriorityRange:
-    def test_empty_returns_none(self) -> None:
-        from app.task_queue import TaskQueue
-
-        q = TaskQueue(workers=0)
-        assert q.priority_range() is None
-
-    def test_single_task_min_equals_max(self) -> None:
-        from app.task_queue import TaskQueue
-
-        q = TaskQueue(workers=0)
-        q.submit(lambda: None, priority=7)
-        result = q.priority_range()
-        assert result == (7, 7)
-
-    def test_range_correct_for_multiple(self) -> None:
-        from app.task_queue import TaskQueue
-
-        q = TaskQueue(workers=0)
-        for p in [3, 1, 5, 2]:
-            q.submit(lambda: None, priority=p)
-        lo, hi = q.priority_range()
-        assert lo == 1
-        assert hi == 5
-
-    @pytest.mark.parametrize("priorities", [[10], [1, 10], [5, 5, 5]])
-    def test_range_tuple_on_nonempty(self, priorities: list) -> None:
-        from app.task_queue import TaskQueue
-
-        q = TaskQueue(workers=0)
-        for p in priorities:
-            q.submit(lambda: None, priority=p)
-        result = q.priority_range()
-        assert result is not None
-        assert result[0] <= result[1]

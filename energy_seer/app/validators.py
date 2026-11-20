@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import math
-
 
 def clamp(value: float, lo: float, hi: float) -> float:
     """Clamp a float to [lo, hi]."""
@@ -61,6 +59,8 @@ def validate_tariff(tariff: float) -> float:
     Raises:
         ValueError: If *tariff* is negative or non-finite.
     """
+    import math
+
     if not math.isfinite(tariff):
         raise ValueError(f"tariff must be finite, got {tariff}")
     if tariff < 0:
@@ -94,156 +94,11 @@ def validate_readings_list(readings: list[float], allow_negative: bool = False) 
     return readings
 
 
-# ---------------------------------------------------------------------------
-# Additional validators
-# ---------------------------------------------------------------------------
-
-
-def validate_alpha(alpha: float) -> float:
-    """Validate a smoothing factor alpha is in (0, 1].
-
-    Args:
-        alpha: Smoothing factor for exponential smoothing.
-
-    Returns:
-        Validated alpha.
-
-    Raises:
-        ValueError: If *alpha* is not in (0, 1].
-    """
-    if not math.isfinite(alpha) or not 0 < alpha <= 1.0:
-        raise ValueError(f"alpha must be in (0, 1], got {alpha}")
-    return alpha
-
-
-def validate_period(period: int, min_period: int = 2) -> int:
-    """Validate a seasonality period is a positive integer.
-
-    Args:
-        period: Number of time steps per seasonal cycle.
-        min_period: Minimum acceptable period (default 2).
-
-    Returns:
-        Validated period.
-
-    Raises:
-        ValueError: If *period* < *min_period*.
-    """
-    if period < min_period:
-        raise ValueError(f"period must be >= {min_period}, got {period}")
-    return period
-
-
-def validate_horizon(horizon_h: int, max_hours: int = 168) -> int:
-    """Validate a forecast horizon in hours.
-
-    Args:
-        horizon_h: Requested forecast horizon in hours.
-        max_hours: Upper limit (default 168 = one week).
-
-    Returns:
-        Validated horizon.
-
-    Raises:
-        ValueError: If *horizon_h* < 1 or > *max_hours*.
-    """
-    if horizon_h < 1:
-        raise ValueError(f"horizon must be at least 1 hour, got {horizon_h}")
-    if horizon_h > max_hours:
-        raise ValueError(f"horizon {horizon_h}h exceeds maximum {max_hours}h")
-    return horizon_h
-
-
-def validate_temperature(temp_c: float) -> float:
-    """Validate an ambient temperature in Celsius is in the plausible range [-60, 60].
-
-    Args:
-        temp_c: Temperature value in degrees Celsius.
-
-    Returns:
-        Validated temperature.
-
-    Raises:
-        ValueError: If *temp_c* is outside [-60, 60] or non-finite.
-    """
-    if not math.isfinite(temp_c):
-        raise ValueError(f"temperature must be finite, got {temp_c}")
-    if not -60.0 <= temp_c <= 60.0:
-        raise ValueError(f"temperature must be in [-60, 60] °C, got {temp_c}")
-    return temp_c
-
-
-def validate_humidity(humidity_pct: float) -> float:
-    """Validate a relative humidity percentage is in [0, 100].
-
-    Args:
-        humidity_pct: Relative humidity in percent.
-
-    Returns:
-        Validated humidity.
-
-    Raises:
-        ValueError: If *humidity_pct* is outside [0, 100] or non-finite.
-    """
-    if not math.isfinite(humidity_pct):
-        raise ValueError(f"humidity must be finite, got {humidity_pct}")
-    if not 0.0 <= humidity_pct <= 100.0:
-        raise ValueError(f"humidity must be in [0, 100], got {humidity_pct}")
-    return humidity_pct
-
-
-def validate_positive_int(value: int, name: str = "value") -> int:
-    """Validate that an integer is strictly positive.
-
-    Args:
-        value: Integer to validate.
-        name: Field name used in the error message.
-
-    Returns:
-        Validated value.
-
-    Raises:
-        ValueError: If *value* is not a positive integer.
-    """
-    if not isinstance(value, int) or isinstance(value, bool):
-        raise ValueError(f"{name} must be an integer, got {type(value).__name__}")
-    if value <= 0:
-        raise ValueError(f"{name} must be positive, got {value}")
-    return value
-
-
-def validate_non_negative_float(value: float, name: str = "value") -> float:
-    """Validate that a float is finite and non-negative.
-
-    Args:
-        value: Float to validate.
-        name: Field name used in the error message.
-
-    Returns:
-        Validated value.
-
-    Raises:
-        ValueError: If *value* is negative or non-finite.
-    """
-    if not math.isfinite(value):
-        raise ValueError(f"{name} must be finite, got {value}")
-    if value < 0.0:
-        raise ValueError(f"{name} must be non-negative, got {value}")
-    return value
-
-
 __all__ = [
     "clamp",
-    "validate_alpha",
     "validate_feature_window",
     "validate_forecast_length",
-    "validate_horizon",
-    "validate_humidity",
     "validate_meter_id",
-    "validate_non_negative_float",
-    "validate_period",
-    "validate_positive_int",
     "validate_readings_list",
     "validate_tariff",
-    "validate_temperature",
 ]

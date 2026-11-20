@@ -79,17 +79,11 @@ def compute_investment_analysis(
     cap_rate = noi / predicted_value
 
     amenity_composite = (
-        school_score * _SCHOOL_WEIGHT
-        + transit_score * _TRANSIT_WEIGHT
-        + walkability_score * _WALK_WEIGHT
+        school_score * _SCHOOL_WEIGHT + transit_score * _TRANSIT_WEIGHT + walkability_score * _WALK_WEIGHT
     ) / 10.0
     risk_score = float(min(max(crime_rate, 0.0), 1.0))
 
-    raw_score = (
-        cap_rate * _CAP_RATE_WEIGHT
-        + amenity_composite * _AMENITY_WEIGHT
-        - risk_score * _RISK_PENALTY
-    )
+    raw_score = cap_rate * _CAP_RATE_WEIGHT + amenity_composite * _AMENITY_WEIGHT - risk_score * _RISK_PENALTY
     investment_score = float(min(max(raw_score, INVESTMENT_SCORE_MIN), INVESTMENT_SCORE_MAX))
 
     break_even = predicted_value / noi if noi > 0 else float("inf")
@@ -258,7 +252,6 @@ def portfolio_weighted_score(
 
 __all__ = [
     "InvestmentAnalysis",
-    "annualized_return",
     "break_even_occupancy",
     "cash_on_cash_return",
     "compute_investment_analysis",
@@ -269,7 +262,6 @@ __all__ = [
     "holding_period_return",
     "investment_score_label",
     "irr_estimate",
-    "is_profitable",
     "leverage_ratio",
     "loan_to_value_ratio",
     "margin_of_safety",
@@ -692,9 +684,7 @@ def price_to_rent_ratio(property_price: float, rent: float) -> float:
     return round(property_price / annual_rent, 2)
 
 
-def holding_period_return(
-    purchase_price: float, sale_price: float, total_income: float = 0.0
-) -> float:
+def holding_period_return(purchase_price: float, sale_price: float, total_income: float = 0.0) -> float:
     """Compute the total Holding Period Return (HPR) as a percentage.
 
     HPR = (sale_price - purchase_price + total_income) / purchase_price * 100.
@@ -715,12 +705,7 @@ def holding_period_return(
     return round((sale_price - purchase_price + total_income) / purchase_price * 100.0, 4)
 
 
-def rent_to_value_ratio(
-    annual_rent: float | None = None,
-    property_value: float = 0.0,
-    *,
-    monthly_rent: float | None = None,
-) -> float:
+def rent_to_value_ratio(annual_rent: float, property_value: float) -> float:
     """Return the rent-to-value (RTV) ratio as a percentage.
 
     RTV = (annual_rent / property_value) * 100.
@@ -739,10 +724,6 @@ def rent_to_value_ratio(
     Raises:
         ValueError: If either argument is negative.
     """
-    if monthly_rent is not None:
-        annual_rent = monthly_rent * 12
-    if annual_rent is None:
-        annual_rent = 0.0
     if annual_rent < 0 or property_value < 0:
         raise ValueError("annual_rent and property_value must be non-negative")
     if property_value == 0.0:
@@ -958,9 +939,7 @@ def rental_yield_after_tax(
     return round(after_tax_rent / property_value * 100.0, 4)
 
 
-def net_operating_income(
-    gross_rent: float, vacancy_rate_pct: float, operating_expenses: float
-) -> float:
+def net_operating_income(gross_rent: float, vacancy_rate_pct: float, operating_expenses: float) -> float:
     """Compute Net Operating Income (NOI) for a rental property.
 
     Args:
@@ -1027,16 +1006,3 @@ def risk_adjusted_return(
         return 0.0
     excess = annual_return_pct - risk_free_rate_pct
     return round(excess / volatility_pct, 4)
-
-
-def is_profitable(total_cost: float, total_revenue: float) -> bool:
-    """Return True if total_revenue exceeds total_cost.
-
-    Args:
-        total_cost: Total investment or expense amount.
-        total_revenue: Total income or return received.
-
-    Returns:
-        True if the investment is profitable (revenue > cost).
-    """
-    return total_revenue > total_cost

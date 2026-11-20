@@ -32,7 +32,7 @@ class ModelVersion:
 
     name: str
     version: str
-    artifact_path: str = ""
+    artifact_path: str
     stage: ModelStage = ModelStage.STAGING
     metrics: dict[str, float] = field(default_factory=dict)
     tags: dict[str, str] = field(default_factory=dict)
@@ -46,7 +46,6 @@ class ModelRegistry:
     """
 
     def __init__(self) -> None:
-        """Initialise an empty registry."""
         self._models: dict[str, list[ModelVersion]] = {}
 
     def register(self, model: ModelVersion) -> None:
@@ -62,9 +61,7 @@ class ModelRegistry:
             self._models[model.name] = []
         existing = {mv.version for mv in self._models[model.name]}
         if model.version in existing:
-            raise ValueError(
-                f"Version '{model.version}' already registered for model '{model.name}'"
-            )
+            raise ValueError(f"Version '{model.version}' already registered for model '{model.name}'")
         self._models[model.name].append(model)
         logger.info("Registered model '%s' v%s", model.name, model.version)
 
@@ -97,7 +94,6 @@ class ModelRegistry:
         return versions[-1] if versions else None
 
     def _get(self, name: str, version: str) -> ModelVersion | None:
-        """Look up a specific version by name and version string."""
         for mv in self._models.get(name, []):
             if mv.version == version:
                 return mv
@@ -118,32 +114,6 @@ class ModelRegistry:
             return False
         mv.tags[key] = value
         return True
-
-    def delete_version(self, name: str, version: str) -> bool:
-        """Remove a specific version. Returns True if removed."""
-        versions = self._models.get(name, [])
-        for i, mv in enumerate(versions):
-            if mv.version == version:
-                versions.pop(i)
-                logger.info("Deleted model '%s' v%s", name, version)
-                return True
-        return False
-
-    def get_by_stage(self, name: str, stage: ModelStage) -> list[ModelVersion]:
-        """Return all versions of a model at the given stage."""
-        return [mv for mv in self._models.get(name, []) if mv.stage is stage]
-
-    def version_count(self, name: str) -> int:
-        """Return number of registered versions for a model."""
-        return len(self._models.get(name, []))
-
-    def registered_model_names(self) -> list[str]:
-        """Return a sorted list of all model names in the registry.
-
-        Returns:
-            Sorted list of model name strings.
-        """
-        return sorted(self._models)
 
 
 __all__ = ["ModelRegistry", "ModelStage", "ModelVersion"]

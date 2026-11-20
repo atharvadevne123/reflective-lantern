@@ -40,11 +40,9 @@ class DemandResponseResult:
 
 
 def customer_baseline_load(
-    historical_hourly_kwh: list[list[float]] | None = None,
+    historical_hourly_kwh: list[list[float]],
     days: int = DEFAULT_CBL_DAYS,
-    *,
-    daily_usage_kwh: float | None = None,
-) -> list[float] | float:
+) -> list[float]:
     """Average comparable historical days into an hourly baseline.
 
     Args:
@@ -59,8 +57,6 @@ def customer_baseline_load(
         ValueError: If *historical_hourly_kwh* is empty, *days* is not
             positive, or the days have differing lengths.
     """
-    if daily_usage_kwh is not None:
-        return float(daily_usage_kwh)
     if not historical_hourly_kwh:
         raise ValueError("historical_hourly_kwh must not be empty")
     if days <= 0:
@@ -70,9 +66,7 @@ def customer_baseline_load(
     hours = len(window[0])
     for index, day in enumerate(window):
         if len(day) != hours:
-            raise ValueError(
-                f"all historical days must have the same length; day {index} has {len(day)}, expected {hours}"
-            )
+            raise ValueError(f"all historical days must have the same length; day {index} has {len(day)}, expected {hours}")
 
     baseline = [round(statistics.fmean(day[hour] for day in window), 4) for hour in range(hours)]
     logger.debug("Baseline built from %d day(s) across %d hour(s)", len(window), hours)
@@ -100,13 +94,7 @@ def curtailment(baseline_hourly_kwh: list[float], actual_hourly_kwh: list[float]
     return round(sum(baseline_hourly_kwh) - sum(actual_hourly_kwh), 4)
 
 
-def performance_score(
-    curtailed_kwh: float = 0.0,
-    committed_kwh: float = 0.0,
-    *,
-    requested_kwh: float | None = None,
-    delivered_kwh: float | None = None,
-) -> float:
+def performance_score(curtailed_kwh: float, committed_kwh: float) -> float:
     """Score delivery against commitment, capped at 1.0.
 
     Args:
@@ -120,10 +108,6 @@ def performance_score(
     Raises:
         ValueError: If *committed_kwh* is negative.
     """
-    if requested_kwh is not None:
-        committed_kwh = requested_kwh
-    if delivered_kwh is not None:
-        curtailed_kwh = delivered_kwh
     if committed_kwh < 0:
         raise ValueError(f"committed_kwh must be non-negative, got {committed_kwh}")
     if committed_kwh == 0:
@@ -194,86 +178,13 @@ def evaluate_event(
     )
 
 
-def curtailment_rate(curtailed_kwh: float, event_hours: int) -> float:
-    """Return the average curtailment rate in kWh per hour.
-
-    Args:
-        curtailed_kwh: Total curtailment delivered over the event window.
-        event_hours: Duration of the event in hours (must be > 0).
-
-    Returns:
-        Average kWh curtailed per hour, rounded to 4 decimal places.
-
-    Raises:
-        ValueError: If *event_hours* is not positive.
-    """
-    if event_hours <= 0:
-        raise ValueError(f"event_hours must be positive, got {event_hours}")
-    return round(curtailed_kwh / event_hours, 4)
-
-
-def event_roi(net_payment: float, baseline_cost_per_kwh: float, baseline_kwh: float) -> float:
-    """Estimate the return on investment of participating in a DR event.
-
-    ROI is the net payment received divided by the electricity cost the
-    site would have paid at baseline.
-
-    Args:
-        net_payment: Net incentive minus penalty for the event.
-        baseline_cost_per_kwh: Electricity rate the site normally pays ($/kWh).
-        baseline_kwh: Expected energy consumption absent the event.
-
-    Returns:
-        ROI as a decimal fraction rounded to 4 decimal places. Returns 0.0
-        when *baseline_kwh* or *baseline_cost_per_kwh* is zero.
-
-    Raises:
-        ValueError: If *baseline_cost_per_kwh* or *baseline_kwh* is negative.
-    """
-    if baseline_cost_per_kwh < 0:
-        raise ValueError(f"baseline_cost_per_kwh must be non-negative, got {baseline_cost_per_kwh}")
-    if baseline_kwh < 0:
-        raise ValueError(f"baseline_kwh must be non-negative, got {baseline_kwh}")
-    reference_cost = baseline_cost_per_kwh * baseline_kwh
-    if reference_cost <= 0:
-        return 0.0
-    return round(net_payment / reference_cost, 4)
-
-
-def peak_curtailment_hour(
-    baseline_hourly_kwh: list[float],
-    actual_hourly_kwh: list[float],
-) -> int:
-    """Return the index of the hour with the greatest curtailment.
-
-    Args:
-        baseline_hourly_kwh: Hourly baseline load in kWh.
-        actual_hourly_kwh: Actual metered load in kWh.
-
-    Returns:
-        Zero-based index of the hour where ``baseline - actual`` is largest.
-
-    Raises:
-        ValueError: If either list is empty or lengths differ.
-    """
-    if not baseline_hourly_kwh or not actual_hourly_kwh:
-        raise ValueError("hourly lists must be non-empty")
-    if len(baseline_hourly_kwh) != len(actual_hourly_kwh):
-        raise ValueError("baseline and actual lists must have the same length")
-    diffs = [b - a for b, a in zip(baseline_hourly_kwh, actual_hourly_kwh, strict=False)]
-    return diffs.index(max(diffs))
-
-
 __all__ = [
     "DEFAULT_CBL_DAYS",
     "DEFAULT_INCENTIVE_PER_KWH",
     "DEFAULT_PENALTY_PER_KWH",
     "DemandResponseResult",
     "curtailment",
-    "curtailment_rate",
     "customer_baseline_load",
     "evaluate_event",
-    "event_roi",
-    "peak_curtailment_hour",
     "performance_score",
 ]

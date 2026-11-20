@@ -6,9 +6,8 @@ import logging
 import os
 import time
 import uuid
-from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from typing import Any
+from typing import Any, AsyncIterator
 
 import numpy as np
 from fastapi import Depends, FastAPI, HTTPException, Request, Response, status
@@ -165,7 +164,7 @@ async def train_model(request: TrainRequest, db: Session = Depends(get_db)) -> T
         df, feature_cols = build_feature_matrix(raw)
         X = df[feature_cols].to_numpy(dtype=np.float32)
 
-        _, _scaler = train_anomaly_detector(X, contamination=request.contamination)
+        _, scaler = train_anomaly_detector(X, contamination=request.contamination)
         y = X[:, 0]
         _, metrics = train_forecaster(X, y)
 
@@ -289,7 +288,7 @@ async def drift_report() -> list[DriftReport]:
 
 
 @app.get("/api/v1/feature-importance", tags=["model"])
-async def feature_importance() -> list[dict[str, object]]:
+async def feature_importance() -> list[dict]:
     """Return top-20 feature importances from the forecaster."""
     return get_feature_importance()
 

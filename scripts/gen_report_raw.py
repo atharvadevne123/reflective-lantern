@@ -19,10 +19,7 @@ LINES = [
     ("body", f"  Commits pushed:  {COMMITS} ({NUMBERED} improvement + 1 ruff cleanup)"),
     ("body", f"  Ruff status:     {RUFF}"),
     ("body", "  Pushed to:       main"),
-    (
-        "body",
-        "  Sub-projects:    energy_seer, temporal-pulse, price-prophet, suite-cast, forge-guard",
-    ),
+    ("body", "  Sub-projects:    energy_seer, temporal-pulse, price-prophet, suite-cast, forge-guard"),
     ("", ""),
     ("h", "Improvement Focus"),
     ("body", "  Test parametrization and coverage expansion across 30 test files."),
@@ -74,13 +71,11 @@ LINES = [
 
 
 def _pdf_string(s: str) -> bytes:
-    """Escape a string for use in PDF text streams and encode as latin-1 bytes."""
     s = s.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
     return f"({s})".encode("latin-1", errors="replace")
 
 
 def generate_pdf() -> bytes:
-    """Build a minimal PDF report from SECTIONS data and return raw PDF bytes."""
     buf = io.BytesIO()
     buf.write(b"%PDF-1.4\n")
     buf.write(b"%\xe2\xe3\xcf\xd3\n")
@@ -89,7 +84,6 @@ def generate_pdf() -> bytes:
     offsets: list[int] = []
 
     def add_obj(content: bytes) -> int:
-        """Append a PDF object with given content and return its 1-based object ID."""
         idx = len(objects) + 1
         objects.append((idx, content))
         return idx
@@ -107,7 +101,6 @@ def generate_pdf() -> bytes:
     x = 50.0
 
     def emit(tag: str, text: str) -> None:
-        """Append a styled PDF text operator for the given tag ('title', 'sub', etc.)."""
         nonlocal y, stream_parts
         if y < margin_bottom + 30:
             # New page not supported in single-pass; just continue
@@ -142,19 +135,11 @@ def generate_pdf() -> bytes:
     raw_stream = "".join(stream_parts).encode("latin-1", errors="replace")
 
     content_id = add_obj(
-        b"<< /Length "
-        + str(len(raw_stream)).encode()
-        + b" >>\nstream\n"
-        + raw_stream
-        + b"\nendstream"
+        b"<< /Length " + str(len(raw_stream)).encode() + b" >>\nstream\n" + raw_stream + b"\nendstream"
     )
 
     resources_id = add_obj(
-        b"<< /Font << /F1 "
-        + str(font_id).encode()
-        + b" 0 R /F2 "
-        + str(font_bold_id).encode()
-        + b" 0 R >> >>"
+        b"<< /Font << /F1 " + str(font_id).encode() + b" 0 R /F2 " + str(font_bold_id).encode() + b" 0 R >> >>"
     )
 
     page_id = add_obj(
@@ -190,14 +175,10 @@ def generate_pdf() -> bytes:
     for off in offsets:
         buf.write(f"{off:010d} 00000 n \n".encode())
 
-    buf.write(
-        f"trailer\n<< /Size {n + 1} /Root {catalog_id} 0 R >>\nstartxref\n{xref_offset}\n%%EOF\n".encode()
-    )
+    buf.write(f"trailer\n<< /Size {n + 1} /Root {catalog_id} 0 R >>\nstartxref\n{xref_offset}\n%%EOF\n".encode())
 
     return buf.getvalue()
 
-
-__all__ = ["generate_pdf"]
 
 if __name__ == "__main__":
     import os

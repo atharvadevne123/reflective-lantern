@@ -83,9 +83,7 @@ class Capabilities:
 
     def summary(self) -> str:
         """Return a multi-line human-readable summary."""
-
         def mark(v: bool) -> str:
-            """Return 'yes' for True or 'NO' for False."""
             return "yes" if v else "NO"
 
         lines = [
@@ -103,9 +101,8 @@ class Capabilities:
         return "\n".join(lines)
 
 
-def _request(
-    path: str, token: str | None = None, method: str = "GET", payload: dict | None = None
-) -> tuple[int, str]:
+def _request(path: str, token: str | None = None, method: str = "GET",
+             payload: dict | None = None) -> tuple[int, str]:
     """Issue a GitHub API request and return (status_code, body).
 
     Args:
@@ -132,7 +129,7 @@ def _request(
             return resp.status, resp.read().decode("utf-8", "replace")
     except urllib.error.HTTPError as exc:
         return exc.code, exc.read().decode("utf-8", "replace")
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001 - any transport failure is a "no"
         logger.debug("Request to %s failed: %s", path, exc)
         return 0, str(exc)
 
@@ -207,7 +204,8 @@ def can_create_repo() -> tuple[bool, str]:
         return False, f"Repository creation unavailable (HTTP {status})."
     if "bound to their configured repositories" in body:
         return False, (
-            "Repository creation BLOCKED: the session is bound to its configured repositories."
+            "Repository creation BLOCKED: the session is bound to its configured "
+            "repositories."
         )
     return False, f"Repository creation unavailable (HTTP {status})."
 
@@ -230,7 +228,7 @@ def can_push_git(remote: str | None = None) -> tuple[bool, str]:
         cmd.append("origin")
     try:
         result = subprocess.run(cmd, capture_output=True, timeout=45, text=True)
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001
         return False, f"git ls-remote failed to run: {exc}"
 
     if result.returncode == 0:
@@ -238,12 +236,9 @@ def can_push_git(remote: str | None = None) -> tuple[bool, str]:
     return False, f"git cannot reach origin: {result.stderr.strip()[:140]}"
 
 
-def smtp_reachable(
-    hosts: tuple[tuple[str, int], ...] = (
-        ("smtp.gmail.com", 587),
-        ("smtp.gmail.com", 465),
-    ),
-) -> tuple[bool, str]:
+def smtp_reachable(hosts: tuple[tuple[str, int], ...] = (
+    ("smtp.gmail.com", 587), ("smtp.gmail.com", 465),
+)) -> tuple[bool, str]:
     """Detect whether any SMTP endpoint accepts a TCP connection.
 
     Args:
@@ -256,7 +251,7 @@ def smtp_reachable(
         try:
             with socket.create_connection((host, port), timeout=10):
                 return True, f"SMTP reachable at {host}:{port}."
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             logger.debug("SMTP %s:%s unreachable: %s", host, port, exc)
     return False, (
         "SMTP UNREACHABLE on all ports — egress is HTTPS-proxy-only. Email "
@@ -274,14 +269,13 @@ def detect(use_cache: bool = True, cache_path: str | None = None) -> Capabilitie
     Returns:
         A populated Capabilities instance.
     """
-    path = Path(
-        cache_path or os.environ.get("LANTERN_CAPS_CACHE", "/tmp/lantern_capabilities.json")
-    )
+    path = Path(cache_path or os.environ.get(
+        "LANTERN_CAPS_CACHE", "/tmp/lantern_capabilities.json"))
 
     if use_cache and path.exists():
         try:
             return Capabilities(**json.loads(path.read_text()))
-        except Exception:
+        except Exception:  # noqa: BLE001
             logger.debug("Capability cache unreadable — re-probing")
 
     caps = Capabilities()
@@ -305,16 +299,6 @@ def detect(use_cache: bool = True, cache_path: str | None = None) -> Capabilitie
     return caps
 
 
-__all__ = [
-    "Capabilities",
-    "can_create_repo",
-    "can_enumerate_repos",
-    "can_push_git",
-    "credentials_are_honoured",
-    "detect",
-    "smtp_reachable",
-]
-
 if __name__ == "__main__":
     logging.basicConfig(level=logging.WARNING, format="%(message)s")
-    logger.warning(detect(use_cache=False).summary())
+    print(detect(use_cache=False).summary())

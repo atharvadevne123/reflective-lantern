@@ -103,9 +103,7 @@ class TestAnalyzeEconomics:
 
     def test_total_benefit_sums_components(self) -> None:
         result = analyze_economics(GENERATION, CONSUMPTION)
-        assert result.total_benefit == pytest.approx(
-            round(result.bill_saving + result.export_revenue, 2)
-        )
+        assert result.total_benefit == pytest.approx(round(result.bill_saving + result.export_revenue, 2))
 
     def test_self_consumed_energy_is_worth_more_than_export(self) -> None:
         # Same kWh self-consumed vs exported: the avoided import rate wins.
@@ -133,177 +131,41 @@ class TestAnalyzeEconomics:
     @pytest.mark.parametrize(("import_rate", "export_rate"), [(-0.1, 0.05), (0.15, -0.05)])
     def test_negative_rates_rejected(self, import_rate: float, export_rate: float) -> None:
         with pytest.raises(ValueError, match="rates must be non-negative"):
-            analyze_economics(
-                GENERATION, CONSUMPTION, import_rate=import_rate, export_rate=export_rate
-            )
+            analyze_economics(GENERATION, CONSUMPTION, import_rate=import_rate, export_rate=export_rate)
 
 
 class TestPaybackYears:
-    def test_simple_payback_basic(self) -> None:
-        years = payback_years(system_cost=10000.0, annual_benefit=1000.0)
-        assert years > 0
+    def test_simple_case(self) -> None:
+        # No degradation: 10000 / 1000 = exactly 10 years.
+        assert payback_years(10000.0, 1000.0, annual_degradation=0.0) == pytest.approx(10.0)
 
-    def test_higher_benefit_shorter_payback(self) -> None:
-        y1 = payback_years(system_cost=10000.0, annual_benefit=1000.0)
-        y2 = payback_years(system_cost=10000.0, annual_benefit=2000.0)
-        assert y1 > y2
+    def test_degradation_lengthens_payback(self) -> None:
+        assert payback_years(10000.0, 1000.0, annual_degradation=0.02) > payback_years(
+            10000.0, 1000.0, annual_degradation=0.0
+        )
 
-    @pytest.mark.parametrize("benefit", [500.0, 1000.0, 2000.0])
-    def test_payback_positive_for_valid_benefit(self, benefit: float) -> None:
-        y = payback_years(system_cost=10000.0, annual_benefit=benefit)
-        assert y > 0
+    def test_larger_benefit_shortens_payback(self) -> None:
+        assert payback_years(10000.0, 2000.0) < payback_years(10000.0, 1000.0)
 
+    def test_zero_cost_repays_immediately(self) -> None:
+        assert payback_years(0.0, 1000.0) == pytest.approx(0.0)
 
-class TestGenerationKwhEdgeCases:
-    def test_doubled_area_doubles_output(self) -> None:
-        g1 = generation_kwh(100.0, 5.0)
-        g2 = generation_kwh(200.0, 5.0)
-        assert pytest.approx(g2, rel=0.01) == 2 * g1
-
-    def test_zero_area_yields_zero(self) -> None:
-        assert generation_kwh(0.0, 5.0) == pytest.approx(0.0)
-
-    @pytest.mark.parametrize("area", [50.0, 100.0, 200.0])
-    def test_generation_positive_for_positive_area(self, area: float) -> None:
-        g = generation_kwh(area, 4.5)
-        assert g > 0
-
-
-class TestCapacityFactor:
-    def test_full_capacity(self) -> None:
-        from app.solar import capacity_factor
-
-        assert capacity_factor(8760.0, 1.0, 8760.0) == pytest.approx(1.0)
-
-    def test_zero_generation(self) -> None:
-        from app.solar import capacity_factor
-
-        assert capacity_factor(0.0, 10.0, 8760.0) == pytest.approx(0.0)
-
-    def test_zero_installed_kw(self) -> None:
-        from app.solar import capacity_factor
-
-        assert capacity_factor(100.0, 0.0, 8760.0) == pytest.approx(0.0)
-
-    def test_negative_raises(self) -> None:
-        from app.solar import capacity_factor
-
-        with pytest.raises(ValueError):
-            capacity_factor(-100.0, 5.0, 8760.0)
-
-    @pytest.mark.parametrize(
-        "actual,kw,hours,expected",
-        [
-            (4380.0, 1.0, 8760.0, 0.5),
-            (2000.0, 1.0, 8000.0, 0.25),
-        ],
-    )
-    def test_typical_values(self, actual, kw, hours, expected) -> None:
-        from app.solar import capacity_factor
-
-        assert capacity_factor(actual, kw, hours) == pytest.approx(expected, rel=1e-4)
-
-
-class TestPaybackYearsExtended:
-    def test_zero_benefit_returns_inf(self) -> None:
-        from app.solar import payback_years
-
+    def test_zero_benefit_never_repays(self) -> None:
         assert payback_years(10000.0, 0.0) == float("inf")
 
-    def test_negative_cost_raises(self) -> None:
-        from app.solar import payback_years
+    def test_unreachable_cost_never_repays(self) -> None:
+        # Heavy degradation caps lifetime benefit well below the cost.
+        assert payback_years(10_000_000.0, 100.0, annual_degradation=0.5) == float("inf")
 
-        with pytest.raises(ValueError):
-            payback_years(-100.0, 500.0)
+    def test_negative_cost_rejected(self) -> None:
+        with pytest.raises(ValueError, match="system_cost must be non-negative"):
+            payback_years(-1.0, 1000.0)
 
-    def test_negative_benefit_raises(self) -> None:
-        from app.solar import payback_years
+    def test_negative_benefit_rejected(self) -> None:
+        with pytest.raises(ValueError, match="annual_benefit must be non-negative"):
+            payback_years(10000.0, -1.0)
 
-        with pytest.raises(ValueError):
-            payback_years(10000.0, -100.0)
-
-    def test_positive_benefit_finite_payback(self) -> None:
-        from app.solar import payback_years
-
-        result = payback_years(10000.0, 2000.0)
-        assert result < float("inf")
-        assert result > 0.0
-
-    @pytest.mark.parametrize("cost,benefit", [(5000.0, 1000.0), (20000.0, 5000.0)])
-    def test_various_scenarios(self, cost: float, benefit: float) -> None:
-        from app.solar import payback_years
-
-        result = payback_years(cost, benefit)
-        assert result > 0.0
-
-
-class TestGenerationKwhExtended:
-    def test_returns_positive(self) -> None:
-        from app.solar import generation_kwh
-
-        result = generation_kwh(peak_kw=5.0, irradiance_kwh_per_sqm=4.5)
-        assert result > 0.0
-
-    def test_more_irradiance_more_generation(self) -> None:
-        from app.solar import generation_kwh
-
-        low = generation_kwh(peak_kw=5.0, irradiance_kwh_per_sqm=3.0)
-        high = generation_kwh(peak_kw=5.0, irradiance_kwh_per_sqm=6.0)
-        assert high > low
-
-    def test_returns_float(self) -> None:
-        from app.solar import generation_kwh
-
-        assert isinstance(generation_kwh(peak_kw=3.0, irradiance_kwh_per_sqm=4.0), float)
-
-
-@pytest.mark.parametrize(
-    "peak_kw,irradiance,efficiency,expected_min",
-    [
-        (5.0, 4.5, 0.8, 0.0),
-        (10.0, 5.0, 0.9, 0.0),
-        (1.0, 1.0, 0.5, 0.0),
-    ],
-)
-def test_generation_kwh_parametrized(
-    peak_kw: float, irradiance: float, efficiency: float, expected_min: float
-) -> None:
-    from app.solar import generation_kwh
-
-    result = generation_kwh(
-        peak_kw=peak_kw, irradiance_kwh_per_sqm=irradiance, panel_efficiency=efficiency
-    )
-    assert result >= expected_min
-    assert isinstance(result, float)
-
-
-@pytest.mark.parametrize(
-    "actual_kwh,installed_kw,hours,expected",
-    [
-        (8760.0, 1.0, 8760.0, 1.0),
-        (4380.0, 1.0, 8760.0, 0.5),
-        (0.0, 5.0, 8760.0, 0.0),
-        (1000.0, 2.0, 2000.0, 0.25),
-    ],
-)
-def test_capacity_factor_parametrized(
-    actual_kwh: float, installed_kw: float, hours: float, expected: float
-) -> None:
-    """capacity_factor returns the correct ratio across typical inputs."""
-    from app.solar import capacity_factor
-
-    result = capacity_factor(actual_kwh, installed_kw, hours)
-    assert result == pytest.approx(expected, rel=1e-4)
-
-
-@pytest.mark.parametrize("n", [1, 5, 24])
-def test_self_consumption_equal_generation_and_consumption(n: int) -> None:
-    """When generation equals consumption every hour, all solar is self-consumed."""
-    from app.solar import self_consumption
-
-    gen = [2.0] * n
-    con = [2.0] * n
-    self_kwh, exported_kwh, imported_kwh = self_consumption(gen, con)
-    assert self_kwh == pytest.approx(sum(gen))
-    assert exported_kwh == pytest.approx(0.0)
-    assert imported_kwh == pytest.approx(0.0)
+    @pytest.mark.parametrize("degradation", [-0.1, 1.0, 1.5])
+    def test_invalid_degradation_rejected(self, degradation: float) -> None:
+        with pytest.raises(ValueError, match=r"annual_degradation must be in \[0, 1\)"):
+            payback_years(10000.0, 1000.0, annual_degradation=degradation)

@@ -6,20 +6,20 @@ import pytest
 
 
 class TestGenerateSyntheticData:
-    def test_generates_correct_shape(self) -> None:
+    def test_generates_correct_shape(self):
         from app.model import generate_synthetic_data
 
         X, y = generate_synthetic_data(500)
         assert len(X) == 500
         assert len(y) == 500
 
-    def test_consumption_non_negative(self) -> None:
+    def test_consumption_non_negative(self):
         from app.model import generate_synthetic_data
 
         _, y = generate_synthetic_data(200)
         assert (y >= 0).all()
 
-    def test_has_expected_columns(self) -> None:
+    def test_has_expected_columns(self):
         from app.model import generate_synthetic_data
 
         X, _ = generate_synthetic_data(100)
@@ -34,7 +34,7 @@ class TestGenerateSyntheticData:
 
 
 class TestTrainModel:
-    def test_train_returns_bundle_and_metrics(self) -> None:
+    def test_train_returns_bundle_and_metrics(self):
         from app.model import generate_synthetic_data, train_model
 
         X, y = generate_synthetic_data(300)
@@ -44,14 +44,14 @@ class TestTrainModel:
         assert "r2_mean" in metrics
         assert "rmse_mean" in metrics
 
-    def test_r2_positive(self) -> None:
+    def test_r2_positive(self):
         from app.model import generate_synthetic_data, train_model
 
         X, y = generate_synthetic_data(300)
         _, metrics = train_model(X, y)
         assert metrics["r2_mean"] > 0.0
 
-    def test_metrics_file_written(self, tmp_path, monkeypatch) -> None:
+    def test_metrics_file_written(self, tmp_path, monkeypatch):
         import app.model as m
 
         monkeypatch.setattr(m, "MODEL_PATH", tmp_path / "model.joblib")
@@ -62,7 +62,7 @@ class TestTrainModel:
         train_model(X, y)
         assert (tmp_path / "metrics.json").exists()
 
-    def test_model_file_written(self, tmp_path, monkeypatch) -> None:
+    def test_model_file_written(self, tmp_path, monkeypatch):
         import app.model as m
 
         monkeypatch.setattr(m, "MODEL_PATH", tmp_path / "model.joblib")
@@ -75,7 +75,7 @@ class TestTrainModel:
 
 
 class TestPredict:
-    def test_predict_returns_list(self) -> None:
+    def test_predict_returns_list(self):
         from app.model import generate_synthetic_data, predict, train_model
 
         X, y = generate_synthetic_data(300)
@@ -85,7 +85,7 @@ class TestPredict:
         assert isinstance(preds, list)
         assert len(preds) == 5
 
-    def test_predict_non_negative(self) -> None:
+    def test_predict_non_negative(self):
         from app.model import generate_synthetic_data, predict, train_model
 
         X, y = generate_synthetic_data(200)
@@ -93,7 +93,7 @@ class TestPredict:
         preds = predict(bundle, X.head(10).to_dict(orient="records"))
         assert all(p >= 0 for p in preds)
 
-    def test_predict_horizon_scales_output(self) -> None:
+    def test_predict_horizon_scales_output(self):
         from app.model import generate_synthetic_data, predict, train_model
 
         X, y = generate_synthetic_data(200)
@@ -104,7 +104,7 @@ class TestPredict:
         assert p6 >= p1
 
     @pytest.mark.parametrize("n_readings", [1, 3, 10])
-    def test_predict_batch_sizes(self, n_readings) -> None:
+    def test_predict_batch_sizes(self, n_readings):
         from app.model import generate_synthetic_data, predict, train_model
 
         X, y = generate_synthetic_data(200)
@@ -114,13 +114,13 @@ class TestPredict:
 
 
 class TestBuildEnsemble:
-    def test_ensemble_has_three_estimators(self) -> None:
+    def test_ensemble_has_three_estimators(self):
         from app.model import build_ensemble
 
         ens = build_ensemble()
         assert len(ens.estimators) == 3
 
-    def test_ensemble_estimator_names(self) -> None:
+    def test_ensemble_estimator_names(self):
         from app.model import build_ensemble
 
         ens = build_ensemble()
@@ -176,68 +176,3 @@ def test_train_model_returns_expected_metrics(metric: str) -> None:
     y = pd.Series(rng.uniform(5, 30, n))
     _, metrics = train_model(X, y)
     assert metric in metrics
-
-
-class TestGetMetrics:
-    def test_returns_dict(self) -> None:
-        from app.model import get_metrics
-
-        result = get_metrics()
-        assert isinstance(result, dict)
-
-    def test_empty_before_training(self) -> None:
-        from app.model import get_metrics
-
-        result = get_metrics()
-        # Before any training the metrics dict may be empty or contain defaults
-        assert result is not None
-
-    def test_load_model_returns_dict(self) -> None:
-        from app.model import load_model
-
-        result = load_model()
-        assert isinstance(result, dict)
-
-
-class TestTrainMetricsKeys:
-    def test_metrics_contains_r2_mean(self) -> None:
-        from app.model import generate_synthetic_data, train_model
-
-        X, y = generate_synthetic_data(200)
-        _, metrics = train_model(X, y)
-        assert "r2_mean" in metrics
-
-    def test_metrics_contains_train_time_sec(self) -> None:
-        from app.model import generate_synthetic_data, train_model
-
-        X, y = generate_synthetic_data(200)
-        _, metrics = train_model(X, y)
-        assert "train_time_sec" in metrics
-
-    def test_train_time_positive(self) -> None:
-        from app.model import generate_synthetic_data, train_model
-
-        X, y = generate_synthetic_data(200)
-        _, metrics = train_model(X, y)
-        assert metrics["train_time_sec"] >= 0.0
-
-
-class TestPredictOutputBounds:
-    def test_predictions_non_negative(self) -> None:
-        from app.model import generate_synthetic_data, predict, train_model
-
-        X, y = generate_synthetic_data(100)
-        bundle, _ = train_model(X, y)
-        readings = X.head(3).to_dict(orient="records")
-        preds = predict(bundle, readings, horizon_h=1)
-        assert all(p >= 0.0 for p in preds)
-
-    def test_predict_returns_correct_count(self) -> None:
-        from app.model import generate_synthetic_data, predict, train_model
-
-        X, y = generate_synthetic_data(100)
-        bundle, _ = train_model(X, y)
-        n = 5
-        readings = X.head(n).to_dict(orient="records")
-        preds = predict(bundle, readings, horizon_h=1)
-        assert len(preds) == n

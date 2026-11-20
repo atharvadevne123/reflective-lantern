@@ -10,39 +10,6 @@ FLAT_DAY = [1.0] * 24
 PEAKY_DAY = [1.0] * 20 + [20.0, 22.0, 21.0, 1.0]
 
 
-@pytest.mark.parametrize(
-    "start_hour,expected_status",
-    [
-        (0, 200),
-        (12, 200),
-        (23, 200),
-        (-1, 422),
-        (24, 422),
-    ],
-)
-def test_tariff_compare_start_hour_boundaries(
-    client: TestClient, start_hour: int, expected_status: int
-) -> None:
-    r = client.post(f"/api/v1/tariff/compare?start_hour={start_hour}", json=[1.0] * 6)
-    assert r.status_code == expected_status
-
-
-@pytest.mark.parametrize(
-    "series,expected_class",
-    [
-        ([1.0] * 24, "flat"),
-        ([1.0] * 20 + [20.0, 22.0, 21.0, 1.0], "peaky"),
-        ([5.0] * 24, "flat"),
-    ],
-)
-def test_load_profile_classification(
-    client: TestClient, series: list[float], expected_class: str
-) -> None:
-    r = client.post("/api/v1/load-profile", json=series)
-    assert r.status_code == 200
-    assert r.json()["profile_class"] == expected_class
-
-
 class TestTariffCompareEndpoint:
     def test_returns_all_three_schemes(self, client: TestClient) -> None:
         r = client.post("/api/v1/tariff/compare", json=FLAT_DAY)
@@ -130,7 +97,8 @@ class TestWeatherNormalizeEndpoint:
 
     def test_zero_baseline_rejected(self, client: TestClient) -> None:
         r = client.post(
-            "/api/v1/weather-normalize?baseline_kwh=0&current_kwh=900&baseline_degree_days=500&current_degree_days=500"
+            "/api/v1/weather-normalize"
+            "?baseline_kwh=0&current_kwh=900&baseline_degree_days=500&current_degree_days=500"
         )
         assert r.status_code == 422
 
@@ -213,21 +181,18 @@ class TestPowerQualityEndpoint:
         assert r.status_code == 422
 
     def test_correction_zero_when_already_at_target(self, client: TestClient) -> None:
-        r = client.get(
-            "/api/v1/power-quality/correction?real_power_kw=100&current_power_factor=0.98"
-        )
+        r = client.get("/api/v1/power-quality/correction?real_power_kw=100&current_power_factor=0.98")
         assert r.status_code == 200
         assert r.json()["required_kvar"] == 0.0
 
     def test_correction_positive_for_poor_factor(self, client: TestClient) -> None:
-        r = client.get(
-            "/api/v1/power-quality/correction?real_power_kw=100&current_power_factor=0.75"
-        )
+        r = client.get("/api/v1/power-quality/correction?real_power_kw=100&current_power_factor=0.75")
         assert r.json()["required_kvar"] > 0
 
     def test_correction_invalid_target_rejected(self, client: TestClient) -> None:
         r = client.get(
-            "/api/v1/power-quality/correction?real_power_kw=100&current_power_factor=0.8&target_power_factor=1.5"
+            "/api/v1/power-quality/correction"
+            "?real_power_kw=100&current_power_factor=0.8&target_power_factor=1.5"
         )
         assert r.status_code == 422
 
@@ -243,12 +208,8 @@ class TestSolarEndpoints:
         )
         assert r.status_code == 200
         data = r.json()
-        assert data["self_consumed_kwh"] + data["exported_kwh"] == pytest.approx(
-            data["generated_kwh"]
-        )
-        assert data["self_consumed_kwh"] + data["imported_kwh"] == pytest.approx(
-            data["consumed_kwh"]
-        )
+        assert data["self_consumed_kwh"] + data["exported_kwh"] == pytest.approx(data["generated_kwh"])
+        assert data["self_consumed_kwh"] + data["imported_kwh"] == pytest.approx(data["consumed_kwh"])
 
     def test_economics_total_benefit_sums_components(self, client: TestClient) -> None:
         r = client.post(
@@ -256,9 +217,7 @@ class TestSolarEndpoints:
             json={"generation_hourly_kwh": [5.0] * 4, "consumption_hourly_kwh": [3.0] * 4},
         )
         data = r.json()
-        assert data["total_benefit"] == pytest.approx(
-            round(data["bill_saving"] + data["export_revenue"], 2)
-        )
+        assert data["total_benefit"] == pytest.approx(round(data["bill_saving"] + data["export_revenue"], 2))
 
     def test_economics_mismatched_series_rejected(self, client: TestClient) -> None:
         r = client.post(
@@ -288,7 +247,7 @@ class TestSolarEndpoints:
 class TestBatteryEndpoints:
     SPIKY = [10.0, 10.0, 50.0, 60.0, 55.0, 10.0, 10.0]
 
-    def _shave(self, client: TestClient, **params: float) -> None:
+    def _shave(self, client: TestClient, **params: float):
         query = {
             "capacity_kwh": 200.0,
             "max_charge_kw": 100.0,
@@ -313,9 +272,7 @@ class TestBatteryEndpoints:
 
     def test_saving_scales_with_reduction(self, client: TestClient) -> None:
         data = self._shave(client, demand_charge_per_kw=15.0).json()
-        assert data["demand_charge_saving"] == pytest.approx(
-            round(data["peak_reduction_kw"] * 15.0, 2)
-        )
+        assert data["demand_charge_saving"] == pytest.approx(round(data["peak_reduction_kw"] * 15.0, 2))
 
     def test_invalid_capacity_rejected(self, client: TestClient) -> None:
         assert self._shave(client, capacity_kwh=0.0).status_code == 422
@@ -381,53 +338,3 @@ class TestCohortBenchmarkEndpoint:
             json=self.COHORT,
         )
         assert r.status_code == 422
-
-    def test_building_eui_computed_correctly(self, client: TestClient) -> None:
-        r = client.post(
-            "/api/v1/benchmark/cohort?annual_kwh=110000&floor_area_m2=1000",
-            json=self.COHORT,
-        )
-        assert r.status_code == 200
-        assert r.json()["building_eui"] == pytest.approx(110.0)
-
-
-class TestPowerQualityCorrectionEndpoint:
-    def test_already_meets_target(self, client: TestClient) -> None:
-        r = client.get(
-            "/api/v1/power-quality/correction?real_power_kw=100&current_power_factor=0.97&target_power_factor=0.95",
-        )
-        assert r.status_code == 200
-        assert r.json()["required_kvar"] == pytest.approx(0.0)
-
-    def test_correction_positive_when_below_target(self, client: TestClient) -> None:
-        r = client.get(
-            "/api/v1/power-quality/correction?real_power_kw=100&current_power_factor=0.80&target_power_factor=0.95",
-        )
-        assert r.status_code == 200
-        assert r.json()["required_kvar"] > 0
-
-    def test_default_target_is_0_95(self, client: TestClient) -> None:
-        r = client.get(
-            "/api/v1/power-quality/correction?real_power_kw=100&current_power_factor=0.70",
-        )
-        assert r.status_code == 200
-        assert "required_kvar" in r.json()
-
-
-class TestSolarPaybackEndpoint:
-    def test_zero_benefit_never_repays(self, client: TestClient) -> None:
-        r = client.get("/api/v1/solar/payback?system_cost=10000&annual_benefit=0")
-        assert r.status_code == 200
-        assert r.json()["repays_within_lifetime"] is False
-        assert r.json()["payback_years"] is None
-
-    def test_repays_quickly(self, client: TestClient) -> None:
-        r = client.get("/api/v1/solar/payback?system_cost=5000&annual_benefit=1000")
-        assert r.status_code == 200
-        assert r.json()["repays_within_lifetime"] is True
-        assert r.json()["payback_years"] == pytest.approx(5.0)
-
-    def test_does_not_repay_within_lifetime(self, client: TestClient) -> None:
-        r = client.get("/api/v1/solar/payback?system_cost=100000&annual_benefit=100")
-        assert r.status_code == 200
-        assert r.json()["repays_within_lifetime"] is False

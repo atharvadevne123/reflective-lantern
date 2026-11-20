@@ -3,6 +3,7 @@
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
+from typing import Optional
 
 import numpy as np
 
@@ -24,15 +25,6 @@ class ForecastPoint:
     value: float
     lower_bound: float
     upper_bound: float
-
-    def to_dict(self) -> dict:
-        """Serialise this forecast point to a JSON-compatible dict."""
-        return {
-            "timestamp": self.timestamp.isoformat(),
-            "value": self.value,
-            "lower_bound": self.lower_bound,
-            "upper_bound": self.upper_bound,
-        }
 
 
 @dataclass
@@ -65,61 +57,6 @@ class IncidentRateBuffer:
         sorted_counts = sorted(self.counts, key=lambda x: x[0])
         return np.array([c for _, c in sorted_counts], dtype=np.float64)
 
-    def get_counts_since(self, cutoff: datetime) -> list[tuple[datetime, int]]:
-        """Return (timestamp, count) pairs recorded at or after cutoff.
-
-        Args:
-            cutoff: Earliest timestamp to include.
-
-        Returns:
-            Filtered list of (timestamp, count) tuples, oldest first.
-        """
-        return sorted(
-            [(t, c) for t, c in self.counts if t >= cutoff],
-            key=lambda x: x[0],
-        )
-
-    def reset(self) -> None:
-        """Clear all accumulated counts."""
-        self.counts.clear()
-        logger.debug("IncidentRateBuffer reset")
-
-    def __repr__(self) -> str:
-        """Return a concise representation showing buffer size and window."""
-        return f"IncidentRateBuffer(len={len(self)}, window_hours={self.window_hours})"
-
-    def __len__(self) -> int:
-        """Return the number of observations in the buffer."""
-        return len(self.counts)
-
-    @property
-    def last_timestamp(self) -> "datetime | None":
-        """Return the most recent timestamp in the buffer, or None if empty."""
-        if not self.counts:
-            return None
-        return max(t for t, _ in self.counts)
-
-    @property
-    def total_incidents(self) -> int:
-        """Return the sum of all incident counts in the buffer."""
-        return sum(c for _, c in self.counts)
-
-    @property
-    def window_span_hours(self) -> float:
-        """Return the time span of buffered data in hours, or 0 if fewer than 2 entries."""
-        if len(self.counts) < 2:
-            return 0.0
-        sorted_ts = sorted(t for t, _ in self.counts)
-        delta = sorted_ts[-1] - sorted_ts[0]
-        return delta.total_seconds() / 3600.0
-
-
-DEFAULT_ALPHA: float = 0.3
-DEFAULT_BETA: float = 0.1
-DEFAULT_HORIZON: int = 24
-DEFAULT_STEP_HOURS: int = 1
-Z80_CONFIDENCE: float = 1.282
-
 
 class ExponentialSmoothingForecaster:
     """Simple double exponential smoothing (Holt's linear) forecaster.
@@ -149,9 +86,8 @@ class ExponentialSmoothingForecaster:
         self.alpha = alpha
         self.beta = beta
         self.horizon = horizon
-        self._is_fitted: bool = False
-        self._level: float | None = None
-        self._trend: float | None = None
+        self._level: Optional[float] = None
+        self._trend: Optional[float] = None
         self._residuals: list[float] = []
 
     def fit(self, series: np.ndarray) -> "ExponentialSmoothingForecaster":
@@ -167,7 +103,6 @@ class ExponentialSmoothingForecaster:
             logger.warning("Series too short (%d pts) — using naive forecast", len(series))
             self._level = float(series[-1]) if len(series) == 1 else 0.0
             self._trend = 0.0
-            self._is_fitted = True
             return self
 
         level = series[0]
@@ -183,11 +118,14 @@ class ExponentialSmoothingForecaster:
         self._level = float(level)
         self._trend = float(trend)
         self._residuals = residuals
-        self._is_fitted = True
-        logger.debug("Holt fit: level=%.4f trend=%.4f on %d points", level, trend, len(series))
+        logger.debug(
+            "Holt fit: level=%.4f trend=%.4f on %d points", level, trend, len(series)
+        )
         return self
 
-    def forecast(self, base_time: datetime, step_hours: int = 1) -> list[ForecastPoint]:
+    def forecast(
+        self, base_time: datetime, step_hours: int = 1
+    ) -> list[ForecastPoint]:
         """Generate horizon-step-ahead forecasts.
 
         Args:
@@ -203,13 +141,15 @@ class ExponentialSmoothingForecaster:
         if self._level is None or self._trend is None:
             raise RuntimeError("Forecaster must be fitted before calling forecast()")
 
-        residual_std = float(np.std(self._residuals)) if self._residuals else 1.0
-        z80 = Z80_CONFIDENCE
+        residual_std = (
+            float(np.std(self._residuals)) if self._residuals else 1.0
+        )
+        z80 = 1.282
 
         points: list[ForecastPoint] = []
         for h in range(1, self.horizon + 1):
             value = max(0.0, self._level + h * self._trend)
-            interval = z80 * residual_std * (h**0.5)
+            interval = z80 * residual_std * (h ** 0.5)
             lower = max(0.0, value - interval)
             upper = value + interval
             ts = base_time + timedelta(hours=h * step_hours)
@@ -222,42 +162,13 @@ class ExponentialSmoothingForecaster:
                 )
             )
 
-        logger.info("Forecast generated: %d points, next=%.4f", len(points), points[0].value)
+        logger.info(
+            "Forecast generated: %d points, next=%.4f", len(points), points[0].value
+        )
         return points
 
-    def __repr__(self) -> str:
-        """Return a concise representation including key parameters."""
-        fitted = "fitted" if self._is_fitted else "unfitted"
-        return (
-            f"ExponentialSmoothingForecaster("
-            f"alpha={self.alpha}, beta={self.beta}, "
-            f"horizon={self.horizon}, {fitted})"
-        )
 
-    @property
-    def is_fitted(self) -> bool:
-        """Return True if fit() has been called successfully."""
-        return self._is_fitted
-
-    @property
-    def params(self) -> dict:
-        """Return current smoothing parameters as a dict."""
-        return {"alpha": self.alpha, "beta": self.beta, "horizon": self.horizon}
-
-
-def forecast_to_dicts(points: list[ForecastPoint]) -> list[dict]:
-    """Serialise a list of ForecastPoint objects to a list of plain dicts.
-
-    Args:
-        points: Forecast points to serialise.
-
-    Returns:
-        List of JSON-compatible dicts, one per point.
-    """
-    return [p.to_dict() for p in points]
-
-
-_buffer_singleton: IncidentRateBuffer | None = None
+_buffer_singleton: Optional[IncidentRateBuffer] = None
 
 
 def get_rate_buffer() -> IncidentRateBuffer:
@@ -266,16 +177,3 @@ def get_rate_buffer() -> IncidentRateBuffer:
     if _buffer_singleton is None:
         _buffer_singleton = IncidentRateBuffer()
     return _buffer_singleton
-
-
-__all__ = [
-    "DEFAULT_ALPHA",
-    "DEFAULT_BETA",
-    "DEFAULT_HORIZON",
-    "DEFAULT_STEP_HOURS",
-    "ExponentialSmoothingForecaster",
-    "ForecastPoint",
-    "IncidentRateBuffer",
-    "forecast_to_dicts",
-    "get_rate_buffer",
-]

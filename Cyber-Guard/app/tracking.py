@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import logging
 import os
-from collections.abc import Generator
 from contextlib import contextmanager
 from typing import Any
 
@@ -33,7 +32,7 @@ def is_tracking_enabled() -> bool:
 
 
 @contextmanager
-def track_run(run_name: str) -> Generator[None, None, None]:
+def track_run(run_name: str):
     """Open an MLflow run, or a no-op context when tracking is unavailable.
 
     Args:

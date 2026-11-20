@@ -35,7 +35,55 @@ else:
 PYEOF
 ```
 
-Store the output as MODE. Then **before branching into IMPROVEMENT or INNOVATION**, run the full pre-flight below.
+Store the output as MODE.
+
+Then compute the commit target for this week:
+
+```bash
+python3 - <<'PYEOF'
+import datetime, json, os, math
+
+config_path = os.path.join(os.environ.get('LANTERN_DIR', '.'), 'history', 'commit_schedule.json')
+try:
+    with open(config_path) as f:
+        config = json.load(f)
+except Exception:
+    config = {}
+
+today = datetime.date.today()
+iso = today.isocalendar()
+
+if 'start_year' not in config:
+    config = {
+        'start_year': iso[0],
+        'start_week': iso[1],
+        'base_commits_per_week': 300,
+        'increment_per_week': 200
+    }
+    os.makedirs(os.path.dirname(config_path), exist_ok=True)
+    with open(config_path, 'w') as f:
+        json.dump(config, f, indent=2)
+
+start_date = datetime.date.fromisocalendar(config['start_year'], config['start_week'], 1)
+weeks_elapsed = max(0, (today - start_date).days // 7)
+weekly_target = config['base_commits_per_week'] + weeks_elapsed * config['increment_per_week']
+daily_target  = math.ceil(weekly_target / 5)
+
+print(f"WEEKS_ELAPSED={weeks_elapsed}")
+print(f"WEEKLY_TARGET={weekly_target}")
+print(f"DAILY_TARGET={daily_target}")
+PYEOF
+```
+
+Parse the printed lines and export:
+```bash
+eval $(python3 ... | grep -E '^(WEEKS_ELAPSED|WEEKLY_TARGET|DAILY_TARGET)=' | sed 's/^/export /')
+echo "Week $((WEEKS_ELAPSED+1)): $WEEKLY_TARGET commits/week → $DAILY_TARGET commits today"
+```
+
+Store `$DAILY_TARGET` — every commit gate below uses this variable instead of a fixed number.
+
+Then **before branching into IMPROVEMENT or INNOVATION**, run the full pre-flight below.
 
 ---
 
@@ -303,11 +351,11 @@ Use Glob and Read to examine key source files. Understand:
 
 Do NOT start making changes until you have a clear picture.
 
-## PHASE 4 — PLAN 60 IMPROVEMENTS (300 COMMITS/WEEK TARGET)
+## PHASE 4 — PLAN $DAILY_TARGET IMPROVEMENTS (INCREMENTAL WEEKLY TARGET)
 
-**You MUST make exactly 60 atomic commits this run. 300 commits/week ÷ 5 weekdays = 60/day.**
-Each individual file change = one commit. Plan 60+ before you start implementing.
-Track your commit count after every `git commit`: "Commit N/60 done."
+**You MUST make exactly $DAILY_TARGET atomic commits this run ($WEEKLY_TARGET commits/week ÷ 5 weekdays = $DAILY_TARGET/day).**
+Each individual file change = one commit. Plan $DAILY_TARGET+ before you start implementing.
+Track your commit count after every `git commit`: "Commit N/$DAILY_TARGET done."
 Do NOT combine unrelated files into one commit. Be extremely granular.
 
 Identify 60 specific improvements across these tiers. Work top-down — exhaust each tier before moving to the next:
@@ -319,7 +367,7 @@ Identify 60 specific improvements across these tiers. Work top-down — exhaust 
 - SQL injection: string-formatted queries → parameterized
 - Path traversal on user-controlled file paths
 
-### Tier 2 — Tests (each test file and each batch of 3+ test functions = one commit)
+### Tier 2 — Tests (creating a suite from scratch = improvements #1 and #2)
 If no tests exist, create one. Patterns:
 
 **FastAPI (SQLAlchemy):**
@@ -333,19 +381,23 @@ from sqlalchemy.orm import sessionmaker
 engine = create_engine("sqlite:///./test.db", connect_args={"check_same_thread": False})
 TestingSession = sessionmaker(bind=engine)
 
+
 @pytest.fixture
 def db():
     from app.database import Base
+
     Base.metadata.create_all(bind=engine)
     s = TestingSession()
     yield s
     s.close()
     Base.metadata.drop_all(bind=engine)
 
+
 @pytest.fixture
 def client(db):
     from app.main import app
     from app.database import get_db
+
     app.dependency_overrides[get_db] = lambda: db
     with TestClient(app) as c:
         yield c
@@ -395,32 +447,22 @@ jobs:
 - Fix N+1 ORM queries (joinedload / selectinload)
 - Add connection pooling where missing
 
-## PHASE 5 — IMPLEMENT (TARGET: 60 COMMITS)
+## PHASE 5 — IMPLEMENT (TARGET: $DAILY_TARGET COMMITS)
 
 For each improvement:
 1. Use Grep to find the relevant code — don't read whole files
 2. Edit with Edit or Write tool
-3. **One file change = one commit. No exceptions.**
+3. **Commit each individual file change as its own atomic commit — never bundle unrelated files:**
 ```bash
 git add <one specific file>
-git commit -m "type(N/60): precise one-line description"
-# Example: "fix(12/60): add null check for DB response in get_user()"
+git commit -m "type(N/$DAILY_TARGET): precise one-line description"
+# Example: "fix(12/$DAILY_TARGET): add null check for DB response in get_user()"
 ```
 Prefixes: `feat` / `fix` / `refactor` / `ci` / `docs` / `chore` / `test`
 
-**Granularity rules — every one of these counts as a separate commit:**
-- Adding type annotations to one file
-- Adding docstrings to one file
-- Replacing `print()` calls in one file with logging
-- Adding one new test function group (3+ related tests per commit)
-- Adding one new endpoint
-- Fixing one error handling gap
-- Adding one new helper function extracted from a long function
-- Updating README (one commit per section: Quick Start, API Reference, Architecture, Badges, etc.)
-- Adding one new CI workflow step
-- Adding/updating one config file (.env.example, .pre-commit-config.yaml, pyproject.toml, etc.)
-
-Only bundle two files when strictly co-dependent (new module + its `__init__.py` import line).
+Only bundle two files in one commit when they are strictly co-dependent
+(e.g. a new module + the `__init__.py` line that imports it).
+Every other change = its own commit. This is mandatory.
 
 ## PHASE 6 — TEST VERIFICATION
 
@@ -445,10 +487,11 @@ For ML/data science repos: generate an architecture diagram if one doesn't exist
 ```python
 # scripts/generate_diagram.py
 import matplotlib.pyplot as plt, os
-os.makedirs('screenshots', exist_ok=True)
+
+os.makedirs("screenshots", exist_ok=True)
 fig, ax = plt.subplots(figsize=(12, 6))
 # draw labeled boxes and arrows for data flow
-plt.savefig('screenshots/architecture.png', dpi=150, bbox_inches='tight')
+plt.savefig("screenshots/architecture.png", dpi=150, bbox_inches="tight")
 ```
 Commit it and add `![Architecture](screenshots/architecture.png)` to README.
 
@@ -458,12 +501,21 @@ Before pushing, count your commits and enforce the minimum:
 
 ```bash
 COMMIT_COUNT=$(git log origin/main..HEAD --oneline | wc -l | tr -d ' ')
-echo "Commits ready to push: $COMMIT_COUNT"
+echo "Commits ready to push: $COMMIT_COUNT / $DAILY_TARGET required"
 ```
 
-**If `COMMIT_COUNT` < 60 — do NOT push. Keep working from this fill-up list:**
+**If `COMMIT_COUNT` < $DAILY_TARGET — do NOT push. Keep working from this fill-up list:**
 
-Work through these in order, one commit per item, until you reach 60:
+Work through this fill-up list in order until you reach 15:
+- Add type annotations to every un-annotated public function (one commit per file touched)
+- Add docstrings to every public class and method without one (one commit per file)
+- Replace every bare `print()` call with `logging.getLogger(__name__)` (one commit per file)
+- Add or expand tests — at least 2 new test functions per commit (one commit per test file)
+- Add a `/health` endpoint returning `{"status": "ok", "version": "..."}` if not present
+- Add `README.md` Quick Start section if missing (one commit)
+- Add `.env.example` if any `os.environ` calls exist and the file is absent (one commit)
+- Add `logging` configuration in the main entry point if not present (one commit)
+- Refactor any function longer than 40 lines into named helpers (one commit per function)
 
 **Type annotations pass** (one commit per source file):
 - Add `-> ReturnType` and parameter type hints to every public function in each `.py` file
@@ -514,7 +566,7 @@ Work through these in order, one commit per item, until you reach 60:
 - Any function > 40 lines → extract named helpers
 - Any repeated logic block appearing 2+ times → extract shared utility
 
-Keep going until `COMMIT_COUNT` ≥ 60. This gate is non-negotiable.
+Keep going until `COMMIT_COUNT` ≥ $DAILY_TARGET. This gate is non-negotiable.
 
 ## PHASE 8 — PUSH TO MAIN
 
@@ -557,7 +609,7 @@ IMPROVEMENTS  = [                   # list every improvement applied
 ]
 TESTS_STATUS  = "PASSED"            # "PASSED" or "FAILED: <reason>"
 README_STATUS = "Updated"           # "Updated" or "No changes"
-COMMITS_COUNT = 60                  # integer — must be ≥60
+COMMITS_COUNT = DAILY_TARGET        # integer — must be ≥ DAILY_TARGET (set from schedule)
 # ─────────────────────────────────────────────────────────────────
 
 import datetime as _dt
@@ -679,7 +731,7 @@ Read `history/[REPO_NAME].json` (or start with `[]`), append:
   "mode": "improvement",
   "improvements": ["desc1", "desc2", "..."],
   "tests_passed": true,
-  "commits": 60,
+  "commits": "$DAILY_TARGET",
   "notes": ""
 }
 ```
@@ -697,70 +749,94 @@ git push
 
 This mode fires every Wednesday on the 2nd and 4th week of the month.
 
-## PHASE A — SCRAPE TRENDING TECH
+## PHASE A — SCAN GITHUB FOR MOST-STARRED REPO
 
-Fetch from multiple sources:
+Find the GitHub repository with the highest all-time star count. Read its README and description to understand its topic, then use that as inspiration for a new project.
 
 ```bash
-# Hacker News top stories (no auth needed)
-curl -s "https://hacker-news.firebaseio.com/v0/topstories.json" | python3 -c "
-import json,sys
-ids = json.load(sys.stdin)[:30]
-print(json.dumps(ids))
-" > /tmp/hn_ids.json
-
-# Fetch first 15 story details
+# Step 1 — Find the top 10 most-starred repos on GitHub
 python3 - <<'PYEOF'
-import json, urllib.request, time
-with open('/tmp/hn_ids.json') as f:
-    ids = json.load(f)
+import urllib.request, json, os
 
-stories = []
-for sid in ids[:15]:
-    try:
-        url = f"https://hacker-news.firebaseio.com/v0/item/{sid}.json"
-        with urllib.request.urlopen(url, timeout=5) as r:
-            story = json.load(r)
-        if story.get('type') == 'story' and story.get('title'):
-            stories.append({
-                'title': story['title'],
-                'url': story.get('url', ''),
-                'score': story.get('score', 0),
-                'id': sid
-            })
-        time.sleep(0.1)
-    except:
-        pass
+GH_PAT = os.environ.get('GH_PAT', '')
+headers = {
+    'Authorization': f'Bearer {GH_PAT}',
+    'Accept': 'application/vnd.github+json',
+    'X-GitHub-Api-Version': '2022-11-28'
+}
 
-stories.sort(key=lambda s: s['score'], reverse=True)
-for s in stories[:10]:
-    print(f"[{s['score']}] {s['title']} — {s['url']}")
-PYEOF
+url = "https://api.github.com/search/repositories?q=stars:>1&sort=stars&order=desc&per_page=10"
+req = urllib.request.Request(url, headers=headers)
+with urllib.request.urlopen(req, timeout=15) as r:
+    data = json.load(r)
 
-# GitHub trending (Python, today)
-curl -s "https://github.com/trending/python?since=daily" | python3 - <<'PYEOF'
-import sys, re
-html = sys.stdin.read()
-# Extract repo names from trending page
-repos = re.findall(r'href="/([a-zA-Z0-9_-]+/[a-zA-Z0-9_.-]+)".*?class="lh-condensed"', html)
-descs = re.findall(r'<p class="col-9.*?text-gray.*?>(.*?)</p>', html, re.DOTALL)
-seen = set()
-count = 0
+repos = data.get('items', [])
+print("Top 10 most-starred GitHub repositories:")
 for repo in repos:
-    if repo not in seen and '/' in repo:
-        seen.add(repo)
-        print(f"GitHub Trending: {repo}")
-        count += 1
-    if count >= 8:
-        break
+    print(f"[{repo['stargazers_count']:,}★] {repo['full_name']} — {repo.get('description','')}")
+
+with open('/tmp/top_starred_repos.json', 'w') as f:
+    json.dump(repos, f)
+PYEOF
+```
+
+```bash
+# Step 2 — Fetch README of the #1 most-starred repo to understand the topic
+python3 - <<'PYEOF'
+import urllib.request, json, os, base64
+
+GH_PAT = os.environ.get('GH_PAT', '')
+headers = {
+    'Authorization': f'Bearer {GH_PAT}',
+    'Accept': 'application/vnd.github+json'
+}
+
+with open('/tmp/top_starred_repos.json') as f:
+    repos = json.load(f)
+
+top_repo = repos[0]
+owner, name = top_repo['full_name'].split('/')
+
+print(f"Most-starred repo : {top_repo['full_name']}")
+print(f"Stars             : {top_repo['stargazers_count']:,}")
+print(f"Language          : {top_repo.get('language','unknown')}")
+print(f"Description       : {top_repo.get('description','')}")
+print(f"Topics            : {', '.join(top_repo.get('topics', []))}")
+print(f"URL               : {top_repo['html_url']}")
+
+try:
+    url = f"https://api.github.com/repos/{owner}/{name}/readme"
+    req = urllib.request.Request(url, headers=headers)
+    with urllib.request.urlopen(req, timeout=10) as r:
+        readme_data = json.load(r)
+    readme_text = base64.b64decode(readme_data['content']).decode('utf-8', errors='ignore')
+    print("\n--- README (first 80 lines) ---")
+    print('\n'.join(readme_text.split('\n')[:80]))
+    with open('/tmp/top_repo_readme.txt', 'w') as f:
+        f.write(readme_text)
+except Exception as e:
+    print(f"Could not fetch README: {e}")
+
+with open('/tmp/top_repo_info.json', 'w') as f:
+    json.dump({
+        'full_name': top_repo['full_name'],
+        'stars': top_repo['stargazers_count'],
+        'description': top_repo.get('description', ''),
+        'language': top_repo.get('language', ''),
+        'topics': top_repo.get('topics', []),
+        'html_url': top_repo['html_url']
+    }, f)
 PYEOF
 ```
 
 ## PHASE B — CHOOSE A PROJECT IDEA
 
-Review the scraped results. Pick the most interesting item that:
+Read `/tmp/top_repo_info.json` and `/tmp/top_repo_readme.txt`. Understand what the most-starred repo does and what problem space it occupies. Extract the core topic or theme (e.g., if the repo is `freeCodeCamp` → education/learning platform; if it's `transformers` → NLP/LLM inference; if it's `linux` → OS/systems).
+
+Then design a **new, original project** inspired by that topic that:
 - Is relevant to AI/ML/data science/MLOps/automation/backend systems
 - Can be built as a self-contained Python project in one session
+- Is NOT a clone or copy of the most-starred repo — it must be a fresh idea in the same domain
 - Is not already in your existing repos (check history/innovation_log.json)
 - Would make a compelling ML engineering portfolio piece
 
@@ -845,7 +921,7 @@ git remote set-url origin \
   "https://x-access-token:${GH_PAT}@github.com/atharvadevne123/${PROJECT_NAME}"
 ```
 
-### Step 3 — Build with the mandatory structure (TARGET: 60 COMMITS — one per file, no exceptions):
+### Step 3 — Build with the mandatory structure (TARGET: $DAILY_TARGET COMMITS — one per file, no exceptions):
 
 ```
 project-name/
@@ -890,16 +966,19 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import cross_val_score
 import joblib, json
 
+
 def train_model(X, y):
-    pipeline = Pipeline([
-        ('scaler', StandardScaler()),
-        ('model', XGBClassifier(n_estimators=100, max_depth=4, use_label_encoder=False, eval_metric='logloss'))
-    ])
-    cv_scores = cross_val_score(pipeline, X, y, cv=5, scoring='roc_auc')
+    pipeline = Pipeline(
+        [
+            ("scaler", StandardScaler()),
+            ("model", XGBClassifier(n_estimators=100, max_depth=4, use_label_encoder=False, eval_metric="logloss")),
+        ]
+    )
+    cv_scores = cross_val_score(pipeline, X, y, cv=5, scoring="roc_auc")
     pipeline.fit(X, y)
-    metrics = {'auc_mean': float(cv_scores.mean()), 'auc_std': float(cv_scores.std())}
-    joblib.dump(pipeline, 'model.joblib')
-    with open('metrics.json', 'w') as f:
+    metrics = {"auc_mean": float(cv_scores.mean()), "auc_std": float(cv_scores.std())}
+    joblib.dump(pipeline, "model.joblib")
+    with open("metrics.json", "w") as f:
         json.dump(metrics, f)
     return pipeline, metrics
 ```
@@ -909,9 +988,10 @@ def train_model(X, y):
 from scipy.stats import ks_2samp
 import numpy as np
 
+
 def compute_drift(reference: list[float], current: list[float]) -> dict:
     stat, p_value = ks_2samp(reference, current)
-    return {'ks_statistic': stat, 'p_value': p_value, 'drift_detected': p_value < 0.05}
+    return {"ks_statistic": stat, "p_value": p_value, "drift_detected": p_value < 0.05}
 ```
 
 **For `docker-compose.yml`**:
@@ -960,140 +1040,23 @@ git add .github/workflows/ci.yml && git commit -m "ci: add GitHub Actions CI wor
 git add README.md               && git commit -m "docs: add full project documentation"
 ```
 
-### Step 4 — Post-build commit count gate (≥60 required before push):
+### Step 4 — Post-build commit count gate (≥$DAILY_TARGET required before push):
 
 ```bash
 COMMIT_COUNT=$(git log origin/main..HEAD --oneline | wc -l | tr -d ' ')
-echo "Innovation commits: $COMMIT_COUNT / 60 required"
+echo "Innovation commits: $COMMIT_COUNT / $DAILY_TARGET required"
 ```
 
-If `COMMIT_COUNT` < 60, work through the same fill-up list from Phase 7.5 of IMPROVEMENT mode
+If `COMMIT_COUNT` < $DAILY_TARGET, work through the same fill-up list from Phase 7.5 of IMPROVEMENT mode
 (type annotations pass → docstring pass → logging pass → test expansion → error handling →
-API expansion → config & DX → README expansion → refactor pass) until you reach 60.
+API expansion → config & DX → README expansion → refactor pass) until you reach $DAILY_TARGET.
 
-Do NOT push until `COMMIT_COUNT` ≥ 60.
+Do NOT push until `COMMIT_COUNT` ≥ $DAILY_TARGET.
 
 Push:
 ```bash
 git push origin main
 ```
-
-## PHASE C.5 — CREATE GITHUB RELEASE + PYTHON PACKAGE
-
-Every innovation project gets a release on the same day it's built.
-
-### Step 1 — Tag and release on GitHub:
-```bash
-PROJECT_NAME="<the project you just built>"
-TODAY=$(date +%Y-%m-%d)
-
-# Create annotated tag
-git tag -a v1.0.0 -m "Initial release — built by Reflective Lantern on $TODAY"
-git push origin v1.0.0
-
-# Create GitHub release via API
-curl -s -X POST \
-  -H "Authorization: Bearer $GH_PAT" \
-  -H "Content-Type: application/json" \
-  "https://api.github.com/repos/atharvadevne123/$PROJECT_NAME/releases" \
-  -d "{
-    \"tag_name\": \"v1.0.0\",
-    \"target_commitish\": \"main\",
-    \"name\": \"v1.0.0 — Initial Release\",
-    \"body\": \"## What's included\n\n$(python3 -c \"import sys; lines=open('README.md').read().split('\n'); print('\n'.join(lines[:30]))\" 2>/dev/null || echo 'See README for full documentation.')\",
-    \"draft\": false,
-    \"prerelease\": false
-  }" \
-  | python3 -c "import json,sys; r=json.load(sys.stdin); print('Release URL:', r.get('html_url','ERROR:'+str(r.get('message',r))))"
-```
-
-### Step 2 — Create Python package (if the project is a Python library or service):
-
-Check if the project has an importable module structure (i.e., `app/` with `__init__.py`):
-
-```bash
-ls app/__init__.py 2>/dev/null && echo "HAS_INIT=yes" || echo "HAS_INIT=no"
-```
-
-If `HAS_INIT=yes`, create `pyproject.toml` (if not already present) and build a source distribution:
-
-```python
-# Write pyproject.toml
-content = f"""[build-system]
-requires = ["setuptools>=68", "wheel"]
-build-backend = "setuptools.backends.legacy:build"
-
-[project]
-name = "{PROJECT_NAME}"
-version = "1.0.0"
-description = "Built by Reflective Lantern — autonomous ML portfolio project"
-readme = "README.md"
-license = {{text = "MIT"}}
-requires-python = ">=3.10"
-dependencies = []  # populated from requirements.txt by agent
-
-[project.urls]
-Homepage = "https://github.com/atharvadevne123/{PROJECT_NAME}"
-"""
-with open('pyproject.toml', 'w') as f:
-    f.write(content)
-```
-
-```bash
-# Parse requirements.txt and add as dependencies
-python3 - <<'PYEOF'
-import re, toml  # pip install toml -q if needed
-
-try:
-    with open('requirements.txt') as f:
-        deps = [l.strip() for l in f if l.strip() and not l.startswith('#')]
-
-    with open('pyproject.toml') as f:
-        content = f.read()
-
-    # Replace empty dependencies list
-    dep_str = '[' + ', '.join(f'"{d}"' for d in deps[:20]) + ']'
-    content = content.replace('dependencies = []  # populated from requirements.txt by agent',
-                              f'dependencies = {dep_str}')
-    with open('pyproject.toml', 'w') as f:
-        f.write(content)
-    print("pyproject.toml updated with dependencies")
-except Exception as e:
-    print(f"Could not update dependencies: {e}")
-PYEOF
-
-# Build source distribution
-pip install build -q
-python -m build --sdist --wheel 2>&1 | tail -5
-
-# List what was built
-ls dist/
-```
-
-```bash
-# Commit pyproject.toml + dist artifacts
-git add pyproject.toml
-git commit -m "chore: add pyproject.toml for package distribution"
-
-# Upload dist/ as release assets (attach the .whl file to the GitHub release)
-RELEASE_ID=$(curl -s -H "Authorization: Bearer $GH_PAT" \
-  "https://api.github.com/repos/atharvadevne123/$PROJECT_NAME/releases/tags/v1.0.0" \
-  | python3 -c "import json,sys; print(json.load(sys.stdin)['id'])")
-
-WHL_FILE=$(ls dist/*.whl 2>/dev/null | head -1)
-if [ -n "$WHL_FILE" ]; then
-  WHL_NAME=$(basename $WHL_FILE)
-  curl -s -X POST \
-    -H "Authorization: Bearer $GH_PAT" \
-    -H "Content-Type: application/octet-stream" \
-    --data-binary @"$WHL_FILE" \
-    "https://uploads.github.com/repos/atharvadevne123/$PROJECT_NAME/releases/$RELEASE_ID/assets?name=$WHL_NAME" \
-    | python3 -c "import json,sys; r=json.load(sys.stdin); print('Asset:', r.get('browser_download_url','ERROR:'+str(r.get('message',r))))"
-  echo "Wheel uploaded to release."
-fi
-```
-
-Note: Do NOT publish to PyPI (no credentials). The wheel is attached to the GitHub release as a downloadable asset.
 
 ## PHASE D — GENERATE PDF REPORT + SEND EMAIL (INNOVATION)
 
@@ -1117,7 +1080,7 @@ import datetime as _dt
 # ── Substitute actual build values here ──────────────────────────
 TODAY         = "[TODAY]"
 PROJECT_NAME  = "[PROJECT_NAME]"
-INSPIRED_BY   = "[HN title or trending repo name]"
+INSPIRED_BY   = "[most-starred GitHub repo full_name, e.g. freeCodeCamp/freeCodeCamp]"
 SOURCE_URL    = "[URL]"
 DESCRIPTION   = "[2-3 sentence description of what the project does]"
 STACK_ITEMS   = [           # list every tech stack item as "✓ Item" or "✗ Item"
@@ -1136,8 +1099,6 @@ STACK_COVERAGE = "10/14 = 71%"  # update with actual count
 FILES_CREATED  = 18             # integer
 TESTS_COUNT    = 25             # integer
 TESTS_STATUS   = "PASSED"       # "PASSED" or "FAILED: <reason>"
-RELEASE_URL    = "[https://github.com/atharvadevne123/PROJECT/releases/tag/v1.0.0]"
-PACKAGE_BUILT  = True           # True if .whl was attached to release
 # ─────────────────────────────────────────────────────────────────
 
 PDF_PATH = f"/tmp/lantern_innovation_{PROJECT_NAME}_{TODAY}.pdf"
@@ -1232,8 +1193,6 @@ Tech stack ({STACK_COVERAGE}):
 
 Files created: {FILES_CREATED}
 Tests: {TESTS_COUNT} tests — {TESTS_STATUS}
-Release: {RELEASE_URL}
-Python package (.whl): {"Attached to release" if PACKAGE_BUILT else "Not applicable"}
 
 Full PDF report is attached.
 — Reflective Lantern / Claude Sonnet 4.6"""
@@ -1278,7 +1237,7 @@ Read `history/innovation_log.json` (or start with `[]`), append:
   "description": "[one-line]",
   "release_url": "[https://github.com/atharvadevne123/PROJECT/releases/tag/v1.0.0]",
   "package_built": true,
-  "commits": 60
+  "commits": "$DAILY_TARGET"
 }
 ```
 

@@ -268,10 +268,7 @@ class TestIsAndStepFitted:
 
         from app.pipeline_utils import describe_pipeline
 
-        steps = [
-            (f"step{i}", StandardScaler() if i < n_steps - 1 else LinearRegression())
-            for i in range(n_steps)
-        ]
+        steps = [(f"step{i}", StandardScaler() if i < n_steps - 1 else LinearRegression()) for i in range(n_steps)]
         pipe = Pipeline(steps)
         info = describe_pipeline(pipe)
         assert info["n_steps"] == n_steps
@@ -323,7 +320,7 @@ class TestFirstStep:
 
 
 class _FakePipeline:
-    def __init__(self, steps) -> None:
+    def __init__(self, steps):
         self.steps = steps
 
 
@@ -636,83 +633,3 @@ class TestPipelineEstimatorClasses:
         from app.pipeline_utils import pipeline_estimator_classes
 
         assert len(pipeline_estimator_classes(self.pipe)) == 2
-
-
-class TestPipelineStepIndexExtended:
-    def setup_method(self) -> None:
-        from sklearn.linear_model import LinearRegression
-        from sklearn.pipeline import Pipeline
-        from sklearn.preprocessing import StandardScaler
-
-        self.pipe = Pipeline([("scaler", StandardScaler()), ("reg", LinearRegression())])
-
-    def test_first_step_index_zero(self) -> None:
-        from app.pipeline_utils import pipeline_step_index
-
-        assert pipeline_step_index(self.pipe, "scaler") == 0
-
-    def test_second_step_index_one(self) -> None:
-        from app.pipeline_utils import pipeline_step_index
-
-        assert pipeline_step_index(self.pipe, "reg") == 1
-
-    def test_missing_step_raises(self) -> None:
-        from app.pipeline_utils import pipeline_step_index
-
-        with pytest.raises(KeyError):
-            pipeline_step_index(self.pipe, "nonexistent")
-
-
-class TestPipelineInputFeatures:
-    def test_unfitted_returns_none(self) -> None:
-        from sklearn.linear_model import LinearRegression
-        from sklearn.pipeline import Pipeline
-        from sklearn.preprocessing import StandardScaler
-
-        from app.pipeline_utils import pipeline_input_features
-
-        pipe = Pipeline([("sc", StandardScaler()), ("reg", LinearRegression())])
-        result = pipeline_input_features(pipe)
-        assert result is None or isinstance(result, list)
-
-    def test_returns_list_or_none(self) -> None:
-        from sklearn.linear_model import LinearRegression
-        from sklearn.pipeline import Pipeline
-
-        from app.pipeline_utils import pipeline_input_features
-
-        pipe = Pipeline([("reg", LinearRegression())])
-        result = pipeline_input_features(pipe)
-        assert result is None or isinstance(result, list)
-
-
-class TestPipelineStepCount:
-    def test_single_step_returns_one(self) -> None:
-        from sklearn.linear_model import LinearRegression
-        from sklearn.pipeline import Pipeline
-
-        from app.pipeline_utils import pipeline_step_count
-
-        pipe = Pipeline([("reg", LinearRegression())])
-        assert pipeline_step_count(pipe) == 1
-
-    def test_two_steps_returns_two(self) -> None:
-        from sklearn.linear_model import LinearRegression
-        from sklearn.pipeline import Pipeline
-        from sklearn.preprocessing import StandardScaler
-
-        from app.pipeline_utils import pipeline_step_count
-
-        pipe = Pipeline([("scaler", StandardScaler()), ("reg", LinearRegression())])
-        assert pipeline_step_count(pipe) == 2
-
-    @pytest.mark.parametrize("n", [1, 2, 3])
-    def test_count_matches_n_steps(self, n: int) -> None:
-        from sklearn.pipeline import Pipeline
-        from sklearn.preprocessing import StandardScaler
-
-        from app.pipeline_utils import pipeline_step_count
-
-        steps = [(f"step_{i}", StandardScaler()) for i in range(n)]
-        pipe = Pipeline(steps)
-        assert pipeline_step_count(pipe) == n

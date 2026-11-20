@@ -75,10 +75,7 @@ def aggregate_by_hour(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
         if h is None or kwh is None:
             continue
         buckets.setdefault(int(h), []).append(float(kwh))
-    return [
-        {"hour": h, "mean_kwh": sum(vals) / len(vals), "count": len(vals)}
-        for h, vals in sorted(buckets.items())
-    ]
+    return [{"hour": h, "mean_kwh": sum(vals) / len(vals), "count": len(vals)} for h, vals in sorted(buckets.items())]
 
 
 def summarize_export(records: list[dict[str, Any]]) -> dict[str, Any]:
@@ -460,7 +457,6 @@ def flatten_nested_records(
     """
 
     def _flatten(d: dict[str, Any], parent: str = "") -> dict[str, Any]:
-        """Recursively flatten *d* into a single-level dict using *separator*."""
         items: dict[str, Any] = {}
         for k, v in d.items():
             key = f"{parent}{separator}{k}" if parent else k
@@ -485,11 +481,7 @@ def records_missing_fields(records: list[dict[str, Any]], required: list[str]) -
     Returns:
         Sorted list of zero-based indices of incomplete records.
     """
-    return sorted(
-        i
-        for i, r in enumerate(records)
-        if any(field not in r or r[field] is None for field in required)
-    )
+    return sorted(i for i, r in enumerate(records) if any(field not in r or r[field] is None for field in required))
 
 
 def records_to_lookup(records: list[dict[str, Any]], key: str) -> dict[str, dict[str, Any]]:
@@ -717,49 +709,3 @@ def daily_peak_consumption(hourly_kwh: list[float]) -> float:
     if len(hourly_kwh) != 24:
         raise ValueError(f"hourly_kwh must have exactly 24 entries, got {len(hourly_kwh)}")
     return max(hourly_kwh)
-
-
-def records_total_kwh(records: list[dict[str, Any]]) -> float:
-    """Return the sum of all ``consumption_kwh`` values in *records*.
-
-    Args:
-        records: List of energy record dicts.
-
-    Returns:
-        Total kWh rounded to 4 decimal places. Returns 0.0 when no record
-        has a ``consumption_kwh`` field.
-    """
-    total = sum(float(r["consumption_kwh"]) for r in records if "consumption_kwh" in r)
-    return round(total, 4)
-
-
-def records_kwh_range(records: list[dict[str, Any]]) -> tuple[float, float] | None:
-    """Return the (min, max) consumption_kwh across *records*.
-
-    Args:
-        records: List of energy record dicts.
-
-    Returns:
-        Tuple (min_kwh, max_kwh) or ``None`` when no record has a
-        ``consumption_kwh`` field.
-    """
-    vals = [float(r["consumption_kwh"]) for r in records if "consumption_kwh" in r]
-    if not vals:
-        return None
-    return (min(vals), max(vals))
-
-
-def records_kwh_average(records: list[dict[str, Any]]) -> float | None:
-    """Return the average consumption_kwh across records that have the field.
-
-    Args:
-        records: List of energy record dicts.
-
-    Returns:
-        Average kWh as a float rounded to 4 decimal places, or ``None`` when
-        no record contains a ``consumption_kwh`` field.
-    """
-    vals = [float(r["consumption_kwh"]) for r in records if "consumption_kwh" in r]
-    if not vals:
-        return None
-    return round(sum(vals) / len(vals), 4)

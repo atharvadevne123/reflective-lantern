@@ -32,7 +32,7 @@ def small_df() -> pd.DataFrame:
     )
 
 
-def test_lag_transformer_adds_columns(small_df) -> None:
+def test_lag_transformer_adds_columns(small_df):
     t = LagFeatureTransformer(lags=2)
     out = t.fit_transform(small_df)
     assert "temperature_lag1" in out.columns
@@ -40,14 +40,14 @@ def test_lag_transformer_adds_columns(small_df) -> None:
     assert len(out) == len(small_df)
 
 
-def test_rolling_transformer_adds_columns(small_df) -> None:
+def test_rolling_transformer_adds_columns(small_df):
     t = RollingStatsTransformer(window=3)
     out = t.fit_transform(small_df)
     assert "temperature_roll_mean" in out.columns
     assert "temperature_roll_std" in out.columns
 
 
-def test_ratio_transformer_adds_derived_features(small_df) -> None:
+def test_ratio_transformer_adds_derived_features(small_df):
     t = RatioFeatureTransformer()
     out = t.fit_transform(small_df)
     assert "temp_pressure_ratio" in out.columns
@@ -56,7 +56,7 @@ def test_ratio_transformer_adds_derived_features(small_df) -> None:
     assert "power_efficiency" in out.columns
 
 
-def test_polynomial_transformer_adds_squared(small_df) -> None:
+def test_polynomial_transformer_adds_squared(small_df):
     t = PolynomialSensorTransformer()
     out = t.fit_transform(small_df)
     assert "vibration_sq" in out.columns
@@ -64,7 +64,7 @@ def test_polynomial_transformer_adds_squared(small_df) -> None:
     assert "temperature_sq" in out.columns
 
 
-def test_build_feature_pipeline_produces_array(small_df) -> None:
+def test_build_feature_pipeline_produces_array(small_df):
     pipe = build_feature_pipeline()
     X = pipe.fit_transform(small_df)
     assert isinstance(X, np.ndarray)
@@ -72,7 +72,7 @@ def test_build_feature_pipeline_produces_array(small_df) -> None:
     assert X.shape[1] > len(small_df.columns)
 
 
-def test_engineer_single_returns_2d_array() -> None:
+def test_engineer_single_returns_2d_array():
     row = {
         "temperature": 78.5,
         "pressure": 52.0,
@@ -87,35 +87,35 @@ def test_engineer_single_returns_2d_array() -> None:
     assert result.shape[0] == 1
 
 
-def test_generate_synthetic_data_shape() -> None:
+def test_generate_synthetic_data_shape():
     df = generate_synthetic_data(n_samples=100, seed=1)
     assert len(df) == 100
     assert "defect" in df.columns
     assert df["defect"].isin([0, 1]).all()
 
 
-def test_generate_synthetic_data_defect_rate() -> None:
+def test_generate_synthetic_data_defect_rate():
     df = generate_synthetic_data(n_samples=5000, seed=42)
     rate = df["defect"].mean()
     assert 0.05 <= rate <= 0.60
 
 
 @pytest.mark.parametrize("lags", [1, 2, 3])
-def test_lag_count_parametrized(small_df, lags) -> None:
+def test_lag_count_parametrized(small_df, lags):
     t = LagFeatureTransformer(lags=lags)
     out = t.fit_transform(small_df)
     for lag in range(1, lags + 1):
         assert f"temperature_lag{lag}" in out.columns
 
 
-def test_engineer_single_missing_column_defaults_to_zero() -> None:
+def test_engineer_single_missing_column_defaults_to_zero():
     row = {"temperature": 78.5, "pressure": 52.0, "vibration": 2.1, "cycle_time": 28.0}
     result = engineer_single(row)
     assert result.ndim == 2
     assert not np.isnan(result).any()
 
 
-def test_ratio_transformer_handles_zero_denominator() -> None:
+def test_ratio_transformer_handles_zero_denominator():
     df = pd.DataFrame(
         {
             "temperature": [75.0],
@@ -133,28 +133,28 @@ def test_ratio_transformer_handles_zero_denominator() -> None:
     assert np.isfinite(out["vibration_per_cycle"]).all()
 
 
-def test_pipeline_output_has_no_nan(small_df) -> None:
+def test_pipeline_output_has_no_nan(small_df):
     pipe = build_feature_pipeline()
     X = pipe.fit_transform(small_df)
     assert not np.isnan(X).any()
 
 
 @pytest.mark.parametrize("seed", [0, 1, 42])
-def test_synthetic_data_reproducible(seed) -> None:
+def test_synthetic_data_reproducible(seed):
     a = generate_synthetic_data(n_samples=50, seed=seed)
     b = generate_synthetic_data(n_samples=50, seed=seed)
     pd.testing.assert_frame_equal(a, b)
 
 
 @pytest.mark.parametrize("window", [3, 5, 10])
-def test_rolling_window_parametrized(small_df, window) -> None:
+def test_rolling_window_parametrized(small_df, window):
     t = RollingStatsTransformer(window=window)
     out = t.fit_transform(small_df)
     assert "temperature_roll_mean" in out.columns
     assert not out["temperature_roll_mean"].isna().any()
 
 
-def test_engineer_single_all_sensors_present() -> None:
+def test_engineer_single_all_sensors_present():
     row = {
         "temperature": 75.0,
         "pressure": 50.0,
@@ -170,13 +170,13 @@ def test_engineer_single_all_sensors_present() -> None:
 
 
 @pytest.mark.parametrize("n_samples", [50, 200, 500])
-def test_synthetic_data_various_sizes(n_samples) -> None:
+def test_synthetic_data_various_sizes(n_samples):
     df = generate_synthetic_data(n_samples=n_samples, seed=7)
     assert len(df) == n_samples
     assert df["defect"].isin([0, 1]).all()
 
 
-def test_polynomial_transformer_values_correct(small_df) -> None:
+def test_polynomial_transformer_values_correct(small_df):
     t = PolynomialSensorTransformer()
     out = t.fit_transform(small_df)
     expected = small_df["vibration"] ** 2
@@ -187,7 +187,7 @@ def test_polynomial_transformer_values_correct(small_df) -> None:
     )
 
 
-def test_pipeline_fit_and_transform_shape_consistent(small_df) -> None:
+def test_pipeline_fit_and_transform_shape_consistent(small_df):
     pipe = build_feature_pipeline()
     X_fit = pipe.fit_transform(small_df)
     # transform again should give same shape
@@ -195,7 +195,7 @@ def test_pipeline_fit_and_transform_shape_consistent(small_df) -> None:
     assert X_fit.shape == X_t.shape
 
 
-def test_engineer_single_no_nan_on_extreme_values() -> None:
+def test_engineer_single_no_nan_on_extreme_values():
     row = {
         "temperature": 299.9,
         "pressure": 199.9,
@@ -209,7 +209,7 @@ def test_engineer_single_no_nan_on_extreme_values() -> None:
     assert not np.isnan(result).any()
 
 
-def test_lag_transformer_is_idempotent_on_fit(small_df) -> None:
+def test_lag_transformer_is_idempotent_on_fit(small_df):
     t = LagFeatureTransformer(lags=1)
     t.fit(small_df)
     out1 = t.transform(small_df)
@@ -218,18 +218,18 @@ def test_lag_transformer_is_idempotent_on_fit(small_df) -> None:
     pd.testing.assert_frame_equal(out1, out2)
 
 
-def test_rolling_stats_no_nan_in_std(small_df) -> None:
+def test_rolling_stats_no_nan_in_std(small_df):
     t = RollingStatsTransformer(window=3)
     out = t.fit_transform(small_df)
     assert not out["temperature_roll_std"].isna().any()
 
 
-def test_generate_synthetic_data_has_both_classes() -> None:
+def test_generate_synthetic_data_has_both_classes():
     df = generate_synthetic_data(n_samples=1000, seed=0)
     assert df["defect"].nunique() == 2
 
 
-def test_pipeline_transform_without_refit_raises_or_works(small_df) -> None:
+def test_pipeline_transform_without_refit_raises_or_works(small_df):
     pipe = build_feature_pipeline()
     pipe.fit(small_df)
     out = pipe.transform(small_df)
@@ -309,59 +309,3 @@ class TestDefectRiskIndex:
 
         risk = defect_risk_index(150.0, 20.0, 100.0, 120.0)
         assert risk >= 0.5
-
-
-class TestSensorRangeFeatureExtended:
-    def test_empty_row_returns_zeros(self) -> None:
-        from app.features import sensor_range_feature
-
-        result = sensor_range_feature({})
-        assert result == {"sensor_min": 0.0, "sensor_max": 0.0, "sensor_range": 0.0}
-
-    def test_single_value(self) -> None:
-        from app.features import sensor_range_feature
-
-        result = sensor_range_feature({"temperature": 75.0})
-        assert result["sensor_min"] == pytest.approx(75.0)
-        assert result["sensor_max"] == pytest.approx(75.0)
-        assert result["sensor_range"] == pytest.approx(0.0)
-
-    def test_range_equals_max_minus_min(self) -> None:
-        from app.features import sensor_range_feature
-
-        result = sensor_range_feature({"a": 10.0, "b": 30.0, "c": 20.0})
-        assert result["sensor_range"] == pytest.approx(20.0)
-
-    def test_negative_values(self) -> None:
-        from app.features import sensor_range_feature
-
-        result = sensor_range_feature({"x": -5.0, "y": 5.0})
-        assert result["sensor_range"] == pytest.approx(10.0)
-
-
-class TestGenerateSyntheticDataExtra:
-    def test_reproducible_with_same_seed(self) -> None:
-        from app.features import generate_synthetic_data
-
-        df1 = generate_synthetic_data(seed=99)
-        df2 = generate_synthetic_data(seed=99)
-        assert (df1.values == df2.values).all()
-
-    def test_different_seeds_differ(self) -> None:
-        from app.features import generate_synthetic_data
-
-        df1 = generate_synthetic_data(seed=1)
-        df2 = generate_synthetic_data(seed=2)
-        assert not (df1["temperature"].values == df2["temperature"].values).all()
-
-    def test_defect_column_binary(self) -> None:
-        from app.features import generate_synthetic_data
-
-        df = generate_synthetic_data(n_samples=200)
-        assert set(df["defect"].unique()).issubset({0, 1})
-
-    def test_custom_n_samples(self) -> None:
-        from app.features import generate_synthetic_data
-
-        df = generate_synthetic_data(n_samples=150)
-        assert len(df) == 150

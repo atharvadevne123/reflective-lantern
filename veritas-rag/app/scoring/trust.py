@@ -15,7 +15,6 @@ from __future__ import annotations
 
 import math
 from datetime import UTC, datetime
-from functools import lru_cache
 
 from ..schemas import ScoredChunk
 
@@ -44,14 +43,8 @@ def freshness_score(
     """
     try:
         created = datetime.fromisoformat(created_at)
-    except (ValueError, TypeError):
-        # Unknown or malformed age: return neutral score and log for visibility
-        import logging
-
-        logging.getLogger(__name__).debug(
-            "Could not parse created_at %r; using neutral freshness", created_at
-        )
-        return 0.5
+    except ValueError:
+        return 0.5  # unknown age: neutral
     if created.tzinfo is None:
         created = created.replace(tzinfo=UTC)
     current = now or datetime.now(UTC)
@@ -59,13 +52,8 @@ def freshness_score(
     return math.exp(-math.log(2) * age_days / half_life_days)
 
 
-@lru_cache(maxsize=32)
 def source_quality_score(source_type: str) -> float:
-    """Source-type prior in [0, 1].
-
-    Cached: there are at most a handful of distinct source types and this
-    is called once per retrieved chunk on every query.
-    """
+    """Source-type prior in [0, 1]."""
     return SOURCE_QUALITY_PRIORS.get(source_type, _DEFAULT_SOURCE_QUALITY)
 
 
@@ -228,26 +216,3 @@ def top_k_trust(chunks: list[ScoredChunk], k: int = 3) -> list[ScoredChunk]:
         Up to *k* chunks sorted by trust descending.
     """
     return sorted(chunks, key=lambda c: c.trust, reverse=True)[:k]
-
-
-def normalize_trust_scores(chunks: list[ScoredChunk]) -> list[ScoredChunk]:
-    """Rescale trust scores so the maximum is 1.0.
-
-    When all scores are clustered near zero (weak retrieval) the relative
-    differences still matter for ranking; this rescaling preserves order
-    while improving readability.
-
-    Args:
-        chunks: Scored chunks to normalize in-place.
-
-    Returns:
-        The same list with trust scores rescaled; original list is modified.
-    """
-    if not chunks:
-        return chunks
-    max_trust = max(c.trust for c in chunks)
-    if max_trust <= 0.0:
-        return chunks
-    for chunk in chunks:
-        chunk.trust = round(chunk.trust / max_trust, 6)
-    return chunks

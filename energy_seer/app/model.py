@@ -5,7 +5,6 @@ from __future__ import annotations
 import json
 import logging
 import os
-import time
 from pathlib import Path
 from typing import Any
 
@@ -26,7 +25,6 @@ METRICS_PATH = Path(os.getenv("METRICS_PATH", "metrics.json"))
 
 
 def build_ensemble() -> VotingRegressor:
-    """Build a soft-voting ensemble of XGBoost, LightGBM, and RandomForest regressors."""
     xgb = XGBRegressor(
         n_estimators=200,
         max_depth=5,
@@ -55,7 +53,6 @@ def build_ensemble() -> VotingRegressor:
 
 
 def generate_synthetic_data(n: int = 2000) -> tuple[pd.DataFrame, pd.Series]:
-    """Generate *n* synthetic hourly energy readings with realistic patterns."""
     rng = np.random.default_rng(42)
     hours = np.arange(n) % 24
     days = (np.arange(n) // 24) % 7
@@ -83,11 +80,6 @@ def train_model(
     X_raw: pd.DataFrame | None = None,
     y: pd.Series | None = None,
 ) -> tuple[Any, dict[str, float]]:
-    """Train the ensemble on *X_raw*/*y* (or synthetic data if omitted) and persist.
-
-    Returns:
-        Tuple of (bundle dict with 'pipeline' and 'model', metrics dict).
-    """
     if X_raw is None or y is None:
         logger.info("No data provided — generating synthetic training data")
         X_raw, y = generate_synthetic_data()
@@ -103,9 +95,7 @@ def train_model(
     r2_scores = cross_val_score(ensemble, X, y, cv=cv, scoring="r2")
     rmse_scores = cross_val_score(ensemble, X, y, cv=cv, scoring="neg_root_mean_squared_error")
 
-    t0 = time.perf_counter()
     ensemble.fit(X, y)
-    train_time_sec = round(time.perf_counter() - t0, 3)
 
     metrics = {
         "r2_mean": float(r2_scores.mean()),
@@ -114,7 +104,6 @@ def train_model(
         "rmse_std": float(rmse_scores.std()),
         "n_features": int(X.shape[1]),
         "n_samples": int(X.shape[0]),
-        "train_time_sec": train_time_sec,
     }
 
     joblib.dump({"pipeline": pipeline, "model": ensemble}, MODEL_PATH)

@@ -33,7 +33,6 @@ class AuditLog:
     """Append-only in-memory audit log."""
 
     def __init__(self) -> None:
-        """Initialise an empty, append-only audit log."""
         self._entries: list[AuditEntry] = []
 
     def record(
@@ -44,18 +43,7 @@ class AuditLog:
         outcome: str = "success",
         **metadata: Any,
     ) -> AuditEntry:
-        """Create and store an immutable audit entry, returning it to the caller.
-
-        Args:
-            actor: Identity of the entity performing the action (e.g. user ID).
-            action: Verb describing what was done (e.g. "login", "delete").
-            resource: Target of the action (e.g. "user:42", "model:v2").
-            outcome: Result string, typically "success" or "failure".
-            **metadata: Arbitrary extra fields attached to the entry.
-
-        Returns:
-            The newly created :class:`AuditEntry`.
-        """
+        """Create and store an audit entry, returning it."""
         entry = AuditEntry(
             actor=actor,
             action=action,
@@ -75,19 +63,7 @@ class AuditLog:
         since: float | None = None,
         until: float | None = None,
     ) -> list[AuditEntry]:
-        """Return entries matching all provided filter criteria (AND logic).
-
-        Args:
-            actor: Filter by exact actor value.
-            action: Filter by exact action value.
-            resource: Filter by exact resource value.
-            outcome: Filter by exact outcome value.
-            since: Lower-bound Unix timestamp (inclusive).
-            until: Upper-bound Unix timestamp (inclusive).
-
-        Returns:
-            Filtered list of :class:`AuditEntry` objects in insertion order.
-        """
+        """Return entries matching all provided filter criteria."""
         results = self._entries
         if actor:
             results = [e for e in results if e.actor == actor]
@@ -107,22 +83,5 @@ class AuditLog:
         """Return all entries serialised as newline-delimited JSON."""
         return "\n".join(json.dumps(asdict(e)) for e in self._entries)
 
-    def clear(self) -> None:
-        """Remove all entries (use only in tests or after export)."""
-        self._entries.clear()
-
-    def count(self, actor: str | None = None, action: str | None = None) -> int:
-        """Count entries matching optional actor and/or action filters."""
-        return len(self.search(actor=actor, action=action))
-
-    def actors(self) -> list[str]:
-        """Return sorted list of distinct actor names in the log."""
-        return sorted({e.actor for e in self._entries})
-
-    def actions(self) -> list[str]:
-        """Return sorted list of distinct action names in the log."""
-        return sorted({e.action for e in self._entries})
-
     def __len__(self) -> int:
-        """Return the total number of audit entries stored."""
         return len(self._entries)

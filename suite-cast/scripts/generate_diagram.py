@@ -8,9 +8,7 @@ import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 
 
-def draw_box(
-    ax, x: float, y: float, w: float, h: float, label: str, color: str, fontsize: int = 10
-) -> None:
+def draw_box(ax, x, y, w, h, label, color, fontsize=10):
     """Draw a rounded box with centered label."""
     box = mpatches.FancyBboxPatch(
         (x, y),
@@ -34,7 +32,7 @@ def draw_box(
     )
 
 
-def draw_arrow(ax, x1: float, y1: float, x2: float, y2: float, label: str = "") -> None:
+def draw_arrow(ax, x1, y1, x2, y2, label=""):
     """Draw an arrow between two points with an optional midpoint label."""
     ax.annotate(
         "",
@@ -57,7 +55,7 @@ def draw_arrow(ax, x1: float, y1: float, x2: float, y2: float, label: str = "") 
 def main() -> None:
     """Render architecture.png into the screenshots directory."""
     os.makedirs("screenshots", exist_ok=True)
-    _fig, ax = plt.subplots(figsize=(14, 7))
+    fig, ax = plt.subplots(figsize=(14, 7))
     ax.set_xlim(0, 14)
     ax.set_ylim(0, 7)
     ax.axis("off")
@@ -92,11 +90,8 @@ def main() -> None:
     draw_arrow(ax, 4.9, 5.0, 4.9, 4.3, "")
     draw_arrow(ax, 4.9, 3.3, 4.9, 2.7, "")
 
-    import logging
-
-    logger = logging.getLogger(__name__)
     plt.savefig("screenshots/architecture.png", dpi=150, bbox_inches="tight")
-    logger.info("Wrote screenshots/architecture.png")
+    print("Wrote screenshots/architecture.png")
 
 
 if __name__ == "__main__":

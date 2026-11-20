@@ -69,14 +69,6 @@ def score_record(record: dict[str, Any]) -> dict[str, Any]:
 
     Each check contributes points. Missing or out-of-range fields deduct points.
     Returns the original record augmented with ``dq_score`` and ``dq_issues``.
-
-    Args:
-        record: Dict containing energy reading fields such as hour, month,
-            day_of_week, consumption_kwh, temperature_c, and humidity_pct.
-
-    Returns:
-        Copy of *record* with ``dq_score`` (int 0-100) and ``dq_issues``
-        (list of strings describing each penalty) added.
     """
     issues: list[str] = []
     penalty = 0
@@ -103,14 +95,7 @@ def score_record(record: dict[str, Any]) -> dict[str, Any]:
 
 
 def batch_score(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Apply :func:`score_record` to each record in *records*.
-
-    Args:
-        records: List of raw energy reading dicts.
-
-    Returns:
-        New list where each element is the corresponding scored record.
-    """
+    """Apply :func:`score_record` to each record in *records*."""
     return [score_record(r) for r in records]
 
 
@@ -124,14 +109,7 @@ def quality_summary(scored: list[dict[str, Any]]) -> dict[str, Any]:
         Dict with mean_score, min_score, max_score, n_perfect, n_failing (score < 60).
     """
     if not scored:
-        return {
-            "total_records": 0,
-            "mean_score": 0.0,
-            "min_score": 0,
-            "max_score": 0,
-            "n_perfect": 0,
-            "n_failing": 0,
-        }
+        return {"total_records": 0, "mean_score": 0.0, "min_score": 0, "max_score": 0, "n_perfect": 0, "n_failing": 0}
     scores = [r["dq_score"] for r in scored]
     summary = {
         "total_records": len(scored),
@@ -142,10 +120,7 @@ def quality_summary(scored: list[dict[str, Any]]) -> dict[str, Any]:
         "n_failing": sum(1 for s in scores if s < 60),
     }
     logger.debug(
-        "quality_summary: n=%d mean=%.1f n_failing=%d",
-        len(scored),
-        summary["mean_score"],
-        summary["n_failing"],
+        "quality_summary: n=%d mean=%.1f n_failing=%d", len(scored), summary["mean_score"], summary["n_failing"]
     )
     return summary
 
@@ -155,19 +130,7 @@ def flag_outliers(
     field: str,
     z_threshold: float = 3.0,
 ) -> list[dict[str, Any]]:
-    """Return records whose *field* value is more than *z_threshold* std devs from the mean.
-
-    Args:
-        records: List of scored or raw records containing *field*.
-        field: The numeric field to evaluate for outliers.
-        z_threshold: Number of standard deviations beyond which a value is
-            considered an outlier (default 3.0).
-
-    Returns:
-        Subset of *records* whose *field* value exceeds the z-score threshold.
-        Returns an empty list when fewer than two records contain the field, or
-        when the standard deviation is zero.
-    """
+    """Return records whose *field* value is more than *z_threshold* std devs from the mean."""
     vals = [float(r[field]) for r in records if field in r]
     if len(vals) < 2:
         return []
@@ -198,11 +161,10 @@ def detect_duplicates(
     seen: set[tuple] = set()
     duplicates: list[int] = []
     for i, record in enumerate(records):
-        key = (
-            tuple(sorted(record.items()))
-            if key_fields is None
-            else tuple(record.get(f) for f in key_fields)
-        )
+        if key_fields is None:
+            key = tuple(sorted(record.items()))
+        else:
+            key = tuple(record.get(f) for f in key_fields)
         if key in seen:
             duplicates.append(i)
         else:
@@ -226,9 +188,7 @@ def completeness_score(records: list[dict[str, Any]], required_fields: list[str]
     if not records or not required_fields:
         return 0.0
     total_cells = len(records) * len(required_fields)
-    filled = sum(
-        1 for r in records for f in required_fields if r.get(f) is not None and r.get(f) != ""
-    )
+    filled = sum(1 for r in records for f in required_fields if r.get(f) is not None and r.get(f) != "")
     return round(filled / total_cells, 4)
 
 
@@ -277,9 +237,7 @@ def schema_validate(
         if value is None:
             errors.append(f"missing:{field}")
         elif not isinstance(value, expected_type):
-            errors.append(
-                f"type_error:{field} expected {expected_type.__name__}, got {type(value).__name__}"
-            )
+            errors.append(f"type_error:{field} expected {expected_type.__name__}, got {type(value).__name__}")
     return errors
 
 
@@ -398,9 +356,7 @@ def duplicate_rate(records: list[dict[str, Any]], key_fields: list[str]) -> floa
     return round(duplicates / len(records), 4)
 
 
-def field_completeness(
-    records: list[dict[str, Any]], required_fields: list[str]
-) -> dict[str, float]:
+def field_completeness(records: list[dict[str, Any]], required_fields: list[str]) -> dict[str, float]:
     """Compute completeness rate (1 - null_rate) for each required field.
 
     Args:
@@ -526,12 +482,7 @@ def data_freshness_score(
             stale += 1
     total = fresh + stale
     rate = round(fresh / total, 4) if total > 0 else 0.0
-    return {
-        "total_records": total,
-        "fresh_count": fresh,
-        "stale_count": stale,
-        "freshness_rate": rate,
-    }
+    return {"total_records": total, "fresh_count": fresh, "stale_count": stale, "freshness_rate": rate}
 
 
 def field_type_consistency(records: list[dict[str, Any]], field: str, expected_type: type) -> float:
@@ -692,9 +643,7 @@ def cross_field_validation(
             if not check(float(va), float(vb)):
                 violations.append(f"cross_field: {field_a}({va}) {op} {field_b}({vb}) violated")
         except (TypeError, ValueError):
-            violations.append(
-                f"cross_field: cannot compare '{field_a}' and '{field_b}' (non-numeric)"
-            )
+            violations.append(f"cross_field: cannot compare '{field_a}' and '{field_b}' (non-numeric)")
     return violations
 
 
@@ -992,10 +941,7 @@ def column_cardinality(records: list[dict[str, object]]) -> dict[str, int]:
     if not records:
         return {}
     all_keys: set[str] = set().union(*(r.keys() for r in records))
-    return {
-        key: len({r.get(key) for r in records if r.get(key) is not None})
-        for key in sorted(all_keys)
-    }
+    return {key: len({r.get(key) for r in records if r.get(key) is not None}) for key in sorted(all_keys)}
 
 
 def outlier_summary(
@@ -1013,33 +959,15 @@ def outlier_summary(
         Returns zeroed summary when std is zero or fewer than 2 values.
     """
     if len(values) < 2:
-        return {
-            "count": 0,
-            "fraction": 0.0,
-            "min_outlier": None,
-            "max_outlier": None,
-            "indices": [],
-        }
+        return {"count": 0, "fraction": 0.0, "min_outlier": None, "max_outlier": None, "indices": []}
     mean_v = sum(values) / len(values)
     variance = sum((v - mean_v) ** 2 for v in values) / len(values)
     std_v = variance**0.5
     if std_v == 0.0:
-        return {
-            "count": 0,
-            "fraction": 0.0,
-            "min_outlier": None,
-            "max_outlier": None,
-            "indices": [],
-        }
+        return {"count": 0, "fraction": 0.0, "min_outlier": None, "max_outlier": None, "indices": []}
     outliers = [(i, v) for i, v in enumerate(values) if abs(v - mean_v) / std_v > z_threshold]
     if not outliers:
-        return {
-            "count": 0,
-            "fraction": 0.0,
-            "min_outlier": None,
-            "max_outlier": None,
-            "indices": [],
-        }
+        return {"count": 0, "fraction": 0.0, "min_outlier": None, "max_outlier": None, "indices": []}
     outlier_vals = [v for _, v in outliers]
     return {
         "count": len(outliers),
@@ -1060,16 +988,3 @@ def unique_value_count(values: list[object]) -> int:
         Count of unique non-None entries.
     """
     return len({v for v in values if v is not None})
-
-
-def has_duplicates(values: list[object]) -> bool:
-    """Return True if *values* contains any duplicate non-None entries.
-
-    Args:
-        values: List of values to check.
-
-    Returns:
-        True when at least two non-None entries are equal.
-    """
-    non_none = [v for v in values if v is not None]
-    return len(non_none) != len(set(non_none))

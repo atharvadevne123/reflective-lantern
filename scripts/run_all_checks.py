@@ -3,13 +3,10 @@
 from __future__ import annotations
 
 import argparse
-import logging
 import subprocess
 import sys
 import time
 from typing import Any
-
-logger = logging.getLogger(__name__)
 
 CHECKS: list[tuple[str, list[Any]]] = [
     ("ruff", ["ruff", "check", "."]),
@@ -30,7 +27,6 @@ def run_check(name: str, cmd: list) -> tuple[bool, float]:
 
 
 def main() -> int:
-    """Execute all pre-flight check commands and report pass/fail results."""
     parser = argparse.ArgumentParser(description="Run all pre-flight checks.")
     parser.add_argument("--stop-on-failure", action="store_true")
     args = parser.parse_args()
@@ -40,14 +36,14 @@ def main() -> int:
         ok, elapsed = run_check(name, cmd)
         results.append((name, ok, elapsed))
         status = "PASS" if ok else "FAIL"
-        logger.info("  [%s] %s  (%.2fs)", status, name, elapsed)
+        print(f"  [{status}] {name}  ({elapsed:.2f}s)")
         if not ok and args.stop_on_failure:
             break
 
     total = sum(e for _, _, e in results)
     passed = sum(1 for _, ok, _ in results if ok)
     failed = len(results) - passed
-    logger.info("\nTotal: %d passed, %d failed  [%.2fs]", passed, failed, total)
+    print(f"\nTotal: {passed} passed, {failed} failed  [{total:.2f}s]")
 
     return 0 if all(ok for _, ok, _ in results) else 1
 

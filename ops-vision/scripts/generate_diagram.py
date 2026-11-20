@@ -115,4 +115,4 @@ def generate_diagram(output_path: Path = OUTPUT_PATH) -> Path:
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     path = generate_diagram()
-    logger.info("Diagram generated: %s", path)
+    print(f"Diagram generated: {path}")

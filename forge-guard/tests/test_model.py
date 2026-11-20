@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 
 
-def test_train_model_returns_pipeline_and_metrics(feature_arrays) -> None:
+def test_train_model_returns_pipeline_and_metrics(feature_arrays):
     from app.model import train_model
 
     X, y = feature_arrays
@@ -18,7 +18,7 @@ def test_train_model_returns_pipeline_and_metrics(feature_arrays) -> None:
     assert metrics["n_samples"] == X.shape[0]
 
 
-def test_model_persisted_to_disk(feature_arrays, tmp_path, monkeypatch) -> None:
+def test_model_persisted_to_disk(feature_arrays, tmp_path, monkeypatch):
     from app import model as m
 
     model_file = tmp_path / "test_model.joblib"
@@ -33,7 +33,7 @@ def test_model_persisted_to_disk(feature_arrays, tmp_path, monkeypatch) -> None:
     assert metrics_file.exists()
 
 
-def test_predict_returns_valid_label_and_prob(feature_arrays) -> None:
+def test_predict_returns_valid_label_and_prob(feature_arrays):
     from app.model import predict, train_model
 
     X, y = feature_arrays
@@ -45,7 +45,7 @@ def test_predict_returns_valid_label_and_prob(feature_arrays) -> None:
         assert 0.0 <= prob <= 1.0
 
 
-def test_load_model_trains_if_missing(tmp_path, monkeypatch) -> None:
+def test_load_model_trains_if_missing(tmp_path, monkeypatch):
     from app import model as m
 
     monkeypatch.setattr(m, "MODEL_PATH", tmp_path / "nonexistent.joblib")
@@ -54,7 +54,7 @@ def test_load_model_trains_if_missing(tmp_path, monkeypatch) -> None:
     assert loaded is not None
 
 
-def test_get_metrics_returns_dict_after_training(feature_arrays, tmp_path, monkeypatch) -> None:
+def test_get_metrics_returns_dict_after_training(feature_arrays, tmp_path, monkeypatch):
     from app import model as m
 
     metrics_file = tmp_path / "metrics.json"
@@ -70,7 +70,7 @@ def test_get_metrics_returns_dict_after_training(feature_arrays, tmp_path, monke
 
 
 @pytest.mark.parametrize("cv_folds", [2, 3])
-def test_cv_folds_parameter(feature_arrays, cv_folds) -> None:
+def test_cv_folds_parameter(feature_arrays, cv_folds):
     from app.model import train_model
 
     X, y = feature_arrays
@@ -78,7 +78,7 @@ def test_cv_folds_parameter(feature_arrays, cv_folds) -> None:
     assert metrics["cv_folds"] == cv_folds
 
 
-def test_predict_probability_sums_to_one(feature_arrays) -> None:
+def test_predict_probability_sums_to_one(feature_arrays):
     from app.model import predict, train_model
 
     X, y = feature_arrays
@@ -88,7 +88,7 @@ def test_predict_probability_sums_to_one(feature_arrays) -> None:
     assert label == int(prob >= 0.5)
 
 
-def test_get_metrics_empty_when_no_file(tmp_path, monkeypatch) -> None:
+def test_get_metrics_empty_when_no_file(tmp_path, monkeypatch):
     from app import model as m
 
     monkeypatch.setattr(m, "METRICS_PATH", tmp_path / "nonexistent.json")
@@ -96,7 +96,7 @@ def test_get_metrics_empty_when_no_file(tmp_path, monkeypatch) -> None:
     assert result == {}
 
 
-def test_feature_importance_returns_nonempty_dict(feature_arrays, tmp_path, monkeypatch) -> None:
+def test_feature_importance_returns_nonempty_dict(feature_arrays, tmp_path, monkeypatch):
     from app import model as m
 
     monkeypatch.setattr(m, "MODEL_PATH", tmp_path / "model.joblib")
@@ -109,7 +109,7 @@ def test_feature_importance_returns_nonempty_dict(feature_arrays, tmp_path, monk
     assert all(0.0 <= v <= 1.0 for v in importances.values())
 
 
-def test_metrics_keys_complete(feature_arrays, tmp_path, monkeypatch) -> None:
+def test_metrics_keys_complete(feature_arrays, tmp_path, monkeypatch):
     from app import model as m
 
     monkeypatch.setattr(m, "MODEL_PATH", tmp_path / "model.joblib")
@@ -121,7 +121,7 @@ def test_metrics_keys_complete(feature_arrays, tmp_path, monkeypatch) -> None:
 
 
 @pytest.mark.parametrize("n_samples", [100, 300])
-def test_train_on_varying_sample_sizes(n_samples) -> None:
+def test_train_on_varying_sample_sizes(n_samples):
     from app.features import build_feature_pipeline, generate_synthetic_data
     from app.model import train_model
 
@@ -129,11 +129,11 @@ def test_train_on_varying_sample_sizes(n_samples) -> None:
     feat_pipe = build_feature_pipeline()
     X = feat_pipe.fit_transform(df[[c for c in df.columns if c != "defect"]])
     y = df["defect"].values
-    _pipe, metrics = train_model(X, y, cv_folds=2)
+    pipe, metrics = train_model(X, y, cv_folds=2)
     assert metrics["n_samples"] == n_samples
 
 
-def test_feature_importance_values_sum_near_one(feature_arrays, tmp_path, monkeypatch) -> None:
+def test_feature_importance_values_sum_near_one(feature_arrays, tmp_path, monkeypatch):
     from app import model as m
 
     monkeypatch.setattr(m, "MODEL_PATH", tmp_path / "model.joblib")
@@ -145,7 +145,7 @@ def test_feature_importance_values_sum_near_one(feature_arrays, tmp_path, monkey
     assert 0.9 <= total <= 1.1
 
 
-def test_load_model_raises_on_corrupt_file(tmp_path, monkeypatch) -> None:
+def test_load_model_raises_on_corrupt_file(tmp_path, monkeypatch):
     from app import model as m
 
     bad_file = tmp_path / "bad.joblib"
@@ -156,7 +156,7 @@ def test_load_model_raises_on_corrupt_file(tmp_path, monkeypatch) -> None:
         m.load_model()
 
 
-def test_predict_batch_consistency(feature_arrays, tmp_path, monkeypatch) -> None:
+def test_predict_batch_consistency(feature_arrays, tmp_path, monkeypatch):
     from app import model as m
 
     monkeypatch.setattr(m, "MODEL_PATH", tmp_path / "model.joblib")

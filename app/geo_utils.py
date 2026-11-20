@@ -21,14 +21,12 @@ class Coordinate:
     lon: float
 
     def __post_init__(self) -> None:
-        """Validate that lat and lon are within WGS-84 bounds."""
         if not -90 <= self.lat <= 90:
             raise ValueError(f"Latitude must be in [-90, 90], got {self.lat}")
         if not -180 <= self.lon <= 180:
             raise ValueError(f"Longitude must be in [-180, 180], got {self.lon}")
 
     def __str__(self) -> str:
-        """Return a human-readable coordinate string."""
         return f"({self.lat:.6f}, {self.lon:.6f})"
 
 
@@ -50,21 +48,6 @@ def haversine(a: Coordinate, b: Coordinate) -> float:
     return 2 * _EARTH_RADIUS_KM * math.asin(math.sqrt(h))
 
 
-def haversine_distance(a: tuple[float, float], b: tuple[float, float]) -> float:
-    """Compute the haversine distance between two (lat, lon) tuples.
-
-    Convenience wrapper around :func:`haversine` that accepts plain tuples.
-
-    Args:
-        a: First point as ``(latitude, longitude)`` in decimal degrees.
-        b: Second point as ``(latitude, longitude)`` in decimal degrees.
-
-    Returns:
-        Great-circle distance in kilometres.
-    """
-    return haversine(Coordinate(a[0], a[1]), Coordinate(b[0], b[1]))
-
-
 @dataclass(frozen=True)
 class BoundingBox:
     """An axis-aligned bounding box in geographic coordinates.
@@ -83,9 +66,7 @@ class BoundingBox:
 
     def contains(self, coord: Coordinate) -> bool:
         """Return True if coord falls within this bounding box."""
-        return (
-            self.min_lat <= coord.lat <= self.max_lat and self.min_lon <= coord.lon <= self.max_lon
-        )
+        return self.min_lat <= coord.lat <= self.max_lat and self.min_lon <= coord.lon <= self.max_lon
 
     @property
     def center(self) -> Coordinate:
@@ -163,154 +144,11 @@ def midpoint(a: Coordinate, b: Coordinate) -> Coordinate:
     return Coordinate(lat=mid_lat, lon=mid_lon)
 
 
-def bearing(a: Coordinate, b: Coordinate) -> float:
-    """Compute the initial compass bearing from *a* to *b* in degrees [0, 360).
-
-    Args:
-        a: Origin coordinate.
-        b: Destination coordinate.
-
-    Returns:
-        Bearing in degrees clockwise from north.
-    """
-    lat1 = math.radians(a.lat)
-    lat2 = math.radians(b.lat)
-    dlon = math.radians(b.lon - a.lon)
-    x = math.sin(dlon) * math.cos(lat2)
-    y = math.cos(lat1) * math.sin(lat2) - math.sin(lat1) * math.cos(lat2) * math.cos(dlon)
-    return (math.degrees(math.atan2(x, y)) + 360) % 360
-
-
-def within_radius(
-    center: Coordinate, radius_km: float, candidates: list[Coordinate]
-) -> list[Coordinate]:
-    """Return all candidates within *radius_km* of *center*.
-
-    Args:
-        center: Reference coordinate.
-        radius_km: Radius in kilometres.
-        candidates: List of coordinates to filter.
-
-    Returns:
-        Subset of candidates within the radius (may be empty).
-    """
-    return [c for c in candidates if haversine(center, c) <= radius_km]
-
-
-def distance_km(a: Coordinate, b: Coordinate) -> float:
-    """Alias for :func:`haversine` — return great-circle distance in kilometres.
-
-    Args:
-        a: First coordinate.
-        b: Second coordinate.
-
-    Returns:
-        Distance in kilometres.
-    """
-    return haversine(a, b)
-
-
-def k_nearest(query: Coordinate, candidates: list[Coordinate], k: int = 5) -> list[Coordinate]:
-    """Return the *k* nearest candidates to *query*, ordered nearest first.
-
-    Args:
-        query: The reference coordinate.
-        candidates: List of coordinates to rank.
-        k: Maximum number of neighbours to return.
-
-    Returns:
-        Up to *k* closest coordinates sorted by ascending distance.
-    """
-    return sorted(candidates, key=lambda c: haversine(query, c))[:k]
-
-
 __all__ = [
     "BoundingBox",
     "Coordinate",
-    "arithmetic_midpoint",
-    "bearing",
     "bounding_box_of",
-    "coordinate_to_dms",
-    "distance_km",
-    "dms_to_decimal",
-    "format_coordinate",
     "haversine",
-    "haversine_distance",
-    "k_nearest",
     "midpoint",
     "nearest_neighbor",
-    "within_radius",
 ]
-
-
-def arithmetic_midpoint(lat1: float, lon1: float, lat2: float, lon2: float) -> tuple[float, float]:
-    """Return the arithmetic midpoint between two coordinate pairs.
-
-    Uses simple arithmetic averaging, suitable for short distances.
-
-    Args:
-        lat1: Latitude of the first point in decimal degrees.
-        lon1: Longitude of the first point in decimal degrees.
-        lat2: Latitude of the second point in decimal degrees.
-        lon2: Longitude of the second point in decimal degrees.
-
-    Returns:
-        Tuple of (latitude, longitude) for the midpoint, each rounded to 6 dp.
-    """
-    return (round((lat1 + lat2) / 2, 6), round((lon1 + lon2) / 2, 6))
-
-
-def coordinate_to_dms(decimal_deg: float) -> tuple[int, int, float]:
-    """Convert a decimal degree value to degrees, minutes, seconds.
-
-    Args:
-        decimal_deg: Latitude or longitude in decimal degrees (may be negative).
-
-    Returns:
-        Tuple of (degrees, minutes, seconds) where degrees is an int >= 0,
-        minutes is an int in [0, 59], and seconds is a float in [0, 60).
-    """
-    abs_deg = abs(decimal_deg)
-    degrees = int(abs_deg)
-    minutes_full = (abs_deg - degrees) * 60
-    minutes = int(minutes_full)
-    seconds = (minutes_full - minutes) * 60
-    return (degrees, minutes, round(seconds, 4))
-
-
-def dms_to_decimal(degrees: int, minutes: int, seconds: float, negative: bool = False) -> float:
-    """Convert degrees, minutes, seconds to a decimal degree value.
-
-    Args:
-        degrees: Whole degrees (non-negative integer).
-        minutes: Whole minutes in [0, 59].
-        seconds: Seconds in [0, 60).
-        negative: When True the result is negated (for South/West).
-
-    Returns:
-        Decimal degree value.
-
-    Raises:
-        ValueError: If minutes or seconds are out of range.
-    """
-    if not 0 <= minutes < 60:
-        raise ValueError(f"minutes must be in [0, 59], got {minutes}")
-    if not 0 <= seconds < 60:
-        raise ValueError(f"seconds must be in [0, 60), got {seconds}")
-    result = degrees + minutes / 60.0 + seconds / 3600.0
-    return -result if negative else result
-
-
-def format_coordinate(coord: Coordinate, precision: int = 4) -> str:
-    """Format a coordinate as a human-readable string.
-
-    Args:
-        coord: Coordinate to format.
-        precision: Decimal places for lat/lon. Defaults to 4.
-
-    Returns:
-        String like ``"51.5074°N, 0.1278°W"``.
-    """
-    lat_dir = "N" if coord.lat >= 0 else "S"
-    lon_dir = "E" if coord.lon >= 0 else "W"
-    return f"{abs(coord.lat):.{precision}f}°{lat_dir}, {abs(coord.lon):.{precision}f}°{lon_dir}"

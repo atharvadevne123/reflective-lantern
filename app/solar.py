@@ -39,27 +39,18 @@ class SolarEconomics:
 
 
 def generation_kwh(
-    array_area_m2: float | None = None,
-    irradiance_kwh_per_m2: float | None = None,
+    array_area_m2: float,
+    irradiance_kwh_per_m2: float,
     panel_efficiency: float = DEFAULT_PANEL_EFFICIENCY,
     performance_ratio: float = DEFAULT_PERFORMANCE_RATIO,
-    *,
-    peak_kw: float | None = None,
-    irradiance_kwh_per_sqm: float | None = None,
 ) -> float:
     """Estimate PV generation for a period.
-
-    Accepts two calling conventions:
-    - ``generation_kwh(array_area_m2, irradiance_kwh_per_m2)`` — area-based model.
-    - ``generation_kwh(peak_kw=..., irradiance_kwh_per_sqm=...)`` — peak-power model.
 
     Args:
         array_area_m2: Total module area in square metres.
         irradiance_kwh_per_m2: Plane-of-array irradiance over the period.
         panel_efficiency: Module conversion efficiency in (0, 1].
         performance_ratio: System-level derate factor in (0, 1].
-        peak_kw: System peak power in kW (alternative to area-based inputs).
-        irradiance_kwh_per_sqm: Alias for irradiance_kwh_per_m2 in kWh/m².
 
     Returns:
         Generated energy in kWh rounded to 4 decimal places.
@@ -68,21 +59,6 @@ def generation_kwh(
         ValueError: If any argument is negative, or either efficiency term
             is outside (0, 1].
     """
-    if peak_kw is not None:
-        _irr = (
-            irradiance_kwh_per_sqm
-            if irradiance_kwh_per_sqm is not None
-            else (irradiance_kwh_per_m2 or 0.0)
-        )
-        if peak_kw < 0 or _irr < 0:
-            raise ValueError("peak_kw and irradiance must be non-negative")
-        return round(peak_kw * _irr * performance_ratio, 4)
-    if irradiance_kwh_per_sqm is not None and irradiance_kwh_per_m2 is None:
-        irradiance_kwh_per_m2 = irradiance_kwh_per_sqm
-    if array_area_m2 is None:
-        array_area_m2 = 0.0
-    if irradiance_kwh_per_m2 is None:
-        irradiance_kwh_per_m2 = 0.0
     if array_area_m2 < 0 or irradiance_kwh_per_m2 < 0:
         raise ValueError(
             f"area and irradiance must be non-negative, got area={array_area_m2} irradiance={irradiance_kwh_per_m2}"
@@ -123,13 +99,9 @@ def self_consumption(
         )
 
     self_consumed = exported = imported = 0.0
-    for hour, (gen, load) in enumerate(
-        zip(generation_hourly_kwh, consumption_hourly_kwh, strict=True)
-    ):
+    for hour, (gen, load) in enumerate(zip(generation_hourly_kwh, consumption_hourly_kwh, strict=True)):
         if gen < 0 or load < 0:
-            raise ValueError(
-                f"values must be non-negative, got generation={gen} consumption={load} at hour {hour}"
-            )
+            raise ValueError(f"values must be non-negative, got generation={gen} consumption={load} at hour {hour}")
         matched = min(gen, load)
         self_consumed += matched
         exported += gen - matched
@@ -161,13 +133,9 @@ def analyze_economics(
             either rate is negative.
     """
     if import_rate < 0 or export_rate < 0:
-        raise ValueError(
-            f"rates must be non-negative, got import={import_rate} export={export_rate}"
-        )
+        raise ValueError(f"rates must be non-negative, got import={import_rate} export={export_rate}")
 
-    self_consumed, exported, imported = self_consumption(
-        generation_hourly_kwh, consumption_hourly_kwh
-    )
+    self_consumed, exported, imported = self_consumption(generation_hourly_kwh, consumption_hourly_kwh)
     generated = round(sum(generation_hourly_kwh), 4)
     consumed = round(sum(consumption_hourly_kwh), 4)
 
@@ -246,58 +214,7 @@ __all__ = [
     "DEFAULT_PERFORMANCE_RATIO",
     "SolarEconomics",
     "analyze_economics",
-    "capacity_factor",
     "generation_kwh",
-    "panel_efficiency_ratio",
     "payback_years",
     "self_consumption",
 ]
-
-
-def capacity_factor(
-    actual_kwh: float,
-    installed_kw: float,
-    hours: float = 8760.0,
-) -> float:
-    """Compute the capacity factor of a solar installation.
-
-    Capacity factor is the ratio of actual energy output to the maximum
-    possible output if the plant ran at full capacity continuously.
-
-    Args:
-        actual_kwh: Actual energy generated in kWh over the period.
-        installed_kw: Installed peak capacity in kilowatts.
-        hours: Duration of the period in hours (default 8760 for one year).
-
-    Returns:
-        Capacity factor in [0, 1]; 0.0 if installed_kw or hours is zero.
-
-    Raises:
-        ValueError: If any argument is negative.
-    """
-    if actual_kwh < 0 or installed_kw < 0 or hours < 0:
-        raise ValueError("All arguments must be non-negative")
-    max_kwh = installed_kw * hours
-    if max_kwh == 0.0:
-        return 0.0
-    return round(actual_kwh / max_kwh, 6)
-
-
-def panel_efficiency_ratio(actual_output_kwh: float, rated_output_kwh: float) -> float:
-    """Return the ratio of actual to rated panel output.
-
-    Args:
-        actual_output_kwh: Measured energy output in kWh.
-        rated_output_kwh: Manufacturer-rated output in kWh under standard conditions.
-
-    Returns:
-        Efficiency ratio in [0, 1]; 0.0 if rated_output_kwh is zero.
-
-    Raises:
-        ValueError: If either argument is negative.
-    """
-    if actual_output_kwh < 0 or rated_output_kwh < 0:
-        raise ValueError("Arguments must be non-negative")
-    if rated_output_kwh == 0.0:
-        return 0.0
-    return min(actual_output_kwh / rated_output_kwh, 1.0)

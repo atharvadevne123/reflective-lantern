@@ -171,7 +171,8 @@ def delete_run(run_name: str) -> bool:
     import json
 
     with open(_RUN_LOG, "w") as fh:
-        fh.writelines(json.dumps(r) + "\n" for r in filtered)
+        for r in filtered:
+            fh.write(json.dumps(r) + "\n")
     return True
 
 

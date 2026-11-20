@@ -19,7 +19,6 @@ from sqlalchemy.orm import Session
 from app.database import get_db, init_db
 from app.features import engineer_single
 from app.logging_config import configure_logging
-from app.middleware import RequestTimingMiddleware, SecurityHeadersMiddleware
 from app.model import MODEL_VERSION, get_metrics, load_model, predict
 from app.monitoring import defect_rate, log_prediction, run_drift_check
 from app.schemas import BatchPredictionResponse, BatchSensorInput
@@ -70,6 +69,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+from app.middleware import RequestTimingMiddleware, SecurityHeadersMiddleware  # noqa: E402
 
 app.add_middleware(RequestTimingMiddleware)
 app.add_middleware(SecurityHeadersMiddleware)
@@ -354,6 +355,3 @@ async def export_drift(
     from app.reporting import export_drift_reports_json
 
     return export_drift_reports_json(db, hours=hours)
-
-
-__all__ = ["HealthResponse", "MetricsResponse", "PredictionResponse", "SensorInput", "app"]

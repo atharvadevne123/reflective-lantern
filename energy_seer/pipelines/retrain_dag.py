@@ -2,13 +2,10 @@
 
 from __future__ import annotations
 
-import logging
 from datetime import datetime, timedelta
 
 from airflow import DAG
 from airflow.operators.python import PythonOperator
-
-logger = logging.getLogger(__name__)
 
 DEFAULT_ARGS = {
     "owner": "energy-seer",
@@ -39,7 +36,7 @@ def _fetch_training_data(**ctx) -> dict:
         raise ValueError(f"Insufficient data: {len(rows)} rows (need {MIN_SAMPLES})")
 
     ctx["ti"].xcom_push(key="row_count", value=len(rows))
-    logger.info("Fetched %d rows for retraining", len(rows))
+    print(f"Fetched {len(rows)} rows for retraining")
     return {"row_count": len(rows)}
 
 
@@ -56,7 +53,7 @@ def _retrain_model(**ctx) -> None:
     if r2 < R2_GATE:
         raise ValueError(f"Model R2={r2:.4f} below gate {R2_GATE}. Aborting.")
 
-    logger.info("Retrain complete: R2=%.4f RMSE=%.4f", r2, metrics.get("rmse_mean", 0))
+    print(f"Retrain complete: R2={r2:.4f} RMSE={metrics.get('rmse_mean', 0):.4f}")
     ctx["ti"].xcom_push(key="r2", value=r2)
 
 
@@ -70,7 +67,7 @@ def _refresh_anomaly_detector(**ctx) -> None:
     _, y = generate_synthetic_data(n=500)
     train_anomaly_detector(y.tolist())
     set_reference_distributions({"consumption_kwh": y.tolist()})
-    logger.info("Anomaly detector refreshed")
+    print("Anomaly detector refreshed")
 
 
 def _rebuild_rag_index(**ctx) -> None:
@@ -83,12 +80,12 @@ def _rebuild_rag_index(**ctx) -> None:
     X, _ = generate_synthetic_data(n=300)
     patterns = X.to_dict(orient="records")
     count = ingest_patterns(patterns)
-    logger.info("RAG index rebuilt with %d patterns", count)
+    print(f"RAG index rebuilt with {count} patterns")
 
 
 def _notify_completion(**ctx) -> None:
     r2 = ctx["ti"].xcom_pull(key="r2", task_ids="retrain_model") or 0.0
-    logger.info("[Energy-Seer] Weekly retrain complete. R2=%.4f", r2)
+    print(f"[Energy-Seer] Weekly retrain complete. R2={r2:.4f}")
 
 
 with DAG(

@@ -1,25 +1,4 @@
-"""Pagination utilities for API endpoints.
-
-Provides two complementary pagination strategies:
-
-**Offset-based (page + per_page)**
-    Simple numeric page navigation backed by :func:`paginate` and
-    :class:`PageInfo`.  Best for small, stable datasets where jumping
-    to an arbitrary page is needed.
-
-**Cursor-based**
-    Opaque base64 cursors created by :func:`encode_cursor` /
-    :func:`decode_cursor` and consumed by :func:`cursor_paginate`.
-    Avoids the "offset drift" problem for rapidly changing datasets.
-
-Key helpers:
-
-- :func:`paginate` — slice a list into a :class:`Page` with full metadata.
-- :func:`cursor_paginate` — walk a sorted list using opaque cursors.
-- :func:`page_range` — generate page-number windows for navigation UIs.
-- :func:`last_page_items` — calculate the item count on the final page.
-- :func:`is_last_page` — boolean test for the terminal page.
-"""
+"""Pagination utilities for API endpoints."""
 
 from __future__ import annotations
 
@@ -53,7 +32,6 @@ class PageInfo:
     has_prev: bool = field(init=False)
 
     def __post_init__(self) -> None:
-        """Compute derived pagination fields from total, page, and per_page."""
         self.total_pages = math.ceil(self.total / self.per_page) if self.per_page > 0 else 0
         self.has_next = self.page < self.total_pages
         self.has_prev = self.page > 1
@@ -70,11 +48,6 @@ class Page(Generic[T]):
 
     items: list[T]
     info: PageInfo
-
-    @property
-    def item_count(self) -> int:
-        """Return the number of items on this page."""
-        return len(self.items)
 
 
 def paginate(items: list, page: int = 1, per_page: int = 20) -> Page:
@@ -139,13 +112,11 @@ class CursorPage(Generic[T]):
         items: Items on this page.
         next_cursor: Opaque token for the next page; None if no more pages.
         has_next: Whether a next page exists.
-        prev_cursor: Opaque token for the previous page; None for first page.
     """
 
     items: list[T]
     next_cursor: str | None
     has_next: bool
-    prev_cursor: str | None = None
 
 
 def cursor_paginate(
@@ -183,86 +154,6 @@ def cursor_paginate(
     return CursorPage(items=page_items, next_cursor=next_cursor, has_next=has_next)
 
 
-def page_range(info: PageInfo, window: int = 5) -> list[int]:
-    """Return a list of page numbers centred on *info.page* for navigation.
-
-    Args:
-        info: PageInfo from a paginated response.
-        window: Total number of page numbers to show (capped by total_pages).
-
-    Returns:
-        Sorted list of 1-based page numbers.
-    """
-    half = window // 2
-    start = max(1, info.page - half)
-    end = min(info.total_pages, start + window - 1)
-    start = max(1, end - window + 1)
-    return list(range(start, end + 1))
-
-
-def last_page_items(items: list, per_page: int) -> int:
-    """Return how many items appear on the final page.
-
-    Args:
-        items: Full list of items.
-        per_page: Page size.
-
-    Returns:
-        Remainder count (1-per_page), or 0 if items is empty.
-    """
-    if not items or per_page < 1:
-        return 0
-    remainder = len(items) % per_page
-    return remainder if remainder else per_page
-
-
-def is_last_page(info: PageInfo) -> bool:
-    """Return True when *info* describes the final page of results.
-
-    Args:
-        info: PageInfo from a paginated response.
-
-    Returns:
-        True if this is the last page, False otherwise.
-    """
-    return not info.has_next
-
-
-def pages_remaining(info: PageInfo) -> int:
-    """Return the number of pages remaining after the current page.
-
-    Args:
-        info: PageInfo from a paginated response.
-
-    Returns:
-        Non-negative integer count of pages that follow the current one.
-    """
-    return max(0, info.total_pages - info.page)
-
-
-def slice_for_page(total: int, page: int, per_page: int) -> tuple[int, int]:
-    """Return the (start, end) slice indices for a given page.
-
-    Args:
-        total: Total number of items in the full list.
-        page: 1-based page number.
-        per_page: Items per page.
-
-    Returns:
-        Tuple (start, end) suitable for ``items[start:end]``.
-
-    Raises:
-        ValueError: If *page* < 1 or *per_page* < 1.
-    """
-    if page < 1:
-        raise ValueError(f"page must be >= 1, got {page}")
-    if per_page < 1:
-        raise ValueError(f"per_page must be >= 1, got {per_page}")
-    start = (page - 1) * per_page
-    end = min(start + per_page, total)
-    return start, end
-
-
 __all__ = [
     "CursorPage",
     "Page",
@@ -270,10 +161,5 @@ __all__ = [
     "cursor_paginate",
     "decode_cursor",
     "encode_cursor",
-    "is_last_page",
-    "last_page_items",
-    "page_range",
-    "pages_remaining",
     "paginate",
-    "slice_for_page",
 ]

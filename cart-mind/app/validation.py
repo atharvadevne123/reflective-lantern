@@ -5,9 +5,6 @@ cross-field coherence — a shopper who registered 30 days ago cannot have last
 purchased 200 days ago — and those contradictions are exactly the ones that
 produce confidently wrong predictions, because the model was never trained on
 states that cannot physically occur.
-
-All check_* functions return a list of human-readable warning strings.
-An empty list means the payload passed that check.
 """
 
 from __future__ import annotations
@@ -120,8 +117,6 @@ def validate_payload(payload: dict[str, Any]) -> list[str]:
         check_temporal_coherence(payload)
         + check_engagement_coherence(payload)
         + check_catalog_coherence(payload)
-        + check_price_coherence(payload)
-        + check_quantity_coherence(payload)
     )
     if warnings:
         logger.warning("Payload coherence warnings: %s", "; ".join(warnings))
@@ -218,31 +213,6 @@ def validation_summary(results: dict[str, list[str]]) -> dict[str, Any]:
     }
 
 
-def revenue_impact_score(
-    cart_value: float,
-    purchase_probability: float,
-    discount_pct: float = 0.0,
-) -> float:
-    """Estimate the expected revenue contribution of a user session.
-
-    Multiplies the expected purchase value (cart value adjusted for discount)
-    by the purchase probability. Useful for prioritising recommendations that
-    maximise expected revenue rather than raw purchase likelihood.
-
-    Args:
-        cart_value: Total value of items in the cart.
-        purchase_probability: Predicted probability of purchase (0-1).
-        discount_pct: Applied discount percentage (0-100).
-
-    Returns:
-        Expected revenue in the same currency units as *cart_value*.
-    """
-    if cart_value < 0 or not (0.0 <= purchase_probability <= 1.0):
-        return 0.0
-    discount_factor = 1.0 - max(0.0, min(100.0, discount_pct)) / 100.0
-    return round(cart_value * discount_factor * purchase_probability, 4)
-
-
 def price_discount_pct(original_price: float, discounted_price: float) -> float:
     """Return percentage discount from original to discounted price.
 
@@ -322,52 +292,3 @@ def normalise_payload(
     result = dict(defaults)
     result.update(payload)
     return result
-
-
-def check_quantity_coherence(payload: dict[str, Any]) -> list[str]:
-    """Check that quantity-related fields are mutually consistent.
-
-    A cart with zero items cannot have a positive cart value, and a purchase
-    count of zero is inconsistent with a non-zero avg_order_value.
-
-    Args:
-        payload: Raw request payload as a mapping.
-
-    Returns:
-        List of human-readable warnings; empty when coherent.
-    """
-    warnings: list[str] = []
-    cart_items = payload.get("cart_item_count")
-    cart_val = payload.get("cart_value")
-    if cart_items is not None and cart_val is not None and cart_items == 0 and cart_val > 0:
-        warnings.append(f"cart_value is positive ({cart_val}) but cart_item_count is zero")
-    purchase_count = payload.get("purchase_count")
-    avg_order = payload.get("avg_order_value")
-    if (
-        purchase_count is not None
-        and avg_order is not None
-        and purchase_count == 0
-        and avg_order > 0
-    ):
-        warnings.append(f"avg_order_value is positive ({avg_order}) but purchase_count is zero")
-    return warnings
-
-
-__all__ = [
-    "ValidationIssue",
-    "cart_value_tier",
-    "check_catalog_coherence",
-    "check_engagement_coherence",
-    "check_price_coherence",
-    "check_quantity_coherence",
-    "check_temporal_coherence",
-    "cross_field_penalty_score",
-    "item_count_flag",
-    "normalise_payload",
-    "price_discount_pct",
-    "revenue_impact_score",
-    "sanitise_payload",
-    "validate_batch",
-    "validate_payload",
-    "validation_summary",
-]

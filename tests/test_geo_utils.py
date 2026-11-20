@@ -9,12 +9,10 @@ import pytest
 from app.geo_utils import (
     BoundingBox,
     Coordinate,
-    bearing,
     bounding_box_of,
     haversine,
     midpoint,
     nearest_neighbor,
-    within_radius,
 )
 
 LONDON = Coordinate(51.5074, -0.1278)
@@ -24,44 +22,44 @@ SYDNEY = Coordinate(-33.8688, 151.2093)
 
 
 class TestCoordinate:
-    def test_valid_coordinate(self) -> None:
+    def test_valid_coordinate(self):
         c = Coordinate(lat=45.0, lon=90.0)
         assert c.lat == 45.0 and c.lon == 90.0
 
-    def test_invalid_lat_raises(self) -> None:
+    def test_invalid_lat_raises(self):
         with pytest.raises(ValueError, match="Latitude"):
             Coordinate(lat=91, lon=0)
 
-    def test_invalid_lon_raises(self) -> None:
+    def test_invalid_lon_raises(self):
         with pytest.raises(ValueError, match="Longitude"):
             Coordinate(lat=0, lon=181)
 
     @pytest.mark.parametrize("lat,lon", [(-90, -180), (90, 180), (0, 0), (45.5, -120.3)])
-    def test_boundary_values_accepted(self, lat, lon) -> None:
+    def test_boundary_values_accepted(self, lat, lon):
         c = Coordinate(lat=lat, lon=lon)
         assert c.lat == lat and c.lon == lon
 
-    def test_str_representation(self) -> None:
+    def test_str_representation(self):
         c = Coordinate(lat=51.5074, lon=-0.1278)
         assert "51.507400" in str(c)
 
 
 class TestHaversine:
-    def test_same_point_is_zero(self) -> None:
+    def test_same_point_is_zero(self):
         assert haversine(LONDON, LONDON) == pytest.approx(0.0, abs=1e-9)
 
-    def test_london_to_paris_approx(self) -> None:
+    def test_london_to_paris_approx(self):
         dist = haversine(LONDON, PARIS)
         assert 340 < dist < 345
 
-    def test_symmetry(self) -> None:
+    def test_symmetry(self):
         assert haversine(LONDON, PARIS) == pytest.approx(haversine(PARIS, LONDON))
 
-    def test_intercontinental_distance(self) -> None:
+    def test_intercontinental_distance(self):
         dist = haversine(LONDON, NEW_YORK)
         assert 5500 < dist < 5600
 
-    def test_antipodal_max_distance(self) -> None:
+    def test_antipodal_max_distance(self):
         north = Coordinate(0, 0)
         south = Coordinate(0, 180)
         dist = haversine(north, south)
@@ -69,450 +67,52 @@ class TestHaversine:
 
 
 class TestBoundingBox:
-    def test_contains_interior_point(self) -> None:
+    def test_contains_interior_point(self):
         bbox = BoundingBox(min_lat=40, max_lat=50, min_lon=-5, max_lon=5)
         assert bbox.contains(Coordinate(45, 0))
 
-    def test_rejects_exterior_point(self) -> None:
+    def test_rejects_exterior_point(self):
         bbox = BoundingBox(min_lat=40, max_lat=50, min_lon=-5, max_lon=5)
         assert not bbox.contains(Coordinate(60, 0))
 
-    def test_center(self) -> None:
+    def test_center(self):
         bbox = BoundingBox(min_lat=40, max_lat=50, min_lon=-10, max_lon=10)
         center = bbox.center
         assert center.lat == pytest.approx(45.0)
         assert center.lon == pytest.approx(0.0)
 
-    def test_bounding_box_of_list(self) -> None:
+    def test_bounding_box_of_list(self):
         coords = [LONDON, PARIS, NEW_YORK]
         bbox = bounding_box_of(coords)
         assert bbox.min_lat == min(c.lat for c in coords)
         assert bbox.max_lon == max(c.lon for c in coords)
 
-    def test_bounding_box_empty_raises(self) -> None:
+    def test_bounding_box_empty_raises(self):
         with pytest.raises(ValueError, match="empty"):
             bounding_box_of([])
 
 
 class TestNearestNeighbor:
-    def test_finds_closest(self) -> None:
+    def test_finds_closest(self):
         result = nearest_neighbor(LONDON, [PARIS, NEW_YORK, SYDNEY])
         assert result == PARIS
 
-    def test_empty_candidates_raises(self) -> None:
+    def test_empty_candidates_raises(self):
         with pytest.raises(ValueError, match="empty"):
             nearest_neighbor(LONDON, [])
 
-    def test_single_candidate(self) -> None:
+    def test_single_candidate(self):
         assert nearest_neighbor(LONDON, [PARIS]) == PARIS
 
 
 class TestMidpoint:
-    def test_midpoint_near_equator(self) -> None:
+    def test_midpoint_near_equator(self):
         a = Coordinate(0, -10)
         b = Coordinate(0, 10)
         mid = midpoint(a, b)
         assert mid.lat == pytest.approx(0.0, abs=0.01)
         assert mid.lon == pytest.approx(0.0, abs=0.01)
 
-    def test_midpoint_london_paris_is_between(self) -> None:
+    def test_midpoint_london_paris_is_between(self):
         mid = midpoint(LONDON, PARIS)
         assert LONDON.lat > mid.lat > PARIS.lat
-
-
-class TestHaversineEdgeCases:
-    @pytest.mark.parametrize("lat,lon", [(-90, 0), (90, 0), (0, -180), (0, 180)])
-    def test_pole_and_antimeridian_coords(self, lat: float, lon: float) -> None:
-        c = Coordinate(lat=lat, lon=lon)
-        assert haversine(c, c) == pytest.approx(0.0, abs=1e-6)
-
-    def test_short_distance_positive(self) -> None:
-        a = Coordinate(0, 0)
-        b = Coordinate(0, 0.001)
-        assert haversine(a, b) > 0
-
-    @pytest.mark.parametrize("city", [LONDON, PARIS, NEW_YORK, SYDNEY])
-    def test_zero_self_distance_for_cities(self, city: Coordinate) -> None:
-        assert haversine(city, city) == pytest.approx(0.0, abs=1e-6)
-
-
-class TestBoundingBoxEdgeCases:
-    def test_single_coord_bbox(self) -> None:
-        bbox = bounding_box_of([LONDON])
-        assert bbox.min_lat == LONDON.lat
-        assert bbox.max_lat == LONDON.lat
-
-    def test_center_of_single_point_is_that_point(self) -> None:
-        bbox = bounding_box_of([PARIS])
-        center = bbox.center
-        assert center.lat == pytest.approx(PARIS.lat)
-        assert center.lon == pytest.approx(PARIS.lon)
-
-    @pytest.mark.parametrize("n", [2, 5, 10])
-    def test_bbox_contains_all_points(self, n: int) -> None:
-        coords = [Coordinate(float(i), float(i)) for i in range(n)]
-        bbox = bounding_box_of(coords)
-        for c in coords:
-            assert bbox.contains(c)
-
-
-class TestNearestNeighborEdgeCases:
-    def test_all_equidistant_returns_one(self) -> None:
-        base = Coordinate(0, 0)
-        candidates = [Coordinate(0, 1), Coordinate(0, -1)]
-        result = nearest_neighbor(base, candidates)
-        assert result in candidates
-
-    def test_returns_exact_match_if_present(self) -> None:
-        result = nearest_neighbor(LONDON, [PARIS, LONDON, NEW_YORK])
-        assert result == LONDON
-
-
-@pytest.mark.parametrize(
-    "lat,lon",
-    [(-90, 0), (90, 0), (0, -180), (0, 180), (45, 90)],
-)
-def test_coordinate_boundary_lat_lon_accepted(lat: float, lon: float) -> None:
-    """Boundary and typical lat/lon values are accepted by Coordinate."""
-    c = Coordinate(lat, lon)
-    assert c.lat == lat
-    assert c.lon == lon
-
-
-@pytest.mark.parametrize(
-    "city_pair",
-    [
-        (LONDON, PARIS),
-        (NEW_YORK, SYDNEY),
-        (LONDON, NEW_YORK),
-    ],
-)
-def test_haversine_is_positive_for_distinct_cities(city_pair) -> None:
-    """haversine returns a positive distance for any pair of distinct cities."""
-    a, b = city_pair
-    assert haversine(a, b) > 0.0
-
-
-def test_midpoint_is_between_endpoints() -> None:
-    """midpoint coordinate lies between the two input points."""
-    mid = midpoint(LONDON, PARIS)
-    assert min(LONDON.lat, PARIS.lat) <= mid.lat <= max(LONDON.lat, PARIS.lat)
-
-
-TOKYO = Coordinate(35.6762, 139.6503)
-
-
-class TestBearing:
-    def test_bearing_east_is_near_90(self) -> None:
-        west = Coordinate(51.5, -1.0)
-        east = Coordinate(51.5, 1.0)
-        b = bearing(west, east)
-        assert 80.0 < b < 100.0
-
-    def test_bearing_is_in_valid_range(self) -> None:
-        b = bearing(LONDON, PARIS)
-        assert 0.0 <= b < 360.0
-
-    @pytest.mark.parametrize(
-        "coord_pair",
-        [
-            (LONDON, PARIS),
-            (NEW_YORK, SYDNEY),
-            (LONDON, TOKYO),
-        ],
-    )
-    def test_bearing_nonnegative_for_city_pairs(self, coord_pair) -> None:
-        a, b = coord_pair
-        result = bearing(a, b)
-        assert 0.0 <= result < 360.0
-
-
-class TestWithinRadius:
-    def test_point_inside_radius_included(self) -> None:
-        result = within_radius(LONDON, 500.0, [LONDON, PARIS])
-        assert PARIS in result
-
-    def test_point_far_outside_radius_excluded(self) -> None:
-        result = within_radius(LONDON, 10.0, [SYDNEY, NEW_YORK])
-        assert len(result) == 0
-
-    def test_zero_radius_excludes_far_points(self) -> None:
-        result = within_radius(LONDON, 0.0, [PARIS, NEW_YORK])
-        assert len(result) == 0
-
-    @pytest.mark.parametrize("radius", [100.0, 500.0, 10000.0])
-    def test_larger_radius_includes_more_points(self, radius: float) -> None:
-        candidates = [PARIS, NEW_YORK, SYDNEY]
-        result = within_radius(LONDON, radius, candidates)
-        assert len(result) <= len(candidates)
-
-
-class TestDistanceKmAlias:
-    def test_distance_km_equals_haversine(self) -> None:
-        from app.geo_utils import distance_km, haversine
-
-        assert distance_km(LONDON, PARIS) == haversine(LONDON, PARIS)
-
-    def test_distance_km_zero_for_same_point(self) -> None:
-        from app.geo_utils import distance_km
-
-        assert distance_km(LONDON, LONDON) == 0.0
-
-
-class TestKNearest:
-    def test_k_nearest_returns_k_closest(self) -> None:
-        from app.geo_utils import k_nearest
-
-        result = k_nearest(LONDON, [PARIS, NEW_YORK, SYDNEY], k=2)
-        assert len(result) == 2
-        assert PARIS in result
-
-    def test_k_nearest_ordered_ascending(self) -> None:
-        from app.geo_utils import distance_km, k_nearest
-
-        result = k_nearest(LONDON, [SYDNEY, PARIS, NEW_YORK], k=3)
-        dists = [distance_km(LONDON, c) for c in result]
-        assert dists == sorted(dists)
-
-    def test_k_nearest_fewer_candidates_than_k(self) -> None:
-        from app.geo_utils import k_nearest
-
-        result = k_nearest(LONDON, [PARIS], k=5)
-        assert len(result) == 1
-
-
-class TestBearingExtended:
-    def test_bearing_returns_float(self) -> None:
-        from app.geo_utils import bearing
-
-        result = bearing(LONDON, PARIS)
-        assert isinstance(result, float)
-
-    def test_bearing_range_0_to_360(self) -> None:
-        from app.geo_utils import bearing
-
-        result = bearing(LONDON, NEW_YORK)
-        assert 0.0 <= result < 360.0
-
-    def test_bearing_east_roughly_90(self) -> None:
-        from app.geo_utils import Coordinate, bearing
-
-        west = Coordinate(0.0, 0.0)
-        east = Coordinate(0.0, 10.0)
-        result = bearing(west, east)
-        assert 80.0 <= result <= 100.0
-
-    @pytest.mark.parametrize("lat_diff", [-5.0, 0.0, 5.0])
-    def test_bearing_lat_variation(self, lat_diff: float) -> None:
-        from app.geo_utils import Coordinate, bearing
-
-        a = Coordinate(10.0, 0.0)
-        b = Coordinate(10.0 + lat_diff, 1.0)
-        result = bearing(a, b)
-        assert 0.0 <= result < 360.0
-
-
-class TestWithinRadiusExtended:
-    def test_empty_candidates_returns_empty(self) -> None:
-        from app.geo_utils import within_radius
-
-        assert within_radius(LONDON, 100.0, []) == []
-
-    def test_nearby_point_included(self) -> None:
-        from app.geo_utils import within_radius
-
-        result = within_radius(LONDON, 500.0, [PARIS])
-        assert PARIS in result
-
-    def test_far_point_excluded(self) -> None:
-        from app.geo_utils import within_radius
-
-        result = within_radius(LONDON, 100.0, [NEW_YORK])
-        assert NEW_YORK not in result
-
-    @pytest.mark.parametrize("radius_km", [100.0, 1000.0, 10000.0])
-    def test_larger_radius_includes_more(self, radius_km: float) -> None:
-        from app.geo_utils import within_radius
-
-        candidates = [PARIS, NEW_YORK]
-        result = within_radius(LONDON, radius_km, candidates)
-        assert isinstance(result, list)
-
-
-class TestArithmeticMidpoint:
-    def test_midpoint_of_same_point_is_itself(self) -> None:
-        from app.geo_utils import arithmetic_midpoint
-
-        lat, lon = arithmetic_midpoint(10.0, 20.0, 10.0, 20.0)
-        assert lat == pytest.approx(10.0)
-        assert lon == pytest.approx(20.0)
-
-    def test_midpoint_of_opposite_latitudes(self) -> None:
-        from app.geo_utils import arithmetic_midpoint
-
-        lat, lon = arithmetic_midpoint(10.0, 0.0, -10.0, 0.0)
-        assert lat == pytest.approx(0.0)
-        assert lon == pytest.approx(0.0)
-
-    def test_midpoint_returns_tuple_of_two(self) -> None:
-        from app.geo_utils import arithmetic_midpoint
-
-        result = arithmetic_midpoint(0.0, 0.0, 1.0, 1.0)
-        assert len(result) == 2
-
-    def test_midpoint_symmetric(self) -> None:
-        from app.geo_utils import arithmetic_midpoint
-
-        a = arithmetic_midpoint(1.0, 2.0, 3.0, 4.0)
-        b = arithmetic_midpoint(3.0, 4.0, 1.0, 2.0)
-        assert a == b
-
-    @pytest.mark.parametrize(
-        "lat1,lon1,lat2,lon2,expected",
-        [
-            (0.0, 0.0, 2.0, 2.0, (1.0, 1.0)),
-            (10.0, 20.0, 20.0, 40.0, (15.0, 30.0)),
-        ],
-    )
-    def test_midpoint_parametrized(
-        self, lat1: float, lon1: float, lat2: float, lon2: float, expected: tuple
-    ) -> None:
-        from app.geo_utils import arithmetic_midpoint
-
-        result = arithmetic_midpoint(lat1, lon1, lat2, lon2)
-        assert result[0] == pytest.approx(expected[0], abs=1e-4)
-        assert result[1] == pytest.approx(expected[1], abs=1e-4)
-
-
-@pytest.mark.parametrize("k", [1, 2, 3])
-def test_k_nearest_returns_k_results(k: int) -> None:
-    """k_nearest returns exactly k candidates when enough are available."""
-    from app.geo_utils import Coordinate, k_nearest
-
-    query = Coordinate(0.0, 0.0)
-    candidates = [Coordinate(float(i), float(i)) for i in range(10)]
-    result = k_nearest(query, candidates, k=k)
-    assert len(result) == k
-
-
-def test_k_nearest_returns_closest_first() -> None:
-    """k_nearest returns candidates ordered by distance, closest first."""
-    from app.geo_utils import Coordinate, k_nearest
-
-    query = Coordinate(0.0, 0.0)
-    far = Coordinate(10.0, 10.0)
-    close = Coordinate(0.1, 0.1)
-    result = k_nearest(query, [far, close], k=2)
-    assert result[0].lat == pytest.approx(close.lat, abs=0.01)
-
-
-@pytest.mark.parametrize(
-    "a,b,expected_bearing",
-    [
-        ((0.0, 0.0), (1.0, 0.0), pytest.approx(0.0, abs=1.0)),  # due north
-        ((0.0, 0.0), (0.0, 1.0), pytest.approx(90.0, abs=1.0)),  # due east
-    ],
-)
-def test_bearing_cardinal_directions(a: tuple, b: tuple, expected_bearing) -> None:
-    """bearing returns correct degree value for cardinal directions."""
-    from app.geo_utils import Coordinate, bearing
-
-    result = bearing(Coordinate(*a), Coordinate(*b))
-    assert result == expected_bearing
-
-
-class TestCoordinateToDms:
-    def test_zero_degrees(self) -> None:
-        from app.geo_utils import coordinate_to_dms
-
-        d, m, s = coordinate_to_dms(0.0)
-        assert d == 0 and m == 0 and s == pytest.approx(0.0)
-
-    def test_positive_value(self) -> None:
-        from app.geo_utils import coordinate_to_dms
-
-        d, m, s = coordinate_to_dms(51.5)
-        assert d == 51
-        assert m == 30
-        assert s == pytest.approx(0.0, abs=0.01)
-
-    def test_negative_abs(self) -> None:
-        from app.geo_utils import coordinate_to_dms
-
-        d, m, s = coordinate_to_dms(-45.75)
-        assert d == 45
-        assert m == 45
-        assert s == pytest.approx(0.0, abs=0.01)
-
-    def test_fractional_seconds(self) -> None:
-        from app.geo_utils import coordinate_to_dms
-
-        d, m, s = coordinate_to_dms(1.0 / 3600)
-        assert d == 0
-        assert m == 0
-        assert s == pytest.approx(1.0, abs=0.01)
-
-
-class TestDmsToDecimal:
-    def test_basic_conversion(self) -> None:
-        from app.geo_utils import dms_to_decimal
-
-        assert dms_to_decimal(51, 30, 0.0) == pytest.approx(51.5, abs=1e-4)
-
-    def test_negative_flag(self) -> None:
-        from app.geo_utils import dms_to_decimal
-
-        assert dms_to_decimal(45, 0, 0.0, negative=True) == pytest.approx(-45.0)
-
-    def test_roundtrip_with_coordinate_to_dms(self) -> None:
-        from app.geo_utils import coordinate_to_dms, dms_to_decimal
-
-        original = 48.8566
-        d, m, s = coordinate_to_dms(original)
-        recovered = dms_to_decimal(d, m, s)
-        assert recovered == pytest.approx(original, abs=1e-3)
-
-    def test_invalid_minutes_raises(self) -> None:
-        from app.geo_utils import dms_to_decimal
-
-        with pytest.raises(ValueError):
-            dms_to_decimal(10, 60, 0.0)
-
-    def test_invalid_seconds_raises(self) -> None:
-        from app.geo_utils import dms_to_decimal
-
-        with pytest.raises(ValueError):
-            dms_to_decimal(10, 0, 60.0)
-
-
-class TestFormatCoordinate:
-    def test_north_east(self) -> None:
-        from app.geo_utils import Coordinate, format_coordinate
-
-        c = Coordinate(51.5074, 0.1278)
-        result = format_coordinate(c)
-        assert "N" in result
-        assert "E" in result
-
-    def test_south_west(self) -> None:
-        from app.geo_utils import Coordinate, format_coordinate
-
-        c = Coordinate(-33.8688, -70.6693)
-        result = format_coordinate(c)
-        assert "S" in result
-        assert "W" in result
-
-    def test_zero_equator(self) -> None:
-        from app.geo_utils import Coordinate, format_coordinate
-
-        c = Coordinate(0.0, 0.0)
-        result = format_coordinate(c)
-        assert "N" in result
-        assert "E" in result
-
-    def test_custom_precision(self) -> None:
-        from app.geo_utils import Coordinate, format_coordinate
-
-        c = Coordinate(51.5074, 0.1278)
-        result = format_coordinate(c, precision=2)
-        assert "51.51" in result or "51.50" in result

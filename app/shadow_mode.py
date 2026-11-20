@@ -16,20 +16,20 @@ class ShadowResult:
     """Outcome of a shadow execution for one request.
 
     Attributes:
-        primary: Return value from the primary handler.
-        shadow: Return value from the shadow handler (None if failed).
+        primary_result: Return value from the primary handler.
+        shadow_result: Return value from the shadow handler (None if failed).
         shadow_error: Exception from shadow handler, if any.
         primary_latency_ms: Milliseconds for the primary call.
         shadow_latency_ms: Milliseconds for the shadow call (or 0 on error).
         matched: Whether primary and shadow results are equal.
     """
 
-    primary: Any
-    shadow: Any | None = None
-    shadow_error: Exception | None = None
-    primary_latency_ms: float = 0.0
-    shadow_latency_ms: float = 0.0
-    matched: bool = False
+    primary_result: Any
+    shadow_result: Any | None
+    shadow_error: Exception | None
+    primary_latency_ms: float
+    shadow_latency_ms: float
+    matched: bool
 
 
 class ShadowRunner:
@@ -51,13 +51,12 @@ class ShadowRunner:
         shadow: Callable,
         comparer: Callable[[Any, Any], bool] | None = None,
     ) -> None:
-        """Initialise the shadow runner with primary/shadow callables and an optional comparer."""
         self.primary = primary
         self.shadow = shadow
         self.comparer = comparer or (lambda a, b: a == b)
         self._results: list[ShadowResult] = []
 
-    def call(self, *args: Any, **kwargs: Any) -> Any:
+    def call(self, *args, **kwargs) -> Any:
         """Execute primary and shadow handlers, return primary result.
 
         Args:
@@ -88,8 +87,8 @@ class ShadowRunner:
             matched = False
 
         result = ShadowResult(
-            primary=primary_result,
-            shadow=shadow_result,
+            primary_result=primary_result,
+            shadow_result=shadow_result,
             shadow_error=shadow_error,
             primary_latency_ms=primary_ms,
             shadow_latency_ms=shadow_ms,
@@ -121,32 +120,9 @@ class ShadowRunner:
             "match_rate": matched / total if total else 0.0,
         }
 
-    def last_result(self) -> ShadowResult | None:
-        """Return the most recent shadow result, or None if no calls have been made."""
-        return self._results[-1] if self._results else None
-
-    def mismatches(self) -> list[ShadowResult]:
-        """Return all results where the shadow disagreed with the primary."""
-        return [r for r in self._results if not r.matched and r.shadow_error is None]
-
-    def error_results(self) -> list[ShadowResult]:
-        """Return all results where the shadow raised an exception."""
-        return [r for r in self._results if r.shadow_error is not None]
-
     def clear(self) -> None:
         """Reset accumulated results."""
         self._results.clear()
-
-    def match_rate(self) -> float:
-        """Return the fraction of calls where shadow matched the primary.
-
-        Returns:
-            Value in [0.0, 1.0]; 0.0 when no calls have been recorded.
-        """
-        if not self._results:
-            return 0.0
-        matched = sum(1 for r in self._results if r.matched)
-        return round(matched / len(self._results), 4)
 
 
 __all__ = ["ShadowResult", "ShadowRunner"]

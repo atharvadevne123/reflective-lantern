@@ -83,7 +83,7 @@ def main() -> int:
         runs = get_latest_runs(owner, name, token)
         if not runs:
             if not args.failing_only:
-                log.info("  %s: no CI", name)
+                print(f"  {name}: no CI")
             continue
         for run in runs:
             conclusion = run.get("conclusion") or run.get("status", "unknown")
@@ -101,8 +101,6 @@ def main() -> int:
         log.info("0 failing workflow(s) found across %d repos", len(repos))
     return 1 if failing > 0 else 0
 
-
-__all__ = ["get_latest_runs", "main"]
 
 if __name__ == "__main__":
     sys.exit(main())

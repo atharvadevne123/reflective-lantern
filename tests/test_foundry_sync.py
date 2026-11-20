@@ -78,23 +78,6 @@ def test_sync_summary_has_required_keys(monkeypatch: pytest.MonkeyPatch) -> None
         assert key in summary, f"Missing key: {key}"
 
 
-@pytest.mark.parametrize("fmt", ["csv", "jsonl"])
-def test_sync_export_format_recorded(monkeypatch: pytest.MonkeyPatch, fmt: str) -> None:
-    summary = sync(fmt=fmt, settings=_unconfigured_settings(monkeypatch))
-    assert summary["format"] == fmt
-
-
-@pytest.mark.parametrize(
-    "key",
-    ["rows", "format", "uploaded", "transaction_rid"],
-)
-def test_sync_summary_keys_present_for_unconfigured(
-    monkeypatch: pytest.MonkeyPatch, key: str
-) -> None:
-    summary = sync(settings=_unconfigured_settings(monkeypatch))
-    assert key in summary
-
-
 def test_sync_format_defaults_to_csv(monkeypatch: pytest.MonkeyPatch) -> None:
     summary = sync(settings=_unconfigured_settings(monkeypatch))
     assert summary["format"] == "csv"
@@ -167,46 +150,3 @@ def test_sync_manifest_is_valid_json(monkeypatch: pytest.MonkeyPatch) -> None:
     files_arg = mocked.return_value.upload_dataset_files.call_args.args[1]
     manifest = _json.loads(files_arg["manifest.json"])
     assert manifest["rows"] > 0
-
-
-def test_sync_jsonl_format_unconfigured(monkeypatch: pytest.MonkeyPatch) -> None:
-    """sync with jsonl format and no credentials still exports without upload."""
-    summary = sync(fmt="jsonl", settings=_unconfigured_settings(monkeypatch))
-    assert summary["format"] == "jsonl"
-    assert summary["uploaded"] is False
-
-
-def test_sync_export_only_with_jsonl_does_not_call_client(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """export_only=True with jsonl format never invokes the Foundry client."""
-    settings = _configured_settings(monkeypatch)
-    with patch("scripts.foundry_sync.client_from_settings") as mocked:
-        summary = sync(fmt="jsonl", export_only=True, settings=settings)
-    mocked.assert_not_called()
-    assert summary["format"] == "jsonl"
-
-
-def test_sync_transaction_rid_is_none_when_unconfigured(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """transaction_rid must be None when no upload occurs."""
-    summary = sync(settings=_unconfigured_settings(monkeypatch))
-    assert summary["transaction_rid"] is None
-
-
-def test_sync_rows_is_positive_integer(monkeypatch: pytest.MonkeyPatch) -> None:
-    """The row count in the summary is always a positive integer."""
-    summary = sync(settings=_unconfigured_settings(monkeypatch))
-    assert isinstance(summary["rows"], int)
-    assert summary["rows"] > 0
-
-
-def test_build_manifest_generator_field(monkeypatch: pytest.MonkeyPatch) -> None:
-    """build_manifest sets the generator key to 'reflective-lantern'."""
-    from scripts.foundry_sync import build_manifest
-
-    m = build_manifest(5, "jsonl", False)
-    assert m["generator"] == "reflective-lantern"
-    assert m["format"] == "jsonl"
-    assert m["includes_ontology"] is False

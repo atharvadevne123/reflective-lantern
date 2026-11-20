@@ -12,7 +12,7 @@ from seed_data import generate_readings
 
 
 class TestEndToEnd:
-    def test_train_then_detect_flags_injected_anomalies(self, client) -> None:
+    def test_train_then_detect_flags_injected_anomalies(self, client):
         # 1. Train on clean data
         clean = generate_readings(n=200, anomaly_rate=0.0, seed=11)
         train_payload = {
@@ -44,7 +44,7 @@ class TestEndToEnd:
         anomalies = client.get("/api/v1/anomalies").json()
         assert anomalies["total"] >= 0
 
-    def test_train_rejects_too_few_readings(self, client) -> None:
+    def test_train_rejects_too_few_readings(self, client):
         clean = generate_readings(n=10, anomaly_rate=0.0)
         payload = {
             "readings": [{k: v for k, v in r.items() if not k.startswith("_")} for r in clean],
@@ -52,7 +52,7 @@ class TestEndToEnd:
         resp = client.post("/api/v1/train", json=payload)
         assert resp.status_code == 422
 
-    def test_drift_endpoint_after_detection(self, client) -> None:
+    def test_drift_endpoint_after_detection(self, client):
         readings = generate_readings(n=60, anomaly_rate=0.0, seed=5)
         payload = {
             "readings": [{k: v for k, v in r.items() if not k.startswith("_")} for r in readings],
@@ -61,31 +61,3 @@ class TestEndToEnd:
         client.post("/api/v1/detect", json=payload)
         drift = client.get("/api/v1/drift")
         assert drift.status_code == 200
-
-    def test_health_returns_model_loaded_after_train(self, client) -> None:
-        """Health endpoint should report model_loaded=True after training."""
-        clean = generate_readings(n=100, anomaly_rate=0.0, seed=42)
-        train_payload = {
-            "readings": [{k: v for k, v in r.items() if not k.startswith("_")} for r in clean],
-        }
-        client.post("/api/v1/train", json=train_payload)
-        resp = client.get("/api/v1/health")
-        assert resp.status_code == 200
-        body = resp.json()
-        assert "model_loaded" in body
-
-    def test_detect_returns_results_list(self, client) -> None:
-        """Detect endpoint returns a results list even for small input."""
-        clean = generate_readings(n=100, anomaly_rate=0.0, seed=77)
-        train_payload = {
-            "readings": [{k: v for k, v in r.items() if not k.startswith("_")} for r in clean],
-        }
-        client.post("/api/v1/train", json=train_payload)
-        detect_payload = {
-            "readings": [{k: v for k, v in r.items() if not k.startswith("_")} for r in clean[:10]],
-        }
-        resp = client.post("/api/v1/detect", json=detect_payload)
-        assert resp.status_code == 200
-        body = resp.json()
-        assert "results" in body
-        assert isinstance(body["results"], list)

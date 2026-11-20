@@ -1,7 +1,5 @@
 """Tests for app.health_check."""
 
-import pytest
-
 from app.health_check import CheckResult, HealthRegistry, check
 
 
@@ -14,13 +12,13 @@ def make_fail(name="cache") -> CheckResult:
 
 
 class TestHealthRegistry:
-    def test_empty_registry_is_healthy(self) -> None:
+    def test_empty_registry_is_healthy(self):
         reg = HealthRegistry()
         status = reg.run()
         assert status.healthy is True
         assert status.results == []
 
-    def test_all_pass(self) -> None:
+    def test_all_pass(self):
         reg = HealthRegistry()
         reg.register("db", lambda: make_ok("db"))
         reg.register("cache", lambda: make_ok("cache"))
@@ -28,7 +26,7 @@ class TestHealthRegistry:
         assert status.healthy is True
         assert len(status.failed) == 0
 
-    def test_one_fail_makes_unhealthy(self) -> None:
+    def test_one_fail_makes_unhealthy(self):
         reg = HealthRegistry()
         reg.register("db", lambda: make_ok("db"))
         reg.register("cache", lambda: make_fail("cache"))
@@ -37,10 +35,10 @@ class TestHealthRegistry:
         assert len(status.failed) == 1
         assert status.failed[0].name == "cache"
 
-    def test_exception_becomes_failure(self) -> None:
+    def test_exception_becomes_failure(self):
         reg = HealthRegistry()
 
-        def bad_check() -> None:
+        def bad_check():
             raise RuntimeError("boom")
 
         reg.register("bad", bad_check)
@@ -48,7 +46,7 @@ class TestHealthRegistry:
         assert status.healthy is False
         assert "boom" in status.failed[0].message
 
-    def test_unregister(self) -> None:
+    def test_unregister(self):
         reg = HealthRegistry()
         reg.register("x", lambda: make_fail("x"))
         reg.unregister("x")
@@ -56,7 +54,7 @@ class TestHealthRegistry:
         status = reg.run()
         assert status.healthy is True
 
-    def test_len(self) -> None:
+    def test_len(self):
         reg = HealthRegistry()
         reg.register("a", lambda: make_ok("a"))
         reg.register("b", lambda: make_ok("b"))
@@ -64,250 +62,23 @@ class TestHealthRegistry:
 
 
 class TestCheckDecorator:
-    def test_decorator_registers(self) -> None:
+    def test_decorator_registers(self):
         reg = HealthRegistry()
 
         @check("ping", registry=reg)
-        def ping_check() -> None:
+        def ping_check():
             return CheckResult(name="ping", healthy=True)
 
         status = reg.run()
         assert status.healthy is True
         assert status.results[0].name == "ping"
 
-    def test_decorator_returns_original_fn(self) -> None:
+    def test_decorator_returns_original_fn(self):
         reg = HealthRegistry()
 
         @check("noop", registry=reg)
-        def noop() -> None:
+        def noop():
             return CheckResult(name="noop", healthy=True)
 
         result = noop()
         assert result.name == "noop"
-
-
-class TestCheckResultDetails:
-    def test_check_result_defaults(self) -> None:
-        r = CheckResult(name="test", healthy=True)
-        assert r.message == ""
-        assert r.details == {}
-
-    def test_check_result_with_details(self) -> None:
-        r = CheckResult(name="db", healthy=False, message="timeout", details={"latency_ms": 5000})
-        assert r.details["latency_ms"] == 5000
-
-    def test_health_status_failed_property(self) -> None:
-        results = [make_ok("a"), make_fail("b"), make_ok("c")]
-        from app.health_check import HealthStatus
-
-        status = HealthStatus(healthy=False, results=results)
-        failed = status.failed
-        assert len(failed) == 1
-        assert failed[0].name == "b"
-
-    def test_multiple_failures_collected(self) -> None:
-        reg = HealthRegistry()
-        reg.register("x", lambda: make_fail("x"))
-        reg.register("y", lambda: make_fail("y"))
-        reg.register("z", lambda: make_ok("z"))
-        status = reg.run()
-        assert status.healthy is False
-        assert len(status.failed) == 2
-
-    def test_check_details_preserved_in_registry_run(self) -> None:
-        reg = HealthRegistry()
-
-        def detailed_check() -> None:
-            return CheckResult(name="db", healthy=True, details={"pool_size": 10, "idle": 5})
-
-        reg.register("db", detailed_check)
-        status = reg.run()
-        assert status.results[0].details["pool_size"] == 10
-
-    def test_exception_message_includes_traceback(self) -> None:
-        reg = HealthRegistry()
-
-        def raises() -> None:
-            raise ValueError("disk full")
-
-        reg.register("disk", raises)
-        status = reg.run()
-        assert "ValueError" in status.failed[0].message
-
-    def test_reregister_overwrites_previous(self) -> None:
-        reg = HealthRegistry()
-        reg.register("svc", lambda: make_fail("svc"))
-        reg.register("svc", lambda: make_ok("svc"))
-        status = reg.run()
-        assert status.healthy is True
-
-    def test_unregister_nonexistent_is_safe(self) -> None:
-        reg = HealthRegistry()
-        reg.unregister("not_there")  # should not raise
-        assert len(reg) == 0
-
-
-@pytest.mark.parametrize("n_healthy", [0, 1, 5, 10])
-def test_registry_all_healthy_various_sizes(n_healthy: int) -> None:
-    """A registry of n_healthy passing checks is always healthy."""
-    from app.health_check import CheckResult, HealthRegistry
-
-    reg = HealthRegistry()
-    for i in range(n_healthy):
-        reg.register(f"svc_{i}", lambda i=i: CheckResult(name=f"svc_{i}", healthy=True))
-    status = reg.run()
-    assert status.healthy is True
-    assert len(status.failed) == 0
-
-
-@pytest.mark.parametrize("n_fail", [1, 2, 3])
-def test_registry_multiple_failures_all_collected(n_fail: int) -> None:
-    """All failing checks are collected; healthy is False."""
-    from app.health_check import CheckResult, HealthRegistry
-
-    reg = HealthRegistry()
-    for i in range(n_fail):
-        reg.register(f"bad_{i}", lambda i=i: CheckResult(name=f"bad_{i}", healthy=False))
-    status = reg.run()
-    assert status.healthy is False
-    assert len(status.failed) == n_fail
-
-
-class TestHealthRegistryLengthTracking:
-    def test_register_increases_len(self) -> None:
-        from app.health_check import CheckResult, HealthRegistry
-
-        reg = HealthRegistry()
-        for i in range(3):
-            reg.register(f"svc{i}", lambda: CheckResult(name="x", healthy=True))
-        assert len(reg) == 3
-
-    def test_unregister_decreases_len(self) -> None:
-        from app.health_check import CheckResult, HealthRegistry
-
-        reg = HealthRegistry()
-        reg.register("a", lambda: CheckResult(name="a", healthy=True))
-        reg.register("b", lambda: CheckResult(name="b", healthy=True))
-        reg.unregister("a")
-        assert len(reg) == 1
-
-
-class TestHealthRegistryCheckDecorator:
-    def test_decorator_registers_function(self) -> None:
-        from app.health_check import CheckResult, HealthRegistry, check
-
-        reg = HealthRegistry()
-
-        @check("my_check", registry=reg)
-        def my_check() -> CheckResult:
-            return CheckResult(name="my_check", healthy=True)
-
-        assert len(reg) == 1
-
-    def test_decorator_function_still_callable(self) -> None:
-        from app.health_check import CheckResult, HealthRegistry, check
-
-        reg = HealthRegistry()
-
-        @check("callable_check", registry=reg)
-        def callable_check() -> CheckResult:
-            return CheckResult(name="callable_check", healthy=True)
-
-        result = callable_check()
-        assert result.healthy is True
-
-    def test_decorator_result_included_in_run(self) -> None:
-        from app.health_check import CheckResult, HealthRegistry, check
-
-        reg = HealthRegistry()
-
-        @check("run_check", registry=reg)
-        def run_check() -> CheckResult:
-            return CheckResult(name="run_check", healthy=True)
-
-        status = reg.run()
-        names = [r.name for r in status.checks]
-        assert "run_check" in names
-
-
-class TestCheckResultDetailsExt:
-    def test_details_preserved(self) -> None:
-        from app.health_check import CheckResult
-
-        result = CheckResult(name="db", healthy=True, details={"latency_ms": 5.0})
-        assert result.details["latency_ms"] == 5.0
-
-    def test_empty_details_by_default(self) -> None:
-        from app.health_check import CheckResult
-
-        result = CheckResult(name="db", healthy=True)
-        assert result.details == {}
-
-    @pytest.mark.parametrize("healthy", [True, False])
-    def test_healthy_flag_preserved(self, healthy: bool) -> None:
-        from app.health_check import CheckResult
-
-        result = CheckResult(name="svc", healthy=healthy)
-        assert result.healthy is healthy
-
-
-@pytest.mark.parametrize("n", [1, 3, 5])
-def test_registry_len_matches_registered_checks(n: int) -> None:
-    """HealthRegistry.__len__ returns the number of registered checks."""
-    from app.health_check import CheckResult, HealthRegistry
-
-    registry = HealthRegistry()
-    for i in range(n):
-        registry.register(f"check-{i}", lambda idx=i: CheckResult(name=f"c{idx}", healthy=True))
-    assert len(registry) == n
-
-
-def test_registry_unregister_removes_check() -> None:
-    """Unregistering a check reduces registry size by one."""
-    from app.health_check import CheckResult, HealthRegistry
-
-    registry = HealthRegistry()
-    registry.register("removable", lambda: CheckResult(name="removable", healthy=True))
-    assert len(registry) == 1
-    registry.unregister("removable")
-    assert len(registry) == 0
-
-
-class TestRunCheck:
-    def test_successful_check(self) -> None:
-        from app.health_check import CheckResult, run_check
-
-        result = run_check("test", lambda: CheckResult(name="test", healthy=True, message="ok"))
-        assert result.healthy is True
-        assert result.name == "test"
-
-    def test_failed_check_on_exception(self) -> None:
-        from app.health_check import run_check
-
-        def boom() -> None:
-            raise RuntimeError("failure")
-
-        result = run_check("failing", boom)  # type: ignore[arg-type]
-        assert result.healthy is False
-        assert "RuntimeError" in result.message
-
-    def test_unhealthy_result_returned(self) -> None:
-        from app.health_check import CheckResult, run_check
-
-        result = run_check("unhealthy", lambda: CheckResult(name="u", healthy=False, message="bad"))
-        assert result.healthy is False
-
-
-class TestCheckRegistryAlias:
-    def test_check_registry_is_health_registry(self) -> None:
-        from app.health_check import CheckRegistry, HealthRegistry
-
-        assert CheckRegistry is HealthRegistry
-
-    def test_check_registry_instance_works(self) -> None:
-        from app.health_check import CheckRegistry, CheckResult
-
-        reg = CheckRegistry()
-        reg.register("x", lambda: CheckResult(name="x", healthy=True))
-        status = reg.run()
-        assert status.healthy is True

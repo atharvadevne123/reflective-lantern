@@ -12,7 +12,7 @@ from sqlalchemy import engine_from_config, pool
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from app.database import Base
+from app.database import Base  # noqa: E402
 
 config = context.config
 

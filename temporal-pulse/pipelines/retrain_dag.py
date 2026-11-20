@@ -72,15 +72,11 @@ def train_and_evaluate(X: Any, contamination: float = 0.05) -> dict[str, Any]:
     import sys
 
     sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-    from app.model import (
-        get_feature_importance,
-        train_anomaly_detector,
-        train_forecaster,
-    )
+    from app.model import get_feature_importance, train_anomaly_detector, train_forecaster
 
-    _if_model, _scaler = train_anomaly_detector(X, contamination=contamination)
+    if_model, scaler = train_anomaly_detector(X, contamination=contamination)
     y = X[:, 0]
-    _rf_model, metrics = train_forecaster(X, y)
+    rf_model, metrics = train_forecaster(X, y)
     importances = get_feature_importance()
     metrics["top_features"] = importances[:5]
     return metrics

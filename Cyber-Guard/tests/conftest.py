@@ -12,7 +12,7 @@ from app.main import app
 
 
 @pytest.fixture(scope="session")
-def test_engine() -> None:
+def test_engine():
     engine = create_engine(
         "sqlite:///./test_cyber_guard.db", connect_args={"check_same_thread": False}
     )
@@ -26,7 +26,7 @@ def test_engine() -> None:
 
 
 @pytest.fixture
-def db_session(test_engine) -> None:
+def db_session(test_engine):
     """Yield a session against a clean database.
 
     ``log_prediction`` commits, so rolling back is not enough to isolate
@@ -43,8 +43,8 @@ def db_session(test_engine) -> None:
 
 
 @pytest.fixture
-def client(db_session) -> None:
-    def override_get_db() -> None:
+def client(db_session):
+    def override_get_db():
         try:
             yield db_session
         finally:
@@ -57,7 +57,7 @@ def client(db_session) -> None:
 
 
 @pytest.fixture
-def sample_request_payload() -> None:
+def sample_request_payload():
     return {
         "src_bytes": 491,
         "dst_bytes": 0,
@@ -69,7 +69,7 @@ def sample_request_payload() -> None:
 
 
 @pytest.fixture
-def sample_dataframe() -> None:
+def sample_dataframe():
     import pandas as pd
 
     return pd.DataFrame(

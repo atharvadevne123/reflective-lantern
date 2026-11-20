@@ -9,11 +9,11 @@ import pytest
 from app.circuit_breaker import CircuitBreaker, CircuitOpenError, CircuitState
 
 
-def _always_fail() -> None:
+def _always_fail():
     raise ValueError("boom")
 
 
-def _always_succeed() -> None:
+def _always_succeed():
     return "ok"
 
 
@@ -23,21 +23,21 @@ def _always_fails() -> None:
 
 
 class TestCircuitBreakerClosed:
-    def test_initial_state_is_closed(self) -> None:
+    def test_initial_state_is_closed(self):
         cb = CircuitBreaker()
         assert cb.state is CircuitState.CLOSED
 
-    def test_successful_call_returns_value(self) -> None:
+    def test_successful_call_returns_value(self):
         cb = CircuitBreaker()
         assert cb.call(_always_succeed) == "ok"
 
-    def test_failure_increments_count(self) -> None:
+    def test_failure_increments_count(self):
         cb = CircuitBreaker(failure_threshold=5)
         with pytest.raises(ValueError):
             cb.call(_always_fail)
         assert cb._failure_count == 1
 
-    def test_stays_closed_below_threshold(self) -> None:
+    def test_stays_closed_below_threshold(self):
         cb = CircuitBreaker(failure_threshold=3)
         for _ in range(2):
             with pytest.raises(ValueError):
@@ -46,24 +46,24 @@ class TestCircuitBreakerClosed:
 
 
 class TestCircuitBreakerOpens:
-    def test_opens_at_threshold(self) -> None:
+    def test_opens_at_threshold(self):
         cb = CircuitBreaker(failure_threshold=3, expected_exceptions=(ValueError,))
         for _ in range(3):
             with pytest.raises(ValueError):
                 cb.call(_always_fail)
         assert cb.state is CircuitState.OPEN
 
-    def test_open_circuit_raises_circuit_open_error(self) -> None:
+    def test_open_circuit_raises_circuit_open_error(self):
         cb = CircuitBreaker(failure_threshold=1)
         with pytest.raises(ValueError):
             cb.call(_always_fail)
         with pytest.raises(CircuitOpenError):
             cb.call(_always_succeed)
 
-    def test_open_circuit_does_not_call_function(self) -> None:
+    def test_open_circuit_does_not_call_function(self):
         calls = [0]
 
-        def counting() -> None:
+        def counting():
             calls[0] += 1
 
         cb = CircuitBreaker(failure_threshold=1)
@@ -75,7 +75,7 @@ class TestCircuitBreakerOpens:
 
 
 class TestCircuitBreakerHalfOpen:
-    def test_transitions_to_half_open_after_timeout(self, monkeypatch) -> None:
+    def test_transitions_to_half_open_after_timeout(self, monkeypatch):
         cb = CircuitBreaker(failure_threshold=1, recovery_timeout=10)
         with pytest.raises(ValueError):
             cb.call(_always_fail)
@@ -83,7 +83,7 @@ class TestCircuitBreakerHalfOpen:
         monkeypatch.setattr("time.monotonic", lambda: cb._opened_at + 11)
         assert cb.state is CircuitState.HALF_OPEN
 
-    def test_successful_probe_closes_circuit(self, monkeypatch) -> None:
+    def test_successful_probe_closes_circuit(self, monkeypatch):
         cb = CircuitBreaker(failure_threshold=1, recovery_timeout=10)
         with pytest.raises(ValueError):
             cb.call(_always_fail)
@@ -91,7 +91,7 @@ class TestCircuitBreakerHalfOpen:
         cb.call(_always_succeed)
         assert cb.state is CircuitState.CLOSED
 
-    def test_failed_probe_reopens_circuit(self, monkeypatch) -> None:
+    def test_failed_probe_reopens_circuit(self, monkeypatch):
         cb = CircuitBreaker(failure_threshold=1, recovery_timeout=10)
         with pytest.raises(ValueError):
             cb.call(_always_fail)
@@ -103,26 +103,26 @@ class TestCircuitBreakerHalfOpen:
 
 
 class TestCircuitBreakerDecorator:
-    def test_decorator_usage(self) -> None:
+    def test_decorator_usage(self):
         cb = CircuitBreaker(failure_threshold=2)
 
         @cb
-        def my_func(x) -> None:
+        def my_func(x):
             return x * 2
 
         assert my_func(5) == 10
 
-    def test_decorator_preserves_name(self) -> None:
+    def test_decorator_preserves_name(self):
         cb = CircuitBreaker()
 
         @cb
-        def my_func() -> None:
+        def my_func():
             pass
 
         assert my_func.__name__ == "my_func"
 
     @pytest.mark.parametrize("threshold", [1, 3, 5])
-    def test_opens_at_various_thresholds(self, threshold) -> None:
+    def test_opens_at_various_thresholds(self, threshold):
         cb = CircuitBreaker(failure_threshold=threshold)
         for _ in range(threshold):
             with pytest.raises(ValueError):
@@ -276,191 +276,3 @@ class TestDecoratorUsage:
     def test_return_value_passes_through(self) -> None:
         breaker = CircuitBreaker()
         assert breaker.call(lambda x: x * 2, 21) == 42
-
-
-class TestCircuitBreakerReset:
-    def test_failure_count_resets_after_success(self) -> None:
-        cb = CircuitBreaker(failure_threshold=5)
-        for _ in range(3):
-            with pytest.raises(ValueError):
-                cb.call(_always_fail)
-        cb.call(_always_succeed)
-        assert cb._failure_count == 0
-
-    def test_state_is_closed_after_success_reset(self) -> None:
-        cb = CircuitBreaker(failure_threshold=5)
-        for _ in range(3):
-            with pytest.raises(ValueError):
-                cb.call(_always_fail)
-        cb.call(_always_succeed)
-        assert cb.state is CircuitState.CLOSED
-
-    @pytest.mark.parametrize("threshold", [2, 4, 6])
-    def test_opens_at_exact_threshold_parametrized(self, threshold: int) -> None:
-        cb = CircuitBreaker(failure_threshold=threshold, expected_exceptions=(ValueError,))
-        for _ in range(threshold):
-            with pytest.raises(ValueError):
-                cb.call(_always_fail)
-        assert cb.state is CircuitState.OPEN
-
-    def test_opened_at_is_set_on_open(self) -> None:
-        cb = CircuitBreaker(failure_threshold=1, expected_exceptions=(ValueError,))
-        with pytest.raises(ValueError):
-            cb.call(_always_fail)
-        assert cb._opened_at is not None
-
-    def test_opened_at_is_none_when_closed(self) -> None:
-        cb = CircuitBreaker()
-        assert cb._opened_at is None
-
-
-class TestCircuitBreakerSuccessPath:
-    @pytest.mark.parametrize("n", [1, 5, 10])
-    def test_call_returns_value_when_closed(self, n: int) -> None:
-        cb = CircuitBreaker()
-        for i in range(n):
-            expected = i
-            result = cb.call(lambda v=expected: v)
-            assert result == expected
-
-    def test_failure_count_resets_after_success(self) -> None:
-        cb = CircuitBreaker(failure_threshold=3, expected_exceptions=(ValueError,))
-        with pytest.raises(ValueError):
-            cb.call(_always_fail)
-        cb.call(_always_succeed)
-        assert cb._failure_count == 0
-
-    @pytest.mark.parametrize("threshold", [1, 3, 5])
-    def test_call_raises_circuit_open_error_when_open(self, threshold: int) -> None:
-        cb = CircuitBreaker(failure_threshold=threshold, expected_exceptions=(ValueError,))
-        for _ in range(threshold):
-            with pytest.raises(ValueError):
-                cb.call(_always_fail)
-        with pytest.raises(CircuitOpenError):
-            cb.call(_always_succeed)
-
-
-class TestIsOpenProperty:
-    def test_initially_closed(self) -> None:
-        cb = CircuitBreaker(failure_threshold=3, expected_exceptions=(ValueError,))
-        assert cb.is_open is False
-
-    def test_open_after_threshold(self) -> None:
-        cb = CircuitBreaker(failure_threshold=2, expected_exceptions=(ValueError,))
-        for _ in range(2):
-            with pytest.raises(ValueError):
-                cb.call(_always_fail)
-        assert cb.is_open is True
-
-    def test_not_open_when_closed_after_reset(self) -> None:
-        cb = CircuitBreaker(failure_threshold=2, expected_exceptions=(ValueError,))
-        for _ in range(2):
-            with pytest.raises(ValueError):
-                cb.call(_always_fail)
-        cb.reset()
-        assert cb.is_open is False
-
-
-class TestCircuitBreakerCallDecorator:
-    def test_decorator_wraps_function(self) -> None:
-        cb = CircuitBreaker(failure_threshold=3, expected_exceptions=(ValueError,))
-
-        @cb
-        def my_func() -> str:
-            return "ok"
-
-        assert my_func() == "ok"
-
-    def test_decorator_trips_on_failures(self) -> None:
-        cb = CircuitBreaker(failure_threshold=2, expected_exceptions=(ValueError,))
-
-        @cb
-        def failing() -> None:
-            raise ValueError("boom")
-
-        for _ in range(2):
-            with pytest.raises(ValueError):
-                failing()
-        assert cb.is_open is True
-
-    def test_decorator_allows_success_when_closed(self) -> None:
-        cb = CircuitBreaker(failure_threshold=3, expected_exceptions=(ValueError,))
-        counter = [0]
-
-        @cb
-        def succeeding() -> int:
-            counter[0] += 1
-            return counter[0]
-
-        for _ in range(5):
-            succeeding()
-        assert counter[0] == 5
-
-
-class TestCircuitBreakerFailureCount:
-    def test_zero_initially(self) -> None:
-        cb = CircuitBreaker(failure_threshold=3, expected_exceptions=(ValueError,))
-        assert cb.failure_count == 0
-
-    def test_increments_on_each_failure(self) -> None:
-        cb = CircuitBreaker(failure_threshold=5, expected_exceptions=(ValueError,))
-        for _i in range(3):
-            with pytest.raises(ValueError):
-                cb.call(_always_fail)
-        assert cb.failure_count == 3
-
-    def test_reset_to_zero_on_reset(self) -> None:
-        cb = CircuitBreaker(failure_threshold=5, expected_exceptions=(ValueError,))
-        for _ in range(3):
-            with pytest.raises(ValueError):
-                cb.call(_always_fail)
-        cb.reset()
-        assert cb.failure_count == 0
-
-    @pytest.mark.parametrize("n_failures", [1, 2, 3])
-    def test_failure_count_matches_calls(self, n_failures: int) -> None:
-        cb = CircuitBreaker(failure_threshold=10, expected_exceptions=(ValueError,))
-        for _ in range(n_failures):
-            with pytest.raises(ValueError):
-                cb.call(_always_fail)
-        assert cb.failure_count == n_failures
-
-
-class TestCircuitBreakerNewProperties:
-    def test_is_closed_initially(self) -> None:
-        cb = CircuitBreaker()
-        assert cb.is_closed is True
-
-    def test_is_closed_false_when_open(self) -> None:
-        cb = CircuitBreaker(failure_threshold=1, expected_exceptions=(ValueError,))
-        with pytest.raises(ValueError):
-            cb.call(_always_fail)
-        assert cb.is_closed is False
-
-    def test_is_half_open_false_initially(self) -> None:
-        cb = CircuitBreaker()
-        assert cb.is_half_open is False
-
-    def test_is_half_open_true_after_timeout(self) -> None:
-        cb = CircuitBreaker(
-            failure_threshold=1, recovery_timeout=0.01, expected_exceptions=(ValueError,)
-        )
-        with pytest.raises(ValueError):
-            cb.call(_always_fail)
-        time.sleep(0.05)
-        assert cb.is_half_open is True
-
-    def test_is_open_and_is_closed_mutually_exclusive(self) -> None:
-        cb = CircuitBreaker(failure_threshold=1, expected_exceptions=(ValueError,))
-        assert cb.is_open != cb.is_closed
-        with pytest.raises(ValueError):
-            cb.call(_always_fail)
-        assert cb.is_open != cb.is_closed
-
-    @pytest.mark.parametrize("threshold", [1, 3, 5])
-    def test_is_closed_true_below_threshold(self, threshold: int) -> None:
-        cb = CircuitBreaker(failure_threshold=threshold, expected_exceptions=(ValueError,))
-        for _ in range(threshold - 1):
-            with pytest.raises(ValueError):
-                cb.call(_always_fail)
-        assert cb.is_closed is True

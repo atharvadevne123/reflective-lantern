@@ -21,11 +21,11 @@ os.environ.setdefault("MODEL_VERSION", "test-1.0.0")
 os.environ.setdefault("BASE_ROOM_RATE", "150.0")
 os.environ.setdefault("RATE_LIMIT_PER_MINUTE", "1000")
 
-from app.database import Base
+from app.database import Base  # noqa: E402
 
 
 @pytest.fixture(scope="session")
-def db_engine() -> None:
+def db_engine():
     """In-memory SQLite engine for the test session."""
     engine = create_engine(
         "sqlite:///:memory:",
@@ -38,7 +38,7 @@ def db_engine() -> None:
 
 
 @pytest.fixture
-def db_session(db_engine) -> None:
+def db_session(db_engine):
     """Transactional database session — rolls back after each test."""
     connection = db_engine.connect()
     transaction = connection.begin()
@@ -95,7 +95,7 @@ def sample_booking_dict() -> dict:
 
 
 @pytest.fixture(scope="module")
-def trained_models() -> None:
+def trained_models():
     """Train a small XGBoost + LightGBM ensemble once per module."""
     from app.model import generate_sample_data, train_model
 

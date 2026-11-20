@@ -1,27 +1,4 @@
-"""Token-bucket rate limiter for fine-grained throughput control.
-
-Implements the token-bucket algorithm for smooth rate limiting:
-
-- Tokens accumulate at a fixed ``rate`` per second up to ``capacity``.
-- Each :meth:`~TokenBucket.consume` call removes tokens non-blockingly;
-  callers that need blocking behaviour can use
-  :meth:`~TokenBucket.wait_and_consume`.
-- :class:`PerKeyTokenBucket` maintains an independent bucket per key (e.g.
-  per client IP or user ID), useful for per-tenant rate limiting.
-
-Both classes are thread-safe via :class:`threading.Lock`.
-
-Example::
-
-    from app.token_bucket import TokenBucket
-
-    limiter = TokenBucket(capacity=10, rate=5.0)  # 5 req/s, burst of 10
-
-    if limiter.consume():
-        process_request()
-    else:
-        raise RateLimitExceeded()
-"""
+"""Token-bucket rate limiter for fine-grained throughput control."""
 
 from __future__ import annotations
 
@@ -31,13 +8,6 @@ import time
 from dataclasses import dataclass, field
 
 logger = logging.getLogger(__name__)
-
-
-class _CallableFloat(float):
-    """Float subclass that is also callable, returning itself."""
-
-    def __call__(self) -> float:
-        return float(self)
 
 
 @dataclass
@@ -60,7 +30,6 @@ class TokenBucket:
     _lock: threading.Lock = field(init=False, repr=False)
 
     def __post_init__(self) -> None:
-        """Validate parameters and initialise mutable state fields."""
         if self.capacity <= 0:
             raise ValueError("capacity must be positive")
         if self.rate <= 0:
@@ -70,11 +39,6 @@ class TokenBucket:
         self._lock = threading.Lock()
 
     def _refill(self) -> None:
-        """Compute elapsed time since last refill and add tokens accordingly.
-
-        Caps accumulated tokens at :attr:`capacity` to prevent unbounded growth
-        during long idle periods.  Must be called while holding :attr:`_lock`.
-        """
         now = time.monotonic()
         elapsed = now - self._last_refill
         added = elapsed * self.rate
@@ -120,16 +84,11 @@ class TokenBucket:
         return False
 
     @property
-    def available(self) -> _CallableFloat:
-        """Return current token count after a refill (also callable)."""
+    def available(self) -> float:
+        """Return current token count after a refill."""
         with self._lock:
             self._refill()
-            return _CallableFloat(self._tokens)
-
-    @property
-    def fill_ratio(self) -> float:
-        """Return the fraction of capacity currently available (0.0–1.0)."""
-        return self.available / self.capacity
+            return self._tokens
 
 
 class PerKeyTokenBucket:
@@ -141,27 +100,13 @@ class PerKeyTokenBucket:
     """
 
     def __init__(self, capacity: float, rate: float) -> None:
-        """Initialise the keyed limiter with shared capacity and rate.
-
-        Args:
-            capacity: Bucket capacity (burst size) applied to every key.
-            rate: Refill rate in tokens per second applied to every key.
-        """
         self.capacity = capacity
         self.rate = rate
         self._buckets: dict[str, TokenBucket] = {}
         self._lock = threading.Lock()
 
     def consume(self, key: str, tokens: float = 1.0) -> bool:
-        """Consume tokens from the bucket for *key*, creating it on first use.
-
-        Args:
-            key: Client or resource identifier (e.g. IP address, user ID).
-            tokens: Number of tokens to consume (default 1).
-
-        Returns:
-            True if the bucket for *key* had sufficient tokens; False otherwise.
-        """
+        """Consume tokens from the bucket for key, creating it on first use."""
         with self._lock:
             if key not in self._buckets:
                 self._buckets[key] = TokenBucket(self.capacity, self.rate)
@@ -169,29 +114,8 @@ class PerKeyTokenBucket:
         return bucket.consume(tokens)
 
     def bucket_count(self) -> int:
-        """Return the number of distinct keys currently tracked.
-
-        Returns:
-            Integer count of keys that have had at least one :meth:`consume` call.
-        """
+        """Return number of distinct keys tracked."""
         return len(self._buckets)
-
-    def is_full(self, key: str) -> bool:
-        """Return True if the bucket for *key* is at its full capacity.
-
-        A bucket that has never been used is considered full.
-
-        Args:
-            key: The rate-limit key to check.
-
-        Returns:
-            True when the bucket's available tokens equal its capacity.
-        """
-        with self._lock:
-            if key not in self._buckets:
-                return True
-            bucket = self._buckets[key]
-        return bucket.available() >= self.capacity
 
 
 __all__ = ["PerKeyTokenBucket", "TokenBucket"]

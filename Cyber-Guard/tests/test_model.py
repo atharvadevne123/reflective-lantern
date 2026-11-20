@@ -17,20 +17,20 @@ from app.model import (
 )
 
 
-def test_generate_synthetic_data_shape() -> None:
+def test_generate_synthetic_data_shape():
     X, y = generate_synthetic_data(200)
     assert isinstance(X, pd.DataFrame)
     assert len(X) == 200
     assert len(y) == 200
 
 
-def test_generate_synthetic_data_classes() -> None:
+def test_generate_synthetic_data_classes():
     _, y = generate_synthetic_data(300)
     unique = set(y.unique())
     assert unique.issubset(set(THREAT_CLASSES))
 
 
-def test_train_model_returns_metrics() -> None:
+def test_train_model_returns_metrics():
     X, y = generate_synthetic_data(150)
     with tempfile.TemporaryDirectory() as tmpdir:
         mp = os.path.join(tmpdir, "model.joblib")
@@ -41,7 +41,7 @@ def test_train_model_returns_metrics() -> None:
     assert metrics["n_features"] == 15
 
 
-def test_train_and_load_predict() -> None:
+def test_train_and_load_predict():
     X, y = generate_synthetic_data(150)
     with tempfile.TemporaryDirectory() as tmpdir:
         mp = os.path.join(tmpdir, "model.joblib")
@@ -68,7 +68,7 @@ def test_train_and_load_predict() -> None:
 
 
 @pytest.mark.parametrize("n_samples", [100, 300])
-def test_train_model_different_sizes(n_samples: int) -> None:
+def test_train_model_different_sizes(n_samples: int):
     X, y = generate_synthetic_data(n_samples)
     with tempfile.TemporaryDirectory() as tmpdir:
         mp = os.path.join(tmpdir, "model.joblib")
@@ -77,7 +77,7 @@ def test_train_model_different_sizes(n_samples: int) -> None:
     assert metrics["n_samples"] == n_samples
 
 
-def test_probabilities_sum_to_one() -> None:
+def test_probabilities_sum_to_one():
     X, y = generate_synthetic_data(150)
     with tempfile.TemporaryDirectory() as tmpdir:
         mp = os.path.join(tmpdir, "model.joblib")

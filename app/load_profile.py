@@ -167,108 +167,13 @@ def build_load_profile(hourly_kwh: list[float]) -> LoadProfile:
     return profile
 
 
-def demand_variability(hourly_kwh: list[float]) -> float:
-    """Return coefficient of variation of the demand series.
-
-    CV = std_dev / mean; measures volatility relative to average demand.
-    Returns 0.0 for series with zero mean or fewer than 2 points.
-
-    Args:
-        hourly_kwh: Consumption values in kWh, one entry per hour.
-
-    Returns:
-        Coefficient of variation, rounded to 4 decimal places.
-    """
-    if len(hourly_kwh) < 2:
-        return 0.0
-    mean = statistics.fmean(hourly_kwh)
-    if mean <= 0:
-        return 0.0
-    return round(statistics.stdev(hourly_kwh) / mean, 4)
-
-
-def night_load_fraction(hourly_kwh: list[float], night_hours: tuple[int, int] = (22, 6)) -> float:
-    """Return the fraction of total energy consumed during night hours.
-
-    Args:
-        hourly_kwh: 24-element list of hourly consumption values (index 0 = midnight).
-        night_hours: Tuple (start_hour, end_hour) defining the night window.
-            The window wraps midnight, e.g. (22, 6) covers 22:00-05:59.
-
-    Returns:
-        Fraction in [0, 1] rounded to 4 decimal places. Returns 0.0 if total
-        consumption is zero or the series has fewer than 24 values.
-    """
-    if len(hourly_kwh) < 24:
-        return 0.0
-    total = sum(hourly_kwh[:24])
-    if total <= 0:
-        return 0.0
-    start, end = night_hours
-    night = (
-        sum(hourly_kwh[start:24]) + sum(hourly_kwh[:end])
-        if start > end
-        else sum(hourly_kwh[start:end])
-    )
-    return round(night / total, 4)
-
-
 __all__ = [
     "BASE_LOAD_PERCENTILE",
     "LoadProfile",
     "base_load",
     "build_load_profile",
     "classify_profile",
-    "demand_variability",
     "load_factor",
     "max_ramp_rate",
-    "night_load_fraction",
-    "off_peak_load_fraction",
     "peak_to_average_ratio",
 ]
-
-
-def off_peak_load_fraction(
-    hourly_kwh: list[float],
-    peak_start: int = 9,
-    peak_end: int = 21,
-) -> float:
-    """Return the fraction of total consumption that falls outside peak hours.
-
-    "Off-peak" is defined as any hour NOT in the range [*peak_start*, *peak_end*).
-
-    Args:
-        hourly_kwh: Hourly consumption list (length 24 for one day, but any length accepted).
-        peak_start: Hour (inclusive) when peak period starts (0-23, default 9).
-        peak_end: Hour (exclusive) when peak period ends (0-23, default 21).
-
-    Returns:
-        Off-peak fraction in [0, 1]; 0.0 if total consumption is zero.
-
-    Raises:
-        ValueError: If *hourly_kwh* is empty.
-    """
-    if not hourly_kwh:
-        raise ValueError("hourly_kwh must not be empty")
-    total = sum(hourly_kwh)
-    if total == 0.0:
-        return 0.0
-    off_peak = sum(v for i, v in enumerate(hourly_kwh) if not (peak_start <= (i % 24) < peak_end))
-    return round(off_peak / total, 6)
-
-
-def peak_hour_index(hourly_kwh: list[float]) -> int:
-    """Return the index of the hour with the highest load.
-
-    Args:
-        hourly_kwh: Hourly consumption values in kWh.
-
-    Returns:
-        Zero-based index of the maximum load hour.
-
-    Raises:
-        ValueError: If *hourly_kwh* is empty.
-    """
-    if not hourly_kwh:
-        raise ValueError("hourly_kwh must not be empty")
-    return hourly_kwh.index(max(hourly_kwh))

@@ -2,26 +2,6 @@
 
 All notable changes to Forge-Guard are documented here.
 
-## [1.3.0] — 2026-11-10
-
-### Added
-- Extended test suites for cache TTLCache, validators, features, monitoring, reporting
-- sensor_z_score, clamp_reading, zscore_outlier, field_statistics, missing_rate tests
-- defect_risk_index parametrized tests covering all threshold combinations
-- compute_drift and compute_zscore_outliers edge case tests
-- format_defect_rate_pct parametrized boundary value tests
-
-## [1.2.0] — 2026-11-10
-
-### Added
-- Extended tests for `sensor_range_feature` and `generate_synthetic_data` reproducibility
-- Tests for `model_prediction_summary` and `defect_rate` monitoring functions
-- Tests for `format_defect_rate_pct`, `export_drift_reports_json`, and `prediction_trend`
-- `TestSensorRangeFeature` covers empty row, single value, negative values, and range calculation
-
-### Changed
-- `generate_synthetic_data` validated to produce binary defect labels deterministically
-
 ## [1.1.0] — 2026-08-04
 
 ### Added

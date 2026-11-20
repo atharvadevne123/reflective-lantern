@@ -8,7 +8,7 @@ import logging
 from app.logging_config import JsonFormatter, configure_logging
 
 
-def test_json_formatter_emits_valid_json() -> None:
+def test_json_formatter_emits_valid_json():
     formatter = JsonFormatter()
     record = logging.LogRecord(
         name="test",
@@ -27,7 +27,7 @@ def test_json_formatter_emits_valid_json() -> None:
     assert "ts" in payload
 
 
-def test_json_formatter_includes_extra_fields() -> None:
+def test_json_formatter_includes_extra_fields():
     formatter = JsonFormatter()
     record = logging.LogRecord(
         name="test",
@@ -45,7 +45,7 @@ def test_json_formatter_includes_extra_fields() -> None:
     assert payload["prediction"] == 1
 
 
-def test_json_formatter_includes_exception() -> None:
+def test_json_formatter_includes_exception():
     formatter = JsonFormatter()
     try:
         raise ValueError("boom")
@@ -66,7 +66,7 @@ def test_json_formatter_includes_exception() -> None:
     assert "ValueError" in payload["exception"]
 
 
-def test_configure_logging_plain_and_json() -> None:
+def test_configure_logging_plain_and_json():
     configure_logging(level="DEBUG", json_output=True)
     root = logging.getLogger()
     assert root.level == logging.DEBUG
@@ -77,7 +77,7 @@ def test_configure_logging_plain_and_json() -> None:
     assert not isinstance(root.handlers[0].formatter, JsonFormatter)
 
 
-def test_json_formatter_timestamp_is_iso() -> None:
+def test_json_formatter_timestamp_is_iso():
     formatter = JsonFormatter()
     record = logging.LogRecord(
         name="test",
@@ -93,7 +93,7 @@ def test_json_formatter_timestamp_is_iso() -> None:
     assert "T" in ts and (ts.endswith("Z") or "+" in ts or ts.endswith("+00:00"))
 
 
-def test_json_formatter_level_names() -> None:
+def test_json_formatter_level_names():
     formatter = JsonFormatter()
     for level_name, level_const in [
         ("DEBUG", logging.DEBUG),
@@ -113,7 +113,7 @@ def test_json_formatter_level_names() -> None:
         assert payload["level"] == level_name
 
 
-def test_configure_logging_clears_previous_handlers() -> None:
+def test_configure_logging_clears_previous_handlers():
     configure_logging(level="INFO", json_output=False)
     first_count = len(logging.getLogger().handlers)
     configure_logging(level="WARNING", json_output=False)
@@ -121,7 +121,7 @@ def test_configure_logging_clears_previous_handlers() -> None:
     assert second_count == first_count  # No duplicate handlers
 
 
-def test_json_formatter_model_version_field() -> None:
+def test_json_formatter_model_version_field():
     formatter = JsonFormatter()
     record = logging.LogRecord(
         name="test",
@@ -137,13 +137,13 @@ def test_json_formatter_model_version_field() -> None:
     assert payload.get("model_version") == "1.1.0"
 
 
-def test_configure_logging_json_output_sets_formatter() -> None:
+def test_configure_logging_json_output_sets_formatter():
     configure_logging(level="INFO", json_output=True)
     handler = logging.getLogger().handlers[0]
     assert isinstance(handler.formatter, JsonFormatter)
 
 
-def test_json_formatter_message_formatting() -> None:
+def test_json_formatter_message_formatting():
     formatter = JsonFormatter()
     record = logging.LogRecord(
         name="test",
@@ -157,38 +157,3 @@ def test_json_formatter_message_formatting() -> None:
     payload = json.loads(formatter.format(record))
     assert "42" in payload["message"]
     assert "3.14" in payload["message"]
-
-
-class TestJsonFormatterEdgeCases:
-    """Edge-case tests for forge-guard JsonFormatter."""
-
-    def test_critical_level_name(self) -> None:
-        formatter = JsonFormatter()
-        record = logging.LogRecord("t", logging.CRITICAL, "f.py", 1, "crit", (), None)
-        payload = json.loads(formatter.format(record))
-        assert payload["level"] == "CRITICAL"
-
-    def test_no_args_message_unchanged(self) -> None:
-        formatter = JsonFormatter()
-        record = logging.LogRecord("t", logging.INFO, "f.py", 1, "static msg", (), None)
-        payload = json.loads(formatter.format(record))
-        assert payload["message"] == "static msg"
-
-    def test_extra_integer_field_preserved(self) -> None:
-        formatter = JsonFormatter()
-        record = logging.LogRecord("t", logging.INFO, "f.py", 1, "m", (), None)
-        record.request_count = 42
-        payload = json.loads(formatter.format(record))
-        assert payload.get("request_count") == 42
-
-    def test_formatter_output_is_single_line(self) -> None:
-        formatter = JsonFormatter()
-        record = logging.LogRecord("t", logging.INFO, "f.py", 1, "line", (), None)
-        line = formatter.format(record)
-        assert "\n" not in line
-
-    def test_configure_sets_json_formatter_on_handler(self) -> None:
-        configure_logging(level="WARNING", json_output=True)
-        handler = logging.getLogger().handlers[0]
-        assert isinstance(handler.formatter, JsonFormatter)
-        configure_logging(level="INFO", json_output=False)

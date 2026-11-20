@@ -1,8 +1,8 @@
-name: CI
+name: Watt-Guard CI
 
 on:
   push:
-    branches: [main]
+    branches: ["**"]
   pull_request:
     branches: [main]
 
@@ -11,27 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.11"]
-
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_DB: logistics_test
-          POSTGRES_USER: test
-          POSTGRES_PASSWORD: test
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-    env:
-      DATABASE_URL: sqlite:///./test.db
-      MODEL_PATH: /tmp/model_ci.joblib
-      METRICS_PATH: /tmp/metrics_ci.json
+        python-version: ["3.11", "3.12"]
 
     steps:
       - uses: actions/checkout@v7
@@ -43,31 +23,32 @@ jobs:
           cache: pip
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: pip install -r requirements.txt ruff
 
       - name: Ruff lint
-        run: python -m ruff check .
-
-      - name: Type check
-        run: python -m mypy app/ --ignore-missing-imports --no-error-summary
-        continue-on-error: true
+        run: ruff check .
 
       - name: Ruff format check
-        run: python -m ruff format --check .
+        run: ruff format --check .
 
-      - name: Run tests with coverage
-        run: pytest tests/ -v --tb=short --cov=app --cov-report=xml --cov-report=term-missing 2>&1 | tail -80
+      - name: Run tests
+        run: pytest tests/ -v --tb=short 2>&1 | tail -80
 
-      - name: Upload coverage report
+      - name: Coverage report
         if: always()
+        run: |
+          pip install pytest-cov -q
+          pytest tests/ --cov=app --cov-report=term-missing --cov-report=xml -q 2>&1 | tail -30
+
+      - name: Upload coverage artifact
+        if: always() && matrix.python-version == '3.11'
         uses: actions/upload-artifact@v7
         with:
-          name: coverage-report
+          name: coverage-xml
           path: coverage.xml
+          retention-days: 7
 
-      - name: Upload test cache
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: pytest-cache
-          path: .pytest_cache/
+      - name: Type check (mypy)
+        run: |
+          pip install mypy -q
+          mypy app/ --ignore-missing-imports --no-error-summary 2>&1 | tail -20 || true

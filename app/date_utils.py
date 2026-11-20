@@ -1,4 +1,4 @@
-"""Date and time utility helpers for Logistics-Flow."""
+"""Date and time utility helpers for Watt-Guard."""
 
 from __future__ import annotations
 
@@ -102,7 +102,6 @@ def week_of_year(dt: datetime) -> int:
 
 
 __all__ = [
-    "add_business_days",
     "business_days_between",
     "clamp_to_range",
     "date_range",
@@ -112,8 +111,6 @@ __all__ = [
     "days_in_month",
     "days_until",
     "elapsed_seconds",
-    "end_of_day",
-    "first_day_of_month",
     "fiscal_quarter",
     "format_duration",
     "format_iso",
@@ -122,10 +119,8 @@ __all__ = [
     "is_business_day",
     "is_business_hour",
     "is_leap_year",
-    "is_same_day",
     "is_weekend",
     "iso_to_datetime",
-    "minutes_between",
     "next_business_day",
     "next_midnight",
     "next_weekday",
@@ -584,52 +579,3 @@ def end_of_day(dt: datetime) -> datetime:
         Datetime at the very end of *dt*'s calendar day.
     """
     return dt.replace(hour=23, minute=59, second=59, microsecond=999999)
-
-
-def end_of_month(dt: datetime) -> datetime:
-    """Return the last microsecond of the month containing *dt*.
-
-    Args:
-        dt: Any datetime (timezone is preserved).
-
-    Returns:
-        Datetime at 23:59:59.999999 on the last day of *dt*'s month.
-    """
-    last_day = days_in_month(dt.year, dt.month)
-    return dt.replace(day=last_day, hour=23, minute=59, second=59, microsecond=999999)
-
-
-def first_day_of_month(dt: datetime) -> datetime:
-    """Return midnight on the first day of *dt*'s month.
-
-    Args:
-        dt: Any datetime (timezone is preserved).
-
-    Returns:
-        Datetime at 00:00:00 on the first day of *dt*'s month.
-    """
-    return dt.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-
-
-def add_business_days(dt: datetime, n: int) -> datetime:
-    """Return *dt* advanced by *n* business days (Mon–Fri).
-
-    Args:
-        dt: Starting datetime.
-        n: Number of business days to add (positive only).
-
-    Returns:
-        Datetime *n* business days after *dt*.
-
-    Raises:
-        ValueError: If *n* is negative.
-    """
-    if n < 0:
-        raise ValueError(f"n must be non-negative, got {n}")
-    result = dt
-    added = 0
-    while added < n:
-        result = result + timedelta(days=1)
-        if result.weekday() < 5:
-            added += 1
-    return result

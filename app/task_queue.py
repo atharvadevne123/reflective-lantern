@@ -1,31 +1,7 @@
 """Priority task queue with worker-thread execution.
 
-Provides a simple in-process task queue backed by Python's :mod:`heapq`
-module.  Tasks are consumed by a configurable number of daemon threads.
-
-Key components:
-
-- :class:`Task` — a dataclass wrapping a callable, its arguments, and a
-  numeric priority (lower value = higher urgency).
-- :class:`TaskQueue` — thread-safe priority queue that spawns worker threads
-  via :meth:`~TaskQueue.start` and shuts them down via :meth:`~TaskQueue.stop`.
-
-Operational notes:
-
-- Worker threads are daemon threads and will not block process exit.
-- Exceptions inside a task are caught, logged, and stored in
-  :attr:`~TaskQueue.errors`; they do not stop other tasks.
-- :meth:`~TaskQueue.drain` removes and returns all pending tasks without
-  executing them — useful for graceful shutdown logging.
-
-Example::
-
-    from app.task_queue import TaskQueue
-
-    q = TaskQueue(workers=4)
-    q.start()
-    q.submit(lambda: print("hello"), priority=1)
-    q.stop()
+Provides a simple in-process task queue backed by Python's ``heapq``
+module. Tasks are consumed by a configurable number of daemon threads.
 """
 
 from __future__ import annotations
@@ -37,21 +13,6 @@ import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
-
-
-class _CallableList(list):
-    """List subclass that is also callable, returning a copy of itself."""
-
-    def __call__(self) -> list:
-        return list(self)
-
-
-class _CallableInt(int):
-    """Int subclass that is also callable, returning itself."""
-
-    def __call__(self) -> int:
-        return int(self)
-
 
 __all__ = [
     "Task",
@@ -80,7 +41,6 @@ class TaskQueue:
     """Thread-safe priority queue that executes tasks on worker threads."""
 
     def __init__(self, workers: int = 2) -> None:
-        """Initialise the queue with *workers* daemon threads (not yet started)."""
         self._heap: list[Task] = []
         self._lock = threading.Lock()
         self._not_empty = threading.Condition(self._lock)
@@ -91,25 +51,14 @@ class TaskQueue:
         self._errors: list[Exception] = []
 
     def submit(self, fn: Callable[..., Any], priority: int = 5, *args: Any, **kwargs: Any) -> None:
-        """Enqueue a task; lower *priority* values run first.
-
-        Args:
-            fn: Callable to execute on a worker thread.
-            priority: Execution priority — lower numbers are dequeued first.
-            *args: Positional arguments forwarded to *fn*.
-            **kwargs: Keyword arguments forwarded to *fn*.
-        """
+        """Enqueue a task; lower *priority* values run first."""
         task = Task(priority=priority, fn=fn, args=args, kwargs=kwargs)
         with self._not_empty:
             heapq.heappush(self._heap, task)
             self._not_empty.notify()
 
     def start(self) -> None:
-        """Start worker threads.
-
-        Spawns :attr:`_workers` daemon threads that continuously pull tasks
-        from the heap.  Call :meth:`stop` to shut them down cleanly.
-        """
+        """Start worker threads."""
         self._running = True
         for _ in range(self._workers):
             t = threading.Thread(target=self._worker, daemon=True)
@@ -117,12 +66,7 @@ class TaskQueue:
             self._threads.append(t)
 
     def stop(self, timeout: float = 2.0) -> None:
-        """Signal workers to stop and wait for them.
-
-        Args:
-            timeout: Maximum seconds to wait per worker thread before giving
-                up on a clean shutdown.
-        """
+        """Signal workers to stop and wait for them."""
         with self._not_empty:
             self._running = False
             self._not_empty.notify_all()
@@ -131,7 +75,6 @@ class TaskQueue:
         self._threads.clear()
 
     def _worker(self) -> None:
-        """Worker thread loop: pop tasks from the heap and execute them until stopped."""
         while True:
             with self._not_empty:
                 while not self._heap and self._running:
@@ -149,63 +92,15 @@ class TaskQueue:
                     self._errors.append(exc)
 
     @property
-    def completed(self) -> _CallableInt:
-        """Number of tasks that have finished successfully (thread-safe)."""
+    def completed(self) -> int:
         with self._lock:
-            return _CallableInt(self._completed)
+            return self._completed
 
     @property
-    def errors(self) -> _CallableList:
-        """Snapshot list of exceptions raised by failed tasks (thread-safe)."""
+    def errors(self) -> list[Exception]:
         with self._lock:
-            return _CallableList(self._errors)
-
-    def clear_errors(self) -> None:
-        """Remove all recorded errors."""
-        with self._lock:
-            self._errors.clear()
-
-    def peek(self) -> Task | None:
-        """Return the highest-priority pending task without removing it.
-
-        Returns:
-            The Task with the lowest priority value, or None if queue is empty.
-        """
-        with self._lock:
-            return self._heap[0] if self._heap else None
-
-    def drain(self) -> list[Task]:
-        """Remove and return all pending (not-yet-started) tasks.
-
-        Useful for graceful shutdown where you want to log dropped work.
-        """
-        with self._not_empty:
-            drained = list(self._heap)
-            self._heap.clear()
-            return drained
+            return list(self._errors)
 
     def __len__(self) -> int:
-        """Return the number of tasks currently waiting in the queue."""
         with self._lock:
             return len(self._heap)
-
-    def is_empty(self) -> bool:
-        """Return True when no tasks are waiting in the queue.
-
-        Returns:
-            True if the queue holds zero pending tasks.
-        """
-        with self._lock:
-            return len(self._heap) == 0
-
-    def priority_range(self) -> tuple[int, int] | None:
-        """Return the (min, max) priority among pending tasks.
-
-        Returns:
-            Tuple (min_priority, max_priority) or ``None`` if the queue is empty.
-        """
-        with self._lock:
-            if not self._heap:
-                return None
-            priorities = [t.priority for t in self._heap]
-            return (min(priorities), max(priorities))

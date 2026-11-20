@@ -1,21 +1,4 @@
-"""Retry utilities with exponential backoff and jitter.
-
-This module provides decorator and helper utilities for retrying functions
-on transient failures without coupling the caller to retry logic.
-
-Key components:
-
-- :func:`retry` — configurable decorator with exponential backoff, a jitter
-  fraction to spread retries, a per-exception filter, and a ``max_delay`` cap.
-- :func:`retry_on_network_error` — convenience wrapper pre-configured for
-  :class:`ConnectionError`, :class:`TimeoutError`, :class:`OSError`, and
-  :class:`urllib.error.URLError`.
-- :func:`with_retry` — inline retry without decorator syntax; useful for
-  lambdas and one-off calls.
-
-All sleep calls go through :func:`time.sleep`, making them easy to monkeypatch
-in tests without touching wall-clock time.
-"""
+"""Retry utilities with exponential backoff and jitter."""
 
 from __future__ import annotations
 
@@ -23,7 +6,6 @@ import functools
 import logging
 import time
 from collections.abc import Callable, Sequence
-from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +17,7 @@ def retry(
     max_delay: float = 60.0,
     backoff: float = 2.0,
     jitter: float = 0.1,
-) -> Callable[..., Any]:
+) -> Callable:
     """Decorator that retries a function on failure with exponential backoff.
 
     Args:
@@ -51,11 +33,8 @@ def retry(
     """
 
     def decorator(func: Callable) -> Callable:
-        """Wrap *func* with retry-on-exception logic."""
-
         @functools.wraps(func)
-        def wrapper(*args: object, **kwargs: object) -> object:
-            """Call the wrapped function, retrying up to max_attempts on allowed exceptions."""
+        def wrapper(*args, **kwargs):
             delay = base_delay
             last_exc: Exception | None = None
             for attempt in range(1, max_attempts + 1):
@@ -88,7 +67,7 @@ def retry(
     return decorator
 
 
-def retry_on_network_error(max_attempts: int = 3, base_delay: float = 2.0) -> Callable[..., Any]:
+def retry_on_network_error(max_attempts: int = 3, base_delay: float = 2.0) -> Callable:
     """Convenience wrapper for retrying on common network-related exceptions.
 
     Args:
@@ -108,37 +87,4 @@ def retry_on_network_error(max_attempts: int = 3, base_delay: float = 2.0) -> Ca
     )
 
 
-def with_retry(func: Callable, *args, max_attempts: int = 3, **kwargs) -> object:
-    """Call *func* with retry logic applied inline (no decorator needed).
-
-    Args:
-        func: Callable to invoke.
-        *args: Positional arguments forwarded to func.
-        max_attempts: Maximum number of total attempts.
-        **kwargs: Keyword arguments forwarded to func.
-
-    Returns:
-        Whatever func returns on success.
-
-    Raises:
-        Exception: Last exception raised after all attempts are exhausted.
-    """
-    wrapped = retry(max_attempts=max_attempts)(func)
-    return wrapped(*args, **kwargs)
-
-
-def is_transient(exc: Exception) -> bool:
-    """Return True if *exc* is likely a transient error worth retrying.
-
-    Args:
-        exc: The exception to classify.
-
-    Returns:
-        True for connection, timeout, OS I/O, and general network errors.
-    """
-    import urllib.error
-
-    return isinstance(exc, (ConnectionError, TimeoutError, urllib.error.URLError, OSError))
-
-
-__all__ = ["is_transient", "retry", "retry_on_network_error", "with_retry"]
+__all__ = ["retry", "retry_on_network_error"]

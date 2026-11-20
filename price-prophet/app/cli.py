@@ -20,10 +20,7 @@ Usage::
 from __future__ import annotations
 
 import argparse
-import logging
 import sys
-
-logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Argument parsing
@@ -151,7 +148,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 def _handle_serve(args: argparse.Namespace) -> int:
     """Start the FastAPI application with uvicorn."""
-    logger.info("Starting server on %s:%d", args.host, args.port)
+    print(f"Starting server on {args.host}:{args.port}")
     try:
         import uvicorn  # type: ignore
 
@@ -162,20 +159,23 @@ def _handle_serve(args: argparse.Namespace) -> int:
             log_level="info",
         )
     except ImportError:
-        logger.error("uvicorn is not installed. Install it with: pip install uvicorn")
+        print(
+            "uvicorn is not installed.  Install it with: pip install uvicorn",
+            file=sys.stderr,
+        )
         return 1
     return 0
 
 
 def _handle_train(args: argparse.Namespace) -> int:
     """Load data and train the requested model type."""
-    logger.info("Training %s model on %s", args.model_type, args.data)
+    print(f"Training {args.model_type} model on {args.data}")
     return 0
 
 
 def _handle_evaluate(args: argparse.Namespace) -> int:
     """Run the backtester for the named model on the given dataset."""
-    logger.info("Evaluating model %s on %s", args.model, args.data)
+    print(f"Evaluating model {args.model} on {args.data}")
     return 0
 
 
@@ -208,7 +208,7 @@ def main(argv: list[str] | None = None) -> int:
 
     handler = handlers.get(args.command)
     if handler is None:
-        logger.error("Unknown command: %r", args.command)
+        print(f"Unknown command: {args.command!r}", file=sys.stderr)
         return 2
 
     return handler(args)

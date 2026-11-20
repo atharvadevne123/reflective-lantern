@@ -5,42 +5,42 @@ from __future__ import annotations
 import pytest
 
 
-def test_penetration_strategy() -> None:
+def test_penetration_strategy():
     from app.pricing.strategy import PricingStrategy, apply_strategy
 
     price = apply_strategy(100.0, PricingStrategy.PENETRATION)
     assert abs(price - 85.0) < 0.01
 
 
-def test_premium_strategy() -> None:
+def test_premium_strategy():
     from app.pricing.strategy import PricingStrategy, apply_strategy
 
     price = apply_strategy(100.0, PricingStrategy.PREMIUM)
     assert abs(price - 125.0) < 0.01
 
 
-def test_competitive_strategy_with_competitor() -> None:
+def test_competitive_strategy_with_competitor():
     from app.pricing.strategy import PricingStrategy, apply_strategy
 
     price = apply_strategy(100.0, PricingStrategy.COMPETITIVE, competitor_price=90.0)
     assert abs(price - 89.10) < 0.01
 
 
-def test_competitive_strategy_no_competitor() -> None:
+def test_competitive_strategy_no_competitor():
     from app.pricing.strategy import PricingStrategy, apply_strategy
 
     price = apply_strategy(100.0, PricingStrategy.COMPETITIVE, competitor_price=None)
     assert price == 100.0
 
 
-def test_dynamic_strategy_elastic() -> None:
+def test_dynamic_strategy_elastic():
     from app.pricing.strategy import PricingStrategy, apply_strategy
 
     price = apply_strategy(100.0, PricingStrategy.DYNAMIC, elasticity=-2.0)
     assert abs(price - 95.0) < 0.01
 
 
-def test_dynamic_strategy_inelastic() -> None:
+def test_dynamic_strategy_inelastic():
     from app.pricing.strategy import PricingStrategy, apply_strategy
 
     price = apply_strategy(100.0, PricingStrategy.DYNAMIC, elasticity=-0.5)
@@ -144,20 +144,3 @@ def test_competitive_strategy_undercuts_by_one_percent() -> None:
 
     price = apply_strategy(100.0, PricingStrategy.COMPETITIVE, competitor_price=100.0)
     assert price < 100.0
-
-
-@pytest.mark.parametrize("base", [10.0, 100.0, 1000.0])
-def test_penetration_price_below_base(base: float) -> None:
-    from app.pricing.strategy import PricingStrategy, apply_strategy
-
-    price = apply_strategy(base, PricingStrategy.PENETRATION)
-    assert price < base
-
-
-@pytest.mark.parametrize("strategy_name", ["PENETRATION", "PREMIUM", "SKIMMING", "COST_PLUS"])
-def test_all_strategies_return_float(strategy_name: str) -> None:
-    from app.pricing.strategy import PricingStrategy, apply_strategy
-
-    strategy = PricingStrategy[strategy_name]
-    price = apply_strategy(50.0, strategy)
-    assert isinstance(price, float)

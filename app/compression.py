@@ -1,13 +1,7 @@
-"""Data compression and decompression utilities using zlib and gzip.
-
-Provides symmetric compress/decompress helpers for both raw bytes and
-JSON-serialisable objects, plus measurement utilities that report
-compression ratio and savings percentage.
-"""
+"""Data compression and decompression utilities using zlib and gzip."""
 
 from __future__ import annotations
 
-import base64
 import gzip
 import io
 import json
@@ -107,9 +101,7 @@ def compress_json(obj: Any, method: str = "gzip", level: int = 6) -> bytes:
     else:
         raise ValueError(f"Unknown compression method: {method}")
     ratio = len(compressed) / len(raw) if raw else 1.0
-    logger.debug(
-        "%s compressed %d -> %d bytes (%.1f%%)", method, len(raw), len(compressed), ratio * 100
-    )
+    logger.debug("%s compressed %d -> %d bytes (%.1f%%)", method, len(raw), len(compressed), ratio * 100)
     return compressed
 
 
@@ -149,116 +141,12 @@ def compression_ratio(original: bytes | str, method: str = "gzip") -> float:
     return len(compressed) / len(raw)
 
 
-def compress_and_measure(data: bytes, method: str = "gzip", level: int = 6) -> dict[str, Any]:
-    """Compress *data* and return a stats dict.
-
-    Args:
-        data: Raw bytes to compress.
-        method: ``'gzip'`` or ``'zlib'``.
-        level: Compression level 0-9.
-
-    Returns:
-        Dict with keys ``original_bytes``, ``compressed_bytes``, ``ratio``,
-        and ``savings_pct``.
-    """
-    if method == "gzip":
-        compressed = gzip_compress(data, level)
-    elif method == "zlib":
-        compressed = zlib_compress(data, level)
-    else:
-        raise ValueError(f"Unknown compression method: {method}")
-    orig_len = len(data)
-    comp_len = len(compressed)
-    ratio = comp_len / orig_len if orig_len else 1.0
-    return {
-        "original_bytes": orig_len,
-        "compressed_bytes": comp_len,
-        "ratio": round(ratio, 6),
-        "savings_pct": round((1 - ratio) * 100, 2),
-    }
-
-
-def is_gzip(data: bytes) -> bool:
-    """Return True if *data* starts with the gzip magic number (``\\x1f\\x8b``).
-
-    Args:
-        data: Bytes to inspect.
-
-    Returns:
-        True when the first two bytes match the gzip magic ``\\x1f\\x8b``;
-        False for empty or non-gzip data.
-    """
-    return len(data) >= 2 and data[:2] == b"\x1f\x8b"
-
-
-def is_zlib(data: bytes) -> bool:
-    """Return True if *data* looks like zlib-compressed bytes.
-
-    Args:
-        data: Bytes to inspect.
-
-    Returns:
-        True when the first byte is ``0x78`` (common zlib header byte).
-    """
-    return len(data) >= 1 and data[0] == 0x78
-
-
-def best_method(data: bytes) -> str:
-    """Return the compression method (``"gzip"`` or ``"zlib"``) that yields the smaller output.
-
-    Args:
-        data: Raw bytes to compress.
-
-    Returns:
-        ``"gzip"`` or ``"zlib"`` - whichever produces the smaller compressed output.
-    """
-    gz = gzip_compress(data)
-    zl = zlib_compress(data)
-    return "gzip" if len(gz) <= len(zl) else "zlib"
-
-
-def encode_to_base64(data: bytes) -> str:
-    """Encode bytes to a URL-safe base64 string.
-
-    Args:
-        data: Raw bytes to encode.
-
-    Returns:
-        URL-safe base64 encoded string.
-    """
-    return base64.urlsafe_b64encode(data).decode()
-
-
-def decode_from_base64(encoded: str) -> bytes:
-    """Decode a URL-safe base64 string back to bytes.
-
-    Args:
-        encoded: URL-safe base64 encoded string.
-
-    Returns:
-        Original bytes.
-
-    Raises:
-        ValueError: If the string is not valid base64.
-    """
-    try:
-        return base64.urlsafe_b64decode(encoded.encode())
-    except Exception as exc:
-        raise ValueError(f"Invalid base64 data: {exc}") from exc
-
-
 __all__ = [
-    "best_method",
-    "compress_and_measure",
     "compress_json",
     "compression_ratio",
-    "decode_from_base64",
     "decompress_json",
-    "encode_to_base64",
     "gzip_compress",
     "gzip_decompress",
-    "is_gzip",
-    "is_zlib",
     "zlib_compress",
     "zlib_decompress",
 ]

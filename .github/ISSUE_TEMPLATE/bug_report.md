@@ -1,26 +1,36 @@
 ---
 name: Bug report
-about: Report something that is not working
+about: Report a bug or unexpected behaviour in Watt-Guard
+title: "[Bug] "
 labels: bug
+assignees: ''
 ---
 
-**What happened**
+## Description
 
-**What you expected**
+A clear and concise description of what the bug is.
 
-**Steps to reproduce**
+## Steps to reproduce
 
-1.
-2.
+1. Call endpoint `...`
+2. With payload `...`
+3. See error
 
-**Request payload (if API-related)**
+## Expected behaviour
 
-```json
-{}
-```
+What you expected to happen.
 
-**Environment**
+## Actual behaviour
 
-- Version:
-- Python:
-- Deployment: local / docker / other
+What actually happened. Include the full error message and stack trace if available.
+
+## Environment
+
+- Python version:
+- Watt-Guard version:
+- OS:
+- Deployment: local / Docker / cloud
+
+## Additional context
+
+Any other context, logs, or screenshots.

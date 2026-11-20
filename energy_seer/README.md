@@ -19,16 +19,11 @@ Energy-Seer predicts hourly energy consumption for smart meters, detects grid an
 
 - **Ensemble Forecasting** — XGBoost + LightGBM + RandomForest VotingRegressor with 5-fold CV
 - **Anomaly Detection** — IsolationForest + Z-score with severity classification (low/medium/high/critical)
-- **Drift Monitoring** — KS-test + PSI per feature with configurable thresholds
+- **Drift Monitoring** — KS-test per feature with configurable p-value threshold
 - **Multi-step Forecast** — Up to 168-hour (7-day) horizon auto-stepping
-- **Weighted Moving Average** — Linear-weighted forecaster for short horizons
-- **Exponential Smoothing** — Simple EMA forecaster with configurable alpha
 - **RAG Pattern Search** — FAISS-based similar consumption pattern retrieval
-- **Efficiency Scoring** — Building energy efficiency on 0–100 scale with letter grades
-- **PSI Alerts** — Population Stability Index alerts for distribution drift
 - **Airflow DAG** — Weekly automated retraining with R² validation gate
 - **Rate Limiting** — 300 requests/minute per IP with correlation ID tracing
-- **Health Check Script** — `scripts/health_check.py` liveness probe
 
 ## Quick Start
 
@@ -118,38 +113,6 @@ pytest tests/ -v --tb=short
 ## Environment Variables
 
 See `.env.example` for all configurable variables.
-
-## Testing
-
-The test suite lives in `energy_seer/tests/` and covers all public API surface.
-
-```bash
-# Run all tests
-pytest energy_seer/tests/ -v
-
-# Run a specific module's tests
-pytest energy_seer/tests/test_demand_spike_extended.py -v
-
-# Run with coverage report
-pytest energy_seer/tests/ --cov=energy_seer/app --cov-report=term-missing
-```
-
-### Test coverage highlights
-
-| Test file | Module tested | Key scenarios |
-|-----------|--------------|---------------|
-| `test_demand_spike_extended.py` | `demand_spike` | spike detection, severity, rolling count, normalise, trend, smooth, percentile, windows |
-| `test_validators_extended.py` | `validators` | meter ID, alpha, temperature, humidity, readings list, tariff, positive int, non-negative float |
-| `test_peak_demand_extended.py` | `peak_demand` | peak hours, shaving savings, flexibility score, window, load factor, off-peak average, rolling sums |
-| `test_efficiency_score_extended.py` | `efficiency_score` | boundary scores, delta, trend, normalised index, percentile, building comparison, color mapping |
-| `test_cache_extended.py` | `cache` | set/get, TTL, invalidate, evict, size, keys, default, get-or-set, batch update |
-| `test_telemetry_extended.py` | `telemetry` | increment, increment-by, snapshot, all-above, top-N, counter exists, reset, batch |
-| `test_psi_extended.py` | `psi` | PSI report, series trend, batch alert |
-| `test_grid_report_extended.py` | `grid_report` | status, drift, anomaly, health score, alert summary |
-| `test_mlflow_stub_extended.py` | `mlflow_stub` | log params/metrics/model, start/end run, sequence types |
-| `test_forecaster_extended.py` | `forecaster` | linear trend, moving average, exponential smoothing, confidence band |
-| `test_monitoring_extended.py` | `monitoring` | drift compute, reference distributions, drift summary, anomaly summary |
-| `test_aws_stub_extended.py` | `aws_stub` | upload, download, list, delete, model exists |
 
 ## License
 

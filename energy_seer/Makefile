@@ -1,4 +1,4 @@
-.PHONY: install test test-cov test-fast lint format run docker-up docker-down clean diagram health typecheck check-all
+.PHONY: install test lint format run docker-up docker-down clean diagram
 
 install:
 	pip install -r requirements.txt
@@ -25,20 +25,6 @@ docker-down:
 
 diagram:
 	python scripts/generate_diagram.py
-
-health:
-	python scripts/health_check.py
-
-typecheck:
-	python -m mypy app/ --ignore-missing-imports --no-error-summary 2>&1 | tail -20
-
-test-cov:
-	pytest tests/ --cov=app --cov-report=term-missing -q 2>&1 | tail -40
-
-test-fast:
-	pytest tests/ -v --tb=short -x -q 2>&1 | tail -40
-
-check-all: lint typecheck test-cov
 
 clean:
 	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true

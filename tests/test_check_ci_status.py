@@ -249,9 +249,7 @@ def test_all_failing_conclusions_in_set(conclusion: str) -> None:
     assert conclusion in FAILING_CONCLUSIONS
 
 
-def test_repo_flag_filters_to_single_repo(
-    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
-) -> None:
+def test_repo_flag_filters_to_single_repo(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture) -> None:
     import sys
 
     with monkeypatch.context() as m:
@@ -268,7 +266,7 @@ def test_repo_flag_filters_to_single_repo(
 
         call_urls: list[str] = []
 
-        def fake_urlopen(req, timeout=15) -> None:
+        def fake_urlopen(req, timeout=15):
             call_urls.append(req.full_url)
             mock = MagicMock()
             mock.__enter__ = lambda s: s

@@ -21,11 +21,6 @@ class LoadPatternIndex:
     """Stores energy load vectors and finds similar historical periods."""
 
     def __init__(self, dim: int = 24) -> None:
-        """Initialise an empty index for load vectors of the given dimensionality.
-
-        Args:
-            dim: Expected vector length (number of time-steps per load period).
-        """
         self.dim = dim
         self._vectors: list[np.ndarray] = []
         self._metadata: list[dict] = []
@@ -140,7 +135,6 @@ __all__ = [
 
 
 def get_pattern_index(dim: int = DIM) -> LoadPatternIndex:
-    """Return (or lazily create) the module-level singleton LoadPatternIndex."""
     global _pattern_index
     if _pattern_index is None:
         _pattern_index = LoadPatternIndex(dim=dim)
@@ -206,9 +200,7 @@ def index_is_empty() -> bool:
     return index_size() == 0
 
 
-def batch_add_properties(
-    vectors: list[list[float]], metadata_list: list[dict | None] | None = None
-) -> int:
+def batch_add_properties(vectors: list[list[float]], metadata_list: list[dict | None] | None = None) -> int:
     """Add multiple property vectors to the index in one call.
 
     Args:

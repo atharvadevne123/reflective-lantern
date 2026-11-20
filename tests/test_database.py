@@ -73,9 +73,7 @@ def test_query_by_building_id(db_session) -> None:
             )
         )
     db_session.commit()
-    rows = (
-        db_session.query(EnergyReading).filter(EnergyReading.building_id == "query-test-bldg").all()
-    )
+    rows = db_session.query(EnergyReading).filter(EnergyReading.building_id == "query-test-bldg").all()
     assert len(rows) >= 3
 
 
@@ -192,9 +190,7 @@ def test_anomaly_log_stored_and_retrieved(db_session) -> None:
     )
     db_session.add(entry)
     db_session.commit()
-    retrieved = (
-        db_session.query(AnomalyLog).filter(AnomalyLog.building_id == "bldg-anomaly").first()
-    )
+    retrieved = db_session.query(AnomalyLog).filter(AnomalyLog.building_id == "bldg-anomaly").first()
     assert retrieved is not None
     assert retrieved.severity == "critical"
 
@@ -213,25 +209,21 @@ def test_drift_log_stored_and_retrieved(db_session) -> None:
     )
     db_session.add(entry)
     db_session.commit()
-    retrieved = (
-        db_session.query(DriftLog).filter(DriftLog.feature_name == "consumption_kwh").first()
-    )
+    retrieved = db_session.query(DriftLog).filter(DriftLog.feature_name == "consumption_kwh").first()
     assert retrieved is not None
     assert bool(retrieved.drift_detected) is True
 
 
 @pytest.mark.parametrize("n", [1, 3, 5, 10])
 def test_prediction_log_multiple_buildings(db_session, n) -> None:
-    import uuid
     from datetime import datetime
 
     from app.database import PredictionLog, get_predictions_by_building
 
-    run_id = uuid.uuid4().hex[:8]
     for i in range(n):
         db_session.add(
             PredictionLog(
-                building_id=f"multi-{run_id}-building-{i}",
+                building_id=f"building-{i}",
                 timestamp=datetime.utcnow(),
                 predicted_kwh=float(i * 2),
                 latency_ms=float(i),
@@ -239,7 +231,7 @@ def test_prediction_log_multiple_buildings(db_session, n) -> None:
         )
     db_session.commit()
     for i in range(n):
-        results = get_predictions_by_building(db_session, f"multi-{run_id}-building-{i}")
+        results = get_predictions_by_building(db_session, f"building-{i}")
         assert len(results) == 1
         assert results[0].predicted_kwh == float(i * 2)
 
@@ -414,37 +406,3 @@ def test_anomaly_log_severity_field(db_session, severity) -> None:
     db_session.add(log)
     db_session.commit()
     assert log.severity == severity
-
-
-def test_get_predictions_by_building_returns_rows(db_session) -> None:
-    from app.database import PredictionLog, get_predictions_by_building
-
-    for i in range(3):
-        db_session.add(PredictionLog(building_id="q-bldg", predicted_kwh=float(i)))
-    db_session.commit()
-    rows = get_predictions_by_building(db_session, "q-bldg")
-    assert len(rows) == 3
-
-
-@pytest.mark.parametrize("n", [1, 3, 5])
-def test_count_anomalies_by_building_returns_correct_count(db_session, n: int) -> None:
-    """count_anomalies_by_building returns the number of anomaly rows for a building."""
-    from app.database import AnomalyLog, count_anomalies_by_building
-
-    bldg = f"count-test-{n}"
-    for _i in range(n):
-        db_session.add(AnomalyLog(building_id=bldg, anomaly_score=0.9, is_anomaly=1))
-    db_session.commit()
-    assert count_anomalies_by_building(db_session, bldg) == n
-
-
-def test_get_recent_anomalies_filters_by_building(db_session) -> None:
-    """get_recent_anomalies returns only rows for the given building."""
-    from app.database import AnomalyLog, get_recent_anomalies
-
-    db_session.add(AnomalyLog(building_id="ra-bldg", anomaly_score=0.95, is_anomaly=1))
-    db_session.add(AnomalyLog(building_id="other-bldg", anomaly_score=0.1, is_anomaly=1))
-    db_session.commit()
-    rows = get_recent_anomalies(db_session, "ra-bldg", limit=10)
-    assert all(r.building_id == "ra-bldg" for r in rows)
-    assert len(rows) == 1

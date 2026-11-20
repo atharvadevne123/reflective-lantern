@@ -260,18 +260,19 @@ def consumption_efficiency_ratio(
     return round(actual_kwh / target_kwh, 4)
 
 
-def daily_average_consumption(series: list[float]) -> float:
-    """Compute the arithmetic mean of a consumption series.
+def daily_average_consumption(hourly_series: list[float]) -> float:
+    """Compute the average daily energy consumption from an hourly time series.
 
     Args:
-        series: Consumption readings (daily or hourly kWh values).
+        hourly_series: Hourly kWh readings (any length).
 
     Returns:
-        Arithmetic mean of the series, or 0.0 for empty input.
+        Mean daily consumption (sum over 24-hour blocks) or 0.0 for empty input.
     """
-    if not series:
+    if not hourly_series:
         return 0.0
-    return round(sum(series) / len(series), 4)
+    days = max(len(hourly_series) / 24.0, 1.0)
+    return round(sum(hourly_series) / days, 4)
 
 
 def benchmark_vs_portfolio(
@@ -468,8 +469,6 @@ def report_anomaly_summary(flags: list[bool]) -> dict:
 def top_consumption_hours(
     hourly_kwh: list[float],
     n: int = 5,
-    *,
-    top_n: int | None = None,
 ) -> list[dict[str, Any]]:
     """Return the *n* hours with the highest consumption in *hourly_kwh*.
 
@@ -481,12 +480,11 @@ def top_consumption_hours(
         List of dicts with 'hour' (index) and 'kwh' keys, sorted by kwh descending.
         Empty list when *hourly_kwh* is empty.
     """
-    effective_n = top_n if top_n is not None else n
     if not hourly_kwh:
         return []
     indexed = [{"hour": i, "kwh": round(v, 4)} for i, v in enumerate(hourly_kwh)]
     indexed.sort(key=lambda x: x["kwh"], reverse=True)
-    return indexed[: min(effective_n, len(indexed))]
+    return indexed[: min(n, len(indexed))]
 
 
 def rolling_savings_summary(
@@ -611,8 +609,7 @@ def hourly_cost_breakdown(
     if tariff_per_kwh < 0:
         raise ValueError("tariff_per_kwh must be non-negative")
     return [
-        {"hour": i, "kwh": round(kwh, 4), "cost": round(kwh * tariff_per_kwh, 4)}
-        for i, kwh in enumerate(hourly_kwh)
+        {"hour": i, "kwh": round(kwh, 4), "cost": round(kwh * tariff_per_kwh, 4)} for i, kwh in enumerate(hourly_kwh)
     ]
 
 
@@ -690,9 +687,7 @@ def peak_usage_window(hourly_kwh: list[float], window_size: int = 3) -> dict[str
     }
 
 
-def emission_report(
-    kwh_values: list[float], carbon_intensity_kg_per_kwh: float = 0.35
-) -> dict[str, float]:
+def emission_report(kwh_values: list[float], carbon_intensity_kg_per_kwh: float = 0.35) -> dict[str, float]:
     """Compute CO2 emission totals from a list of kWh readings.
 
     Args:
@@ -709,12 +704,7 @@ def emission_report(
     if carbon_intensity_kg_per_kwh < 0:
         raise ValueError("carbon_intensity_kg_per_kwh must be non-negative")
     if not kwh_values:
-        return {
-            "total_kwh": 0.0,
-            "total_co2_kg": 0.0,
-            "avg_co2_kg_per_period": 0.0,
-            "max_co2_kg": 0.0,
-        }
+        return {"total_kwh": 0.0, "total_co2_kg": 0.0, "avg_co2_kg_per_period": 0.0, "max_co2_kg": 0.0}
     total_kwh = sum(kwh_values)
     total_co2 = total_kwh * carbon_intensity_kg_per_kwh
     avg_co2 = total_co2 / len(kwh_values)
@@ -876,9 +866,7 @@ def consumption_heatmap_data(
         dkey = str(dow)
         hkey = str(hour)
         buckets.setdefault(dkey, {}).setdefault(hkey, []).append(float(kwh))
-    return {
-        d: {h: round(sum(v) / len(v), 4) for h, v in hours.items()} for d, hours in buckets.items()
-    }
+    return {d: {h: round(sum(v) / len(v), 4) for h, v in hours.items()} for d, hours in buckets.items()}
 
 
 def savings_summary(
@@ -975,16 +963,3 @@ def format_kwh(value: float) -> str:
     if value >= 1000.0:
         return f"{value / 1000.0:.2f} MWh"
     return f"{value:.2f} kWh"
-
-
-def consumption_delta(before_kwh: float, after_kwh: float) -> float:
-    """Return the absolute change in consumption between two periods.
-
-    Args:
-        before_kwh: Consumption in the earlier period.
-        after_kwh: Consumption in the later period.
-
-    Returns:
-        Signed difference (after - before) in kWh, rounded to 4 decimal places.
-    """
-    return round(after_kwh - before_kwh, 4)

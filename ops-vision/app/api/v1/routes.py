@@ -9,18 +9,12 @@ from sqlalchemy.orm import Session
 
 from app import __version__
 from app.config import get_settings
-from app.constants import (
-    SEVERITY_CRITICAL_THRESHOLD,
-    SEVERITY_HIGH_THRESHOLD,
-    SEVERITY_MEDIUM_THRESHOLD,
-)
 from app.crud import (
     avg_confidence,
     count_drift_alerts_last_24h,
     count_incidents_predicted,
     count_predictions,
     create_prediction,
-    delete_old_predictions,
     list_incidents,
 )
 from app.database import get_db
@@ -38,7 +32,6 @@ from app.schemas import (
     MetricsPayload,
     MetricsResponse,
     PredictionResponse,
-    PredictionStats,
     RunbookResult,
     RunbookSearchRequest,
 )
@@ -75,7 +68,8 @@ def _load_artifacts() -> tuple:
         return model, pipeline
     except (FileNotFoundError, OSError, pickle.UnpicklingError):
         logger.warning(
-            "Model/pipeline artifacts missing or unreadable — bootstrapping from synthetic data"
+            "Model/pipeline artifacts missing or unreadable — bootstrapping "
+            "from synthetic data"
         )
 
     from app.model import generate_synthetic_data, save_model, train
@@ -105,20 +99,20 @@ def _ensure_artifacts() -> None:
         _model, _feature_pipeline = _load_artifacts()
 
 
-def _get_model() -> object:
+def _get_model():
     """Return the cached model, loading or bootstrapping it on first use."""
     _ensure_artifacts()
     return _model
 
 
-def _get_pipeline() -> object:
+def _get_pipeline():
     """Return the cached fitted feature pipeline, matched to the loaded model."""
     _ensure_artifacts()
     return _feature_pipeline
 
 
 @router.post("/predict", response_model=PredictionResponse, summary="Predict incident probability")
-def predict_endpoint(payload: MetricsPayload, db: Session = Depends(get_db)) -> PredictionResponse:
+def predict_endpoint(payload: MetricsPayload, db: Session = Depends(get_db)):
     """Run the ML ensemble on incoming SRE metrics and return incident probability.
 
     Also records the sample in the drift monitor and persists the prediction.
@@ -138,7 +132,7 @@ def predict_endpoint(payload: MetricsPayload, db: Session = Depends(get_db)) -> 
         X = pipeline.transform(df)
     except Exception:
         logger.exception("Feature transform failed")
-        raise HTTPException(status_code=422, detail="Feature engineering failed") from None
+        raise HTTPException(status_code=422, detail="Feature engineering failed")
 
     preds, proba = predict(model, X)
     is_incident = bool(preds[0])
@@ -151,7 +145,9 @@ def predict_endpoint(payload: MetricsPayload, db: Session = Depends(get_db)) -> 
     runbook_hint: str | None = None
     if is_incident:
         index = get_runbook_index(get_settings().runbooks_path)
-        results = index.search(f"high cpu memory error latency {payload.service_name}", top_k=1)
+        results = index.search(
+            f"high cpu memory error latency {payload.service_name}", top_k=1
+        )
         if results:
             runbook_hint = results[0][0].title
 
@@ -182,7 +178,7 @@ def predict_endpoint(payload: MetricsPayload, db: Session = Depends(get_db)) -> 
 
 
 @router.get("/health", response_model=HealthResponse, summary="Service health check")
-def health(db: Session = Depends(get_db)) -> HealthResponse:
+def health(db: Session = Depends(get_db)):
     """Return service health including model load status and window sizes.
 
     Args:
@@ -208,7 +204,7 @@ def health(db: Session = Depends(get_db)) -> HealthResponse:
 
 
 @router.get("/metrics", response_model=MetricsResponse, summary="Aggregate operational metrics")
-def metrics(db: Session = Depends(get_db)) -> MetricsResponse:
+def metrics(db: Session = Depends(get_db)):
     """Return aggregate prediction and drift metrics for dashboarding.
 
     Args:
@@ -232,7 +228,7 @@ def metrics(db: Session = Depends(get_db)) -> MetricsResponse:
 
 
 @router.post("/runbooks/search", response_model=list[RunbookResult], summary="Search SRE runbooks")
-def search_runbooks(request: RunbookSearchRequest) -> list[RunbookResult]:
+def search_runbooks(request: RunbookSearchRequest):
     """Search the FAISS runbook index for relevant remediation steps.
 
     Args:
@@ -256,7 +252,7 @@ def search_runbooks(request: RunbookSearchRequest) -> list[RunbookResult]:
 
 
 @router.get("/forecast", response_model=list[ForecastPoint], summary="Forecast incident rate")
-def forecast_incident_rate() -> list[ForecastPoint]:
+def forecast_incident_rate():
     """Forecast the next 24-hour incident rate using exponential smoothing.
 
     Returns:
@@ -267,7 +263,6 @@ def forecast_incident_rate() -> list[ForecastPoint]:
 
     if len(series) < 2:
         from datetime import timedelta
-
         now = datetime.utcnow()
         return [
             ForecastPoint(
@@ -289,9 +284,7 @@ def forecast_incident_rate() -> list[ForecastPoint]:
     response_model=list[PredictionResponse],
     summary="Score a batch of observations",
 )
-def predict_batch(
-    request: BatchPredictRequest, db: Session = Depends(get_db)
-) -> list[PredictionResponse]:
+def predict_batch(request: BatchPredictRequest, db: Session = Depends(get_db)):
     """Score up to 500 telemetry observations in a single call.
 
     Batching amortises the model and pipeline lookup across the whole request
@@ -321,7 +314,7 @@ def predict_batch(
     now = datetime.utcnow()
 
     responses: list[PredictionResponse] = []
-    for item, pred, conf in zip(request.items, preds, proba, strict=False):
+    for item, pred, conf in zip(request.items, preds, proba):
         is_incident = bool(pred)
         responses.append(
             PredictionResponse(
@@ -349,7 +342,7 @@ def get_incidents(
     offset: int = Query(default=0, ge=0),
     service_name: str | None = Query(default=None),
     db: Session = Depends(get_db),
-) -> list[IncidentRecord]:
+):
     """List persisted incidents, most recent first.
 
     Args:
@@ -365,10 +358,8 @@ def get_incidents(
     return [IncidentRecord.model_validate(row) for row in rows]
 
 
-@router.get(
-    "/drift/status", response_model=DriftStatusResponse, summary="Latest drift check status"
-)
-def drift_status() -> DriftStatusResponse:
+@router.get("/drift/status", response_model=DriftStatusResponse, summary="Latest drift check status")
+def drift_status():
     """Return the drift monitor's last check results.
 
     Returns:
@@ -384,68 +375,6 @@ def drift_status() -> DriftStatusResponse:
     )
 
 
-@router.get(
-    "/predictions/stats",
-    response_model=PredictionStats,
-    summary="Aggregated prediction statistics",
-)
-def prediction_stats(db: Session = Depends(get_db)) -> PredictionStats:
-    """Return aggregated statistics about all stored predictions.
-
-    Args:
-        db: Injected database session.
-
-    Returns:
-        PredictionStats with totals, incident count, rate, and avg confidence.
-    """
-    total = count_predictions(db)
-    incidents = count_incidents_predicted(db)
-    avg_conf = avg_confidence(db)
-    return PredictionStats(
-        total_predictions=total,
-        incident_count=incidents,
-        incident_rate=round(incidents / total, 4) if total > 0 else 0.0,
-        avg_confidence=round(avg_conf, 4),
-    )
-
-
-@router.get(
-    "/model/version",
-    summary="Current model version",
-)
-def model_version() -> dict[str, object]:
-    """Return the currently loaded model version string.
-
-    Returns:
-        Dict with model_version and model_loaded flag.
-    """
-    return {
-        "model_version": MODEL_VERSION,
-        "model_loaded": _model is not None,
-    }
-
-
-@router.delete(
-    "/predictions/old",
-    summary="Delete old prediction records",
-)
-def prune_predictions(
-    older_than_days: int = Query(default=30, ge=1, le=365),
-    db: Session = Depends(get_db),
-) -> dict:
-    """Delete prediction records older than the specified number of days.
-
-    Args:
-        older_than_days: Predictions older than this are removed (default 30).
-        db: Injected database session.
-
-    Returns:
-        Dict with the count of deleted records.
-    """
-    deleted = delete_old_predictions(db, older_than_days=older_than_days)
-    return {"deleted": deleted, "older_than_days": older_than_days}
-
-
 def _infer_severity(confidence: float) -> str:
     """Map confidence score to a severity label.
 
@@ -455,10 +384,10 @@ def _infer_severity(confidence: float) -> str:
     Returns:
         One of 'critical', 'high', 'medium', or 'low'.
     """
-    if confidence >= SEVERITY_CRITICAL_THRESHOLD:
+    if confidence >= 0.9:
         return "critical"
-    if confidence >= SEVERITY_HIGH_THRESHOLD:
+    if confidence >= 0.75:
         return "high"
-    if confidence >= SEVERITY_MEDIUM_THRESHOLD:
+    if confidence >= 0.5:
         return "medium"
     return "low"

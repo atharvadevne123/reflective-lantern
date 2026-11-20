@@ -233,18 +233,14 @@ def demand_variability(values: list[float]) -> dict[str, float]:
 
 
 __all__ = [
-    "consecutive_spike_run",
-    "demand_percentile",
-    "demand_trend",
-    "demand_variability",
     "detect_spike",
-    "normalise_demand",
     "rolling_spike_count",
-    "smooth_demand",
-    "spike_ratio",
     "spike_severity",
-    "spike_windows",
+    "spike_ratio",
+    "consecutive_spike_run",
+    "normalise_demand",
     "sustained_demand_violation",
+    "demand_variability",
 ]
 
 
@@ -277,38 +273,6 @@ def spike_windows(
         else:
             i += 1
     return windows
-
-
-def demand_trend(values: list[float]) -> dict[str, object]:
-    """Classify whether demand is trending up, down, or flat.
-
-    Compares the mean of the first half with the mean of the second half.
-
-    Args:
-        values: Time-ordered demand readings (at least 4 values required).
-
-    Returns:
-        Dict with 'trend' ('rising'|'falling'|'flat'), 'first_half_mean',
-        'second_half_mean', and 'delta'.
-    """
-    if len(values) < 4:
-        return {"trend": "flat", "first_half_mean": 0.0, "second_half_mean": 0.0, "delta": 0.0}
-    mid = len(values) // 2
-    first = float(np.mean(values[:mid]))
-    second = float(np.mean(values[mid:]))
-    delta = round(second - first, 4)
-    if delta > 0.05 * max(abs(first), 1e-6):
-        trend = "rising"
-    elif delta < -0.05 * max(abs(first), 1e-6):
-        trend = "falling"
-    else:
-        trend = "flat"
-    return {
-        "trend": trend,
-        "first_half_mean": round(first, 4),
-        "second_half_mean": round(second, 4),
-        "delta": delta,
-    }
 
 
 def demand_percentile(values: list[float], percentile: float = 95.0) -> float:

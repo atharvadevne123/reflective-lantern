@@ -11,40 +11,40 @@ from app.rate_limit import WINDOW_SECONDS, _prune, reset_rate_limit_state
 
 
 @pytest.fixture(autouse=True)
-def clear_state() -> None:
+def clear_state():
     reset_rate_limit_state()
     yield
     reset_rate_limit_state()
 
 
-def test_prune_drops_expired_timestamps() -> None:
+def test_prune_drops_expired_timestamps():
     now = time.time()
     bucket = deque([now - WINDOW_SECONDS - 10, now - WINDOW_SECONDS - 1, now - 5])
     _prune(bucket, now)
     assert len(bucket) == 1
 
 
-def test_prune_keeps_all_recent() -> None:
+def test_prune_keeps_all_recent():
     now = time.time()
     bucket = deque([now - 5, now - 3, now - 1])
     _prune(bucket, now)
     assert len(bucket) == 3
 
 
-def test_prune_on_empty_bucket() -> None:
+def test_prune_on_empty_bucket():
     bucket: deque[float] = deque()
     _prune(bucket, time.time())
     assert len(bucket) == 0
 
 
-def test_rate_limit_headers_present(client) -> None:
+def test_rate_limit_headers_present(client):
     resp = client.get("/api/v1/metrics")
     assert resp.status_code == 200
     assert "X-RateLimit-Limit" in resp.headers
     assert "X-RateLimit-Remaining" in resp.headers
 
 
-def test_health_endpoint_is_exempt(client) -> None:
+def test_health_endpoint_is_exempt(client):
     """Liveness probes must not be able to rate-limit the service out."""
     for _ in range(50):
         resp = client.get("/api/v1/health")
@@ -52,7 +52,7 @@ def test_health_endpoint_is_exempt(client) -> None:
     assert "X-RateLimit-Limit" not in resp.headers
 
 
-def test_limit_enforced_returns_429(client, monkeypatch) -> None:
+def test_limit_enforced_returns_429(client, monkeypatch):
     """Once the window fills, further calls get 429 with a Retry-After."""
     from app import rate_limit
 

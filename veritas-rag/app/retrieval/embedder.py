@@ -12,7 +12,6 @@ pipeline is agnostic to the backend.
 from __future__ import annotations
 
 import hashlib
-import itertools
 import struct
 from typing import Protocol
 
@@ -22,24 +21,12 @@ from .bm25 import tokenize
 
 
 class Embedder(Protocol):
-    """Interface every embedding backend must satisfy.
-
-    Implementations must be stateless per call: the same text always produces
-    the same vector. This contract allows the cache to serve vectors across
-    pipeline restarts without consistency issues.
-    """
+    """Interface every embedding backend must satisfy."""
 
     dim: int
 
     def embed(self, texts: list[str]) -> np.ndarray:
-        """Return an (n, dim) float32 matrix of L2-normalized embeddings.
-
-        Args:
-            texts: Batch of strings to embed.
-
-        Returns:
-            Float32 array of shape (len(texts), dim); each row is unit-norm.
-        """
+        """Return an (n, dim) float32 matrix of L2-normalized embeddings."""
         ...
 
 
@@ -52,52 +39,21 @@ def _bucket(feature: str, dim: int) -> tuple[int, float]:
 
 
 class HashingEmbedder:
-    """Feature-hashing embedder (deterministic, no model download).
-
-    Produces L2-normalized float32 vectors using word unigrams, word bigrams,
-    and character trigrams hashed into a fixed-dimension space via BLAKE2b.
-    Vectors for empty or stopword-only texts are zero-vectors before
-    normalization; the normalization guard returns a uniform-magnitude vector
-    rather than NaN.
-
-    Replace this class with a sentence-transformer or API-backed implementation
-    for production semantic quality — the rest of the pipeline calls only
-    ``embed(texts)`` and inspects ``dim``.
-    """
+    """Feature-hashing embedder (deterministic, no model download)."""
 
     def __init__(self, dim: int = 384) -> None:
-        """Create an embedder with the given output dimensionality.
-
-        Args:
-            dim: Number of hashing buckets (output vector length).
-        """
         self.dim = dim
 
     def _features(self, text: str) -> list[str]:
-        """Extract word, bigram, and character-trigram features from text.
-
-        Args:
-            text: Raw text to featurize.
-
-        Returns:
-            List of prefixed feature strings for hashing.
-        """
         tokens = tokenize(text)
         features = [f"w:{t}" for t in tokens]
-        features += [f"b:{a}_{b}" for a, b in itertools.pairwise(tokens)]
+        features += [f"b:{a}_{b}" for a, b in zip(tokens, tokens[1:], strict=False)]
         compact = "".join(tokens)
         features += [f"c:{compact[i : i + 3]}" for i in range(max(0, len(compact) - 2))]
         return features
 
     def embed(self, texts: list[str]) -> np.ndarray:
-        """Embed a batch of texts into L2-normalized hashed-feature vectors.
-
-        Args:
-            texts: Batch of text strings to embed.
-
-        Returns:
-            Float32 array of shape (len(texts), dim) with unit-norm rows.
-        """
+        """Embed texts into L2-normalized hashed-feature vectors."""
         out = np.zeros((len(texts), self.dim), dtype=np.float32)
         for row, text in enumerate(texts):
             for feature in self._features(text):

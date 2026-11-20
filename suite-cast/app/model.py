@@ -97,7 +97,6 @@ def generate_sample_data(n: int = 2000) -> tuple[pd.DataFrame, np.ndarray]:
 
 
 def _make_xgb_pipe() -> Pipeline:
-    """Build an XGBoost classification pipeline with feature engineering and scaling."""
     return Pipeline(
         [
             ("engineer", HotelFeatureEngineer()),
@@ -119,7 +118,6 @@ def _make_xgb_pipe() -> Pipeline:
 
 
 def _make_lgbm_pipe() -> Pipeline:
-    """Build a LightGBM classification pipeline with feature engineering and scaling."""
     return Pipeline(
         [
             ("engineer", HotelFeatureEngineer()),
@@ -172,7 +170,7 @@ def train_model(X: pd.DataFrame, y: np.ndarray) -> tuple[Pipeline, Pipeline, dic
         "lgbm_auc_mean": float(lgbm_cv.mean()),
         "lgbm_auc_std": float(lgbm_cv.std()),
         "n_features": 18,
-        "n_samples": len(y),
+        "n_samples": int(len(y)),
     }
     METRICS_PATH.write_text(json.dumps(metrics, indent=2))
     logger.info(
@@ -218,8 +216,8 @@ def predict_demand(
         base_rate: Baseline room rate used for dynamic pricing calculation.
 
     Returns:
-        Dict containing demand_score, demand_tier, confidence, suggested_rate,
-        and per_row_scores for drift monitoring.
+        Dict containing demand_score, demand_tier, suggested_rate, and
+        per_row_scores for drift monitoring.
     """
     xgb_probs: np.ndarray = xgb_model.predict_proba(X)[:, 1]
 
@@ -245,7 +243,6 @@ def predict_demand(
     return {
         "demand_score": round(demand_score, 4),
         "demand_tier": tier,
-        "confidence": round(demand_score, 4),
         "suggested_rate": suggested_rate,
         "per_row_scores": per_row.tolist(),
     }

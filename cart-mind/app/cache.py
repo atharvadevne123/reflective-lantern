@@ -38,12 +38,6 @@ class TTLCache:
         ttl_seconds: float = DEFAULT_TTL_SECONDS,
         max_entries: int = DEFAULT_MAX_ENTRIES,
     ) -> None:
-        """Initialise the LRU-TTL cache with the given lifetime and capacity.
-
-        Args:
-            ttl_seconds: Entry lifetime in seconds from insertion time.
-            max_entries: Hard capacity; least-recently-used entries are evicted first.
-        """
         self._ttl = ttl_seconds
         self._max = max_entries
         self._store: OrderedDict[str, tuple[float, Any]] = OrderedDict()
@@ -116,30 +110,6 @@ class TTLCache:
             self._hits = 0
             self._misses = 0
 
-    def contains(self, key: str) -> bool:
-        """Return True if *key* exists and has not yet expired.
-
-        Args:
-            key: Cache key to probe.
-
-        Returns:
-            True when the key is live; False when absent or expired.
-        """
-        return self.get(key) is not None
-
-    def keys(self) -> list[str]:
-        """Return a snapshot of all live (non-expired) keys.
-
-        Args:
-            None.
-
-        Returns:
-            List of live cache keys at the moment of the call.
-        """
-        now = time.monotonic()
-        with self._lock:
-            return [k for k, (ts, _) in self._store.items() if now - ts <= self._ttl]
-
     def stats(self) -> dict[str, Any]:
         """Return cache size and hit-rate statistics.
 
@@ -161,17 +131,6 @@ class TTLCache:
 RECOMMENDATION_CACHE = TTLCache()
 SIMILARITY_CACHE = TTLCache()
 
-__all__ = [
-    "DEFAULT_MAX_ENTRIES",
-    "DEFAULT_TTL_SECONDS",
-    "RECOMMENDATION_CACHE",
-    "SIMILARITY_CACHE",
-    "TTLCache",
-    "cache_hit_rate",
-    "evict_expired",
-    "warm_cache",
-]
-
 
 def cache_hit_rate(cache: TTLCache) -> float:
     """Return the current hit rate of *cache* as a fraction in [0, 1].
@@ -184,25 +143,6 @@ def cache_hit_rate(cache: TTLCache) -> float:
     """
     s = cache.stats()
     return s["hit_rate"]
-
-
-def warm_cache(cache: TTLCache, items: dict[str, Any]) -> int:
-    """Pre-populate *cache* with a batch of key-value pairs.
-
-    Useful at startup to seed the cache with recently retrieved results so
-    the first wave of requests hits hot entries rather than computing from scratch.
-
-    Args:
-        cache: A TTLCache instance to warm.
-        items: Mapping of cache keys to their values.
-
-    Returns:
-        Number of entries inserted.
-    """
-    for key, value in items.items():
-        cache.set(key, value)
-    logger.debug("Cache warmed with %d entries", len(items))
-    return len(items)
 
 
 def evict_expired(cache: TTLCache) -> int:

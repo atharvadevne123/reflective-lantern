@@ -8,12 +8,7 @@ import logging
 
 from fastapi import APIRouter, HTTPException
 
-from app.api.schemas import (
-    BatchPriceRequest,
-    BatchPriceResponse,
-    PriceRequest,
-    PriceResponse,
-)
+from app.api.schemas import BatchPriceRequest, BatchPriceResponse, PriceRequest, PriceResponse
 from app.config import settings
 
 logger = logging.getLogger(__name__)

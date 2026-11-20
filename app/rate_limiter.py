@@ -12,8 +12,6 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class _Bucket:
-    """Internal per-client token bucket with current token count and last refill timestamp."""
-
     tokens: float
     last_refill: float = field(default_factory=time.monotonic)
 
@@ -42,27 +40,14 @@ class TokenBucketRateLimiter:
         self._lock = threading.RLock()
 
     def _refill(self, bucket: _Bucket) -> None:
-        """Refill *bucket* tokens based on elapsed time since last refill.
-
-        Args:
-            bucket: The :class:`_Bucket` to update in-place. Tokens are capped
-                at :attr:`_capacity`. Must be called while holding :attr:`_lock`.
-        """
+        """Refill *bucket* tokens based on elapsed time since last refill."""
         now = time.monotonic()
         elapsed = now - bucket.last_refill
         bucket.tokens = min(self._capacity, bucket.tokens + elapsed * self._rate)
         bucket.last_refill = now
 
     def is_allowed(self, client_key: str) -> bool:
-        """Return True and consume one token if the client is within rate limit.
-
-        Args:
-            client_key: Identifier for the client (e.g. IP address, user ID).
-
-        Returns:
-            True when a token was available and consumed; False when the bucket
-            is empty and the request should be throttled.
-        """
+        """Return True and consume one token if the client is within rate limit."""
         with self._lock:
             if client_key not in self._buckets:
                 self._buckets[client_key] = _Bucket(tokens=self._capacity)
@@ -75,15 +60,7 @@ class TokenBucketRateLimiter:
             return False
 
     def remaining_tokens(self, client_key: str) -> float:
-        """Return current token count for *client_key* after a refill.
-
-        Args:
-            client_key: Client identifier.
-
-        Returns:
-            Float token count, up to :attr:`_capacity`. Returns the full
-            capacity when the key has never been seen.
-        """
+        """Return current token count for *client_key* after a refill."""
         with self._lock:
             if client_key not in self._buckets:
                 return self._capacity
@@ -92,27 +69,18 @@ class TokenBucketRateLimiter:
             return bucket.tokens
 
     def reset(self, client_key: str) -> None:
-        """Reset the bucket for *client_key* to full capacity.
-
-        Args:
-            client_key: Client identifier whose bucket should be restored.
-        """
+        """Reset the bucket for *client_key* to full capacity."""
         with self._lock:
             self._buckets[client_key] = _Bucket(tokens=self._capacity)
 
     def clear(self) -> None:
-        """Remove all client buckets, effectively resetting every rate limit."""
+        """Remove all client buckets."""
         with self._lock:
             self._buckets.clear()
 
     @property
     def client_count(self) -> int:
-        """Number of tracked client keys (including exhausted ones).
-
-        Returns:
-            Integer count of distinct client identifiers seen since creation
-            or the last :meth:`clear` call.
-        """
+        """Number of tracked client keys."""
         with self._lock:
             return len(self._buckets)
 
@@ -176,9 +144,7 @@ def reset_limiter(limiter: TokenBucketRateLimiter, client_key: str = "default") 
     limiter.reset(client_key)
 
 
-def is_rate_limited(
-    limiter: TokenBucketRateLimiter, client_key: str = "default", cost: float = 1.0
-) -> bool:
+def is_rate_limited(limiter: TokenBucketRateLimiter, client_key: str = "default", cost: float = 1.0) -> bool:
     """Check whether a client's next request would be rate-limited WITHOUT consuming tokens.
 
     Args:
@@ -240,9 +206,7 @@ def prune_idle_clients(limiter: TokenBucketRateLimiter, max_idle_seconds: float)
     now = time.monotonic()
     removed = 0
     with limiter._lock:
-        idle_keys = [
-            k for k, b in limiter._buckets.items() if now - b.last_refill > max_idle_seconds
-        ]
+        idle_keys = [k for k, b in limiter._buckets.items() if now - b.last_refill > max_idle_seconds]
         for k in idle_keys:
             del limiter._buckets[k]
             removed += 1

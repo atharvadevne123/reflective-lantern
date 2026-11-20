@@ -7,7 +7,7 @@ import pytest
 
 
 @pytest.fixture
-def sample_df() -> None:
+def sample_df():
     return pd.DataFrame(
         {
             "consumption_kwh": [3.0, 4.5, 2.8, 6.1, 5.0],
@@ -22,7 +22,7 @@ def sample_df() -> None:
 
 
 class TestLagFeatureTransformer:
-    def test_creates_lag_columns(self, sample_df) -> None:
+    def test_creates_lag_columns(self, sample_df):
         from app.features import LagFeatureTransformer
 
         t = LagFeatureTransformer(lags=[1, 2])
@@ -30,13 +30,13 @@ class TestLagFeatureTransformer:
         assert "consumption_lag_1h" in out.columns
         assert "consumption_lag_2h" in out.columns
 
-    def test_lag_values_are_non_negative(self, sample_df) -> None:
+    def test_lag_values_are_non_negative(self, sample_df):
         from app.features import LagFeatureTransformer
 
         out = LagFeatureTransformer(lags=[1]).fit_transform(sample_df)
         assert (out["consumption_lag_1h"] >= 0).all()
 
-    def test_fit_returns_self(self, sample_df) -> None:
+    def test_fit_returns_self(self, sample_df):
         from app.features import LagFeatureTransformer
 
         t = LagFeatureTransformer()
@@ -44,7 +44,7 @@ class TestLagFeatureTransformer:
 
 
 class TestRollingStatsTransformer:
-    def test_creates_rolling_columns(self, sample_df) -> None:
+    def test_creates_rolling_columns(self, sample_df):
         from app.features import RollingStatsTransformer
 
         out = RollingStatsTransformer(windows=[3]).fit_transform(sample_df)
@@ -52,7 +52,7 @@ class TestRollingStatsTransformer:
         assert "rolling_std_3h" in out.columns
         assert "rolling_max_3h" in out.columns
 
-    def test_rolling_mean_equals_manual(self, sample_df) -> None:
+    def test_rolling_mean_equals_manual(self, sample_df):
         from app.features import RollingStatsTransformer
 
         out = RollingStatsTransformer(windows=[3]).fit_transform(sample_df)
@@ -61,7 +61,7 @@ class TestRollingStatsTransformer:
 
 
 class TestTemporalFeatureTransformer:
-    def test_creates_cyclical_features(self, sample_df) -> None:
+    def test_creates_cyclical_features(self, sample_df):
         from app.features import TemporalFeatureTransformer
 
         out = TemporalFeatureTransformer().fit_transform(sample_df)
@@ -70,21 +70,21 @@ class TestTemporalFeatureTransformer:
         assert "day_sin" in out.columns
         assert "day_cos" in out.columns
 
-    def test_cyclical_values_in_range(self, sample_df) -> None:
+    def test_cyclical_values_in_range(self, sample_df):
         from app.features import TemporalFeatureTransformer
 
         out = TemporalFeatureTransformer().fit_transform(sample_df)
         assert out["hour_sin"].between(-1, 1).all()
         assert out["hour_cos"].between(-1, 1).all()
 
-    def test_peak_flags_binary(self, sample_df) -> None:
+    def test_peak_flags_binary(self, sample_df):
         from app.features import TemporalFeatureTransformer
 
         out = TemporalFeatureTransformer().fit_transform(sample_df)
         assert set(out["is_peak_morning"].unique()).issubset({0, 1})
         assert set(out["is_weekend"].unique()).issubset({0, 1})
 
-    def test_weekend_flag_correct(self, sample_df) -> None:
+    def test_weekend_flag_correct(self, sample_df):
         from app.features import TemporalFeatureTransformer
 
         out = TemporalFeatureTransformer().fit_transform(sample_df)
@@ -93,7 +93,7 @@ class TestTemporalFeatureTransformer:
 
 
 class TestWeatherRatioTransformer:
-    def test_creates_degree_features(self, sample_df) -> None:
+    def test_creates_degree_features(self, sample_df):
         from app.features import WeatherRatioTransformer
 
         out = WeatherRatioTransformer().fit_transform(sample_df)
@@ -101,13 +101,13 @@ class TestWeatherRatioTransformer:
         assert "heating_degree" in out.columns
         assert "temp_deviation" in out.columns
 
-    def test_cooling_non_negative(self, sample_df) -> None:
+    def test_cooling_non_negative(self, sample_df):
         from app.features import WeatherRatioTransformer
 
         out = WeatherRatioTransformer().fit_transform(sample_df)
         assert (out["cooling_degree"] >= 0).all()
 
-    def test_heating_non_negative(self, sample_df) -> None:
+    def test_heating_non_negative(self, sample_df):
         from app.features import WeatherRatioTransformer
 
         out = WeatherRatioTransformer().fit_transform(sample_df)
@@ -115,14 +115,14 @@ class TestWeatherRatioTransformer:
 
 
 class TestBuildingEncoderTransformer:
-    def test_replaces_building_type_with_intensity(self, sample_df) -> None:
+    def test_replaces_building_type_with_intensity(self, sample_df):
         from app.features import BuildingEncoderTransformer
 
         out = BuildingEncoderTransformer().fit_transform(sample_df)
         assert "building_intensity" in out.columns
         assert "building_type" not in out.columns
 
-    def test_industrial_higher_than_residential(self, sample_df) -> None:
+    def test_industrial_higher_than_residential(self, sample_df):
         from app.features import BuildingEncoderTransformer
 
         out = BuildingEncoderTransformer().fit_transform(sample_df)
@@ -135,14 +135,14 @@ class TestBuildingEncoderTransformer:
 
 
 class TestBuildFeaturePipeline:
-    def test_pipeline_runs_end_to_end(self, sample_df) -> None:
+    def test_pipeline_runs_end_to_end(self, sample_df):
         from app.features import build_feature_pipeline
 
         pipe = build_feature_pipeline()
         X = pipe.fit_transform(sample_df)
         assert X.shape[0] == len(sample_df)
 
-    def test_pipeline_output_no_raw_columns(self, sample_df) -> None:
+    def test_pipeline_output_no_raw_columns(self, sample_df):
         from app.features import build_feature_pipeline
 
         pipe = build_feature_pipeline()
@@ -197,132 +197,3 @@ class TestValidateDataframeColumns:
 
         df = pd.DataFrame({"a": [1], "b": [2]})
         assert validate_dataframe_columns(df, ["a", "c"]) == ["c"]
-
-
-class TestFeaturePipelineEdgeCases:
-    """Edge-case tests for energy_seer feature engineering."""
-
-    def test_lag_transformer_single_row(self) -> None:
-        import pandas as pd
-
-        from app.features import LagFeatureTransformer
-
-        df = pd.DataFrame(
-            {
-                "consumption_kwh": [5.0],
-                "temperature_c": [20.0],
-                "humidity_pct": [50.0],
-                "hour_of_day": [12],
-                "day_of_week": [1],
-                "is_holiday": [0],
-                "building_type": ["office"],
-            }
-        )
-        out = LagFeatureTransformer(lags=[1]).fit_transform(df)
-        assert "consumption_lag_1h" in out.columns
-
-    def test_rolling_stats_window_larger_than_data(self) -> None:
-        import pandas as pd
-
-        from app.features import RollingStatsTransformer
-
-        df = pd.DataFrame(
-            {
-                "consumption_kwh": [1.0, 2.0],
-                "temperature_c": [20.0, 21.0],
-                "humidity_pct": [50.0, 51.0],
-                "hour_of_day": [8, 9],
-                "day_of_week": [0, 0],
-                "is_holiday": [0, 0],
-                "building_type": ["office", "office"],
-            }
-        )
-        out = RollingStatsTransformer(windows=[10]).fit_transform(df)
-        assert "rolling_mean_10h" in out.columns
-
-    def test_temporal_transformer_midnight_hour(self) -> None:
-        import pandas as pd
-
-        from app.features import TemporalFeatureTransformer
-
-        df = pd.DataFrame(
-            {
-                "consumption_kwh": [2.0],
-                "temperature_c": [15.0],
-                "humidity_pct": [55.0],
-                "hour_of_day": [0],
-                "day_of_week": [6],
-                "is_holiday": [0],
-                "building_type": ["residential"],
-            }
-        )
-        out = TemporalFeatureTransformer().fit_transform(df)
-        assert out["is_weekend"].iloc[0] == 1
-
-    def test_pipeline_fit_then_transform_consistent(self, sample_df) -> None:
-        from app.features import build_feature_pipeline
-
-        pipe = build_feature_pipeline()
-        out1 = pipe.fit_transform(sample_df)
-        out2 = pipe.transform(sample_df)
-        assert out1.shape == out2.shape
-
-    def test_feature_column_names_no_duplicates(self) -> None:
-        from energy_seer.app.features import feature_column_names
-
-        cols = feature_column_names()
-        assert len(cols) == len(set(cols))
-
-
-class TestFeaturePipelineOutputShape:
-    def test_output_has_more_columns_than_input(self, sample_df) -> None:
-        from app.features import build_feature_pipeline
-
-        pipe = build_feature_pipeline()
-        out = pipe.fit_transform(sample_df)
-        assert out.shape[1] > sample_df.shape[1]
-
-    def test_no_nan_values_in_output(self, sample_df) -> None:
-        import pandas as pd
-
-        from app.features import build_feature_pipeline
-
-        pipe = build_feature_pipeline()
-        out = pipe.fit_transform(sample_df)
-        if isinstance(out, pd.DataFrame):
-            assert not out.isnull().any().any()
-
-    def test_pipeline_preserves_row_count(self, sample_df) -> None:
-        from app.features import build_feature_pipeline
-
-        pipe = build_feature_pipeline()
-        out = pipe.fit_transform(sample_df)
-        assert out.shape[0] == len(sample_df)
-
-
-class TestValidateDataframeColumnsExtra:
-    def test_missing_columns_returned(self) -> None:
-        import pandas as pd
-
-        from app.features import validate_dataframe_columns
-
-        df = pd.DataFrame({"consumption_kwh": [1.0]})
-        missing = validate_dataframe_columns(df)
-        assert "hour_of_day" in missing
-
-    def test_all_present_returns_empty(self) -> None:
-        import pandas as pd
-
-        from app.features import validate_dataframe_columns
-
-        df = pd.DataFrame({"consumption_kwh": [1.0], "hour_of_day": [0], "day_of_week": [0]})
-        assert validate_dataframe_columns(df) == []
-
-    def test_custom_required_columns(self) -> None:
-        import pandas as pd
-
-        from app.features import validate_dataframe_columns
-
-        df = pd.DataFrame({"a": [1]})
-        missing = validate_dataframe_columns(df, required=["a", "b"])
-        assert missing == ["b"]

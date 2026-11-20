@@ -1,11 +1,10 @@
-"""Structured JSON logging configuration for Logistics-Flow."""
+"""Structured JSON logging configuration for Watt-Guard."""
 
 from __future__ import annotations
 
 import json
 import logging
 import sys
-from pathlib import Path
 from typing import Any
 
 
@@ -60,16 +59,10 @@ class TraceIdFilter(logging.Filter):
     """Inject a trace_id field into every log record that lacks one."""
 
     def __init__(self, trace_id: str = "") -> None:
-        """Initialise the filter with the trace ID to inject.
-
-        Args:
-            trace_id: Identifier stamped on log records that lack one.
-        """
         super().__init__()
         self.trace_id = trace_id
 
     def filter(self, record: logging.LogRecord) -> bool:
-        """Inject trace_id into *record* if not already present; always allow."""
         if not hasattr(record, "trace_id"):
             record.trace_id = self.trace_id  # type: ignore[attr-defined]
         return True
@@ -148,35 +141,29 @@ def suppress_noisy_loggers(*names: str, level: str = "WARNING") -> None:
         logging.getLogger(name).setLevel(int_level)
 
 
-def _resolve_logger(logger_name) -> logging.Logger:
-    """Accept either a Logger object or a name string."""
-    if isinstance(logger_name, logging.Logger):
-        return logger_name
-    return logging.getLogger() if logger_name == "root" else logging.getLogger(logger_name)
-
-
-def log_handler_count(logger_name="root") -> int:
+def log_handler_count(logger_name: str = "root") -> int:
     """Return the number of handlers attached to the named logger.
 
     Args:
-        logger_name: Logger name string or Logger instance.
+        logger_name: Logger name; 'root' returns the root logger's handler count.
 
     Returns:
         Handler count as a non-negative integer.
     """
-    return len(_resolve_logger(logger_name).handlers)
+    log = logging.getLogger() if logger_name == "root" else logging.getLogger(logger_name)
+    return len(log.handlers)
 
 
-def has_console_handler(logger_name="root") -> bool:
+def has_console_handler(logger_name: str = "root") -> bool:
     """Return True if the named logger has a StreamHandler (console) attached.
 
     Args:
-        logger_name: Logger name string or Logger instance.
+        logger_name: Logger name; 'root' checks the root logger.
 
     Returns:
         True if at least one :class:`logging.StreamHandler` is present.
     """
-    log = _resolve_logger(logger_name)
+    log = logging.getLogger() if logger_name == "root" else logging.getLogger(logger_name)
     return any(isinstance(h, logging.StreamHandler) for h in log.handlers)
 
 
@@ -222,38 +209,3 @@ def clear_handlers(logger_name: str = "root") -> int:
     for handler in list(logger_obj.handlers):
         logger_obj.removeHandler(handler)
     return count
-
-
-def add_file_handler(
-    logger_name: str,
-    log_path: Path | str,
-    level: int = logging.DEBUG,
-    formatter: logging.Formatter | None = None,
-) -> logging.FileHandler:
-    """Attach a :class:`~logging.FileHandler` writing to *log_path*.
-
-    Parent directories of *log_path* are created automatically using
-    :func:`pathlib.Path.mkdir`.
-
-    Args:
-        logger_name: Name of the logger to attach the handler to; ``"root"``
-            targets the root logger.
-        log_path: Filesystem path for the log file (string or
-            :class:`~pathlib.Path`).
-        level: Logging level for the new handler (default ``DEBUG``).
-        formatter: Optional :class:`~logging.Formatter` to apply; uses a
-            plain :class:`~logging.Formatter` with ISO timestamp when omitted.
-
-    Returns:
-        The newly created and attached :class:`~logging.FileHandler`.
-    """
-    path = Path(log_path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    handler = logging.FileHandler(path)
-    handler.setLevel(level)
-    if formatter is None:
-        formatter = logging.Formatter("%(asctime)s %(name)s %(levelname)s %(message)s")
-    handler.setFormatter(formatter)
-    logger_obj = logging.getLogger() if logger_name == "root" else logging.getLogger(logger_name)
-    logger_obj.addHandler(handler)
-    return handler

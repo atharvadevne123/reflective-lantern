@@ -80,9 +80,7 @@ def compute_severity(
     either = z or iq
     severity = "critical" if both else ("warning" if either else "none")
 
-    logger.debug(
-        "Anomaly severity=%s z=%s iqr=%s value=%.2f mean=%.2f", severity, z, iq, value, mean
-    )
+    logger.debug("Anomaly severity=%s z=%s iqr=%s value=%.2f mean=%.2f", severity, z, iq, value, mean)
     return {"z_flag": z, "iqr_flag": iq, "severity": severity}
 
 
@@ -110,9 +108,7 @@ def batch_compute_severity(
             len(reference),
             MIN_REFERENCE_SIZE,
         )
-        return [
-            {"z_flag": False, "iqr_flag": False, "severity": "none", "value": v} for v in values
-        ]
+        return [{"z_flag": False, "iqr_flag": False, "severity": "none", "value": v} for v in values]
     results = []
     for v in values:
         result = compute_severity(v, reference, z_threshold, iqr_k)
@@ -157,9 +153,7 @@ def compute_percentile_bounds(
     if not reference:
         raise ValueError("reference must be non-empty")
     if not (0 <= lower_pct < upper_pct <= 100):
-        raise ValueError(
-            f"Percentiles must satisfy 0 <= lower_pct < upper_pct <= 100, got {lower_pct}, {upper_pct}"
-        )
+        raise ValueError(f"Percentiles must satisfy 0 <= lower_pct < upper_pct <= 100, got {lower_pct}, {upper_pct}")
     arr = np.array(reference, dtype=float)
     return {
         "lower": round(float(np.percentile(arr, lower_pct)), 4),
@@ -189,9 +183,7 @@ def classify_consumption(
         ValueError: If low_threshold >= high_threshold.
     """
     if low_threshold >= high_threshold:
-        raise ValueError(
-            f"low_threshold must be less than high_threshold, got {low_threshold} >= {high_threshold}"
-        )
+        raise ValueError(f"low_threshold must be less than high_threshold, got {low_threshold} >= {high_threshold}")
     if value < low_threshold:
         return "low"
     if value >= high_threshold:
@@ -200,7 +192,6 @@ def classify_consumption(
 
 
 __all__ = [
-    "anomaly_density",
     "anomaly_rate",
     "anomaly_summary",
     "batch_compute_severity",
@@ -210,10 +201,8 @@ __all__ = [
     "compute_z_score",
     "consecutive_anomaly_runs",
     "ewma_smooth",
-    "first_anomaly_index",
     "flag_anomaly_rate",
     "flag_z_score_outliers",
-    "inter_anomaly_gap",
     "iqr_flag",
     "rolling_anomaly_flag",
     "top_anomalies",
@@ -242,7 +231,6 @@ def top_anomalies(
     default_rank = len(order)
 
     def _key(entry: dict[str, object]) -> int:
-        """Map an anomaly entry to its numeric severity rank for sorting."""
         return rank.get(str(entry.get("severity", "")), default_rank)
 
     return sorted(severities, key=_key)[:n]
@@ -294,10 +282,10 @@ def flag_anomaly_rate(flags: list[bool]) -> float:
     """Return the fraction of True values in *flags* (anomaly rate).
 
     Args:
-        flags: List of bool anomaly labels (True = anomaly, False = normal).
+        flags: List of bool anomaly labels.
 
     Returns:
-        Rate in [0, 1], rounded to 4 decimal places, or 0.0 for an empty list.
+        Rate in [0, 1], or 0.0 for an empty list.
     """
     if not flags:
         return 0.0
@@ -432,9 +420,7 @@ def percentile_anomaly_flag(
     if not reference:
         raise ValueError("reference must not be empty")
     if not (0 <= lower_pct < upper_pct <= 100):
-        raise ValueError(
-            f"Percentiles must satisfy 0 <= lower < upper <= 100, got {lower_pct}, {upper_pct}"
-        )
+        raise ValueError(f"Percentiles must satisfy 0 <= lower < upper <= 100, got {lower_pct}, {upper_pct}")
     sorted_ref = sorted(reference)
     n = len(sorted_ref)
     lo_idx = int(lower_pct / 100.0 * (n - 1))
@@ -537,14 +523,11 @@ def anomaly_free_streak(flags: list[bool]) -> int:
     encountered. Useful for dashboard widgets showing "days without anomaly."
 
     Args:
-        flags: Ordered list of anomaly flags (True = anomalous, False = normal).
+        flags: Ordered list of anomaly flags (True = anomalous).
 
     Returns:
         Number of consecutive False values at the end of the list.
         Returns 0 if the list is empty or ends with True.
-
-    Note:
-        An empty *flags* list returns 0 (no streak possible).
     """
     streak = 0
     for flag in reversed(flags):
@@ -773,15 +756,11 @@ def modified_zscore(value: float, values: list[float]) -> float:
 def anomaly_persistence_score(flags: list[bool]) -> float:
     """Return the fraction of True flags in *flags* as a persistence score.
 
-    A high score close to 1.0 indicates a system that is anomalous most of
-    the time; a score near 0.0 indicates largely normal behavior.
-
     Args:
-        flags: Non-empty list of boolean anomaly flags (True = anomaly).
+        flags: Non-empty list of boolean anomaly flags.
 
     Returns:
-        Float in [0.0, 1.0] rounded to 6 decimal places;
-        1.0 means all timesteps are anomalous.
+        Float in [0.0, 1.0]; 1.0 means all timesteps are anomalous.
 
     Raises:
         ValueError: If *flags* is empty.

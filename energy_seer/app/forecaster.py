@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 
 
-def linear_trend(values: list[float]) -> dict[str, float]:
+def linear_trend(values: list[float]) -> dict:
     """Fit a linear trend and return slope, intercept, and next-step forecast."""
     arr = np.array(values, dtype=float)
     n = len(arr)
@@ -21,7 +21,7 @@ def linear_trend(values: list[float]) -> dict[str, float]:
     }
 
 
-def seasonal_decompose_simple(values: list[float], period: int = 24) -> dict[str, list[float]]:
+def seasonal_decompose_simple(values: list[float], period: int = 24) -> dict:
     """Remove linear trend and extract mean seasonal component."""
     arr = np.array(values, dtype=float)
     n = len(arr)
@@ -78,38 +78,6 @@ def forecast_horizon_accuracy(
     return {"mae": round(mae, 4), "rmse": round(rmse, 4), "n_evaluated": n}
 
 
-def weighted_moving_average(
-    values: list[float],
-    weights: list[float] | None = None,
-    steps: int = 1,
-) -> list[float]:
-    """Forecast *steps* future values using a linearly-weighted moving average.
-
-    Args:
-        values: Historical observations (non-empty).
-        weights: Optional explicit weights (same length as the window used).
-            Defaults to linearly increasing weights ``[1, 2, …, min(len(values), 10)]``.
-        steps: Number of future steps to return.
-
-    Returns:
-        List of *steps* forecast values.
-
-    Raises:
-        ValueError: If *values* is empty or *weights* sum to zero.
-    """
-    if not values:
-        raise ValueError("values must not be empty")
-    window = weights if weights is not None else list(range(1, min(len(values), 10) + 1))
-    w_len = len(window)
-    if sum(window) == 0:
-        raise ValueError("weights must not sum to zero")
-    tail = values[-w_len:] if len(values) >= w_len else values
-    effective_weights = window[-len(tail) :]
-    total_w = sum(effective_weights)
-    wma = round(sum(v * w for v, w in zip(tail, effective_weights, strict=False)) / total_w, 4)
-    return [wma] * steps
-
-
 def exponential_smoothing(
     values: list[float],
     alpha: float = 0.3,
@@ -136,42 +104,3 @@ def exponential_smoothing(
     for v in values[1:]:
         level = alpha * v + (1 - alpha) * level
     return [round(level, 4)] * steps
-
-
-def forecast_confidence_band(
-    forecast: list[float],
-    residuals: list[float],
-    z: float = 1.96,
-) -> dict[str, list[float]]:
-    """Compute upper and lower confidence bands around a point forecast.
-
-    Uses the standard deviation of historical residuals as the error estimate.
-
-    Args:
-        forecast: Point forecast values.
-        residuals: Historical forecast errors (used to estimate uncertainty).
-        z: Z-score multiplier for the confidence interval (default 1.96 = 95%).
-
-    Returns:
-        Dict with 'lower' and 'upper' lists the same length as *forecast*.
-        Returns equal bands at forecast values when *residuals* is empty.
-    """
-    if not residuals:
-        return {"lower": list(forecast), "upper": list(forecast)}
-    std = float(np.std(residuals))
-    margin = z * std
-    return {
-        "lower": [round(v - margin, 4) for v in forecast],
-        "upper": [round(v + margin, 4) for v in forecast],
-    }
-
-
-__all__ = [
-    "exponential_smoothing",
-    "forecast_confidence_band",
-    "forecast_horizon_accuracy",
-    "linear_trend",
-    "moving_average_forecast",
-    "seasonal_decompose_simple",
-    "weighted_moving_average",
-]

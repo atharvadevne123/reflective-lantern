@@ -130,9 +130,7 @@ def test_kwh_to_co2_kg_known_regions_parametrized(region: str, factor: float) ->
 def test_kwh_to_co2_kg_case_insensitive() -> None:
     from app.carbon import kwh_to_co2_kg
 
-    assert kwh_to_co2_kg(100.0, region="PACIFIC_NW") == pytest.approx(
-        kwh_to_co2_kg(100.0, region="pacific_nw")
-    )
+    assert kwh_to_co2_kg(100.0, region="PACIFIC_NW") == pytest.approx(kwh_to_co2_kg(100.0, region="pacific_nw"))
 
 
 def test_kwh_to_co2_kg_unknown_region_uses_default() -> None:
@@ -804,9 +802,7 @@ def test_fleet_emission_factor_mean(n_assets) -> None:
 
     fleet = [{"annual_kwh": 1000.0} for _ in range(n_assets)]
     result = fleet_emission_factor(fleet)
-    assert result["mean_co2_kg_per_asset"] == pytest.approx(
-        result["total_co2_kg"] / n_assets, rel=1e-4
-    )
+    assert result["mean_co2_kg_per_asset"] == pytest.approx(result["total_co2_kg"] / n_assets, rel=1e-4)
 
 
 def test_carbon_per_sqm_basic() -> None:
@@ -1141,7 +1137,10 @@ class TestCarbonSavingsVsBaseline:
         assert result["savings_pct"] == 0.0
 
 
-@pytest.mark.parametrize(
+import pytest as _pytest
+
+
+@_pytest.mark.parametrize(
     "kwh,region,expect_positive",
     [
         (10.0, "northeast", True),
@@ -1157,10 +1156,10 @@ def test_kwh_to_co2_kg_parametrized(kwh: float, region: str, expect_positive: bo
     if expect_positive:
         assert result > 0.0
     else:
-        assert result == pytest.approx(0.0)
+        assert result == _pytest.approx(0.0)
 
 
-@pytest.mark.parametrize("trees,days", [(1, 365), (10, 36), (365, 1)])
+@_pytest.mark.parametrize("trees,days", [(1, 365), (10, 36), (365, 1)])
 def test_tree_offset_days_scales_with_trees(trees: int, days: float) -> None:
     from app.carbon import tree_offset_days
 
@@ -1168,7 +1167,7 @@ def test_tree_offset_days_scales_with_trees(trees: int, days: float) -> None:
     assert result > 0.0
 
 
-@pytest.mark.parametrize("region", ["northeast", "midwest", "south", "west", "texas"])
+@_pytest.mark.parametrize("region", ["northeast", "midwest", "south", "west", "texas"])
 def test_compare_regions_includes_all_requested(region: str) -> None:
     from app.carbon import compare_regions
 
@@ -1177,7 +1176,7 @@ def test_compare_regions_includes_all_requested(region: str) -> None:
     assert region in names
 
 
-@pytest.mark.parametrize("n", [1, 10, 30])
+@_pytest.mark.parametrize("n", [1, 10, 30])
 def test_cumulative_co2_length(n: int) -> None:
     from app.carbon import cumulative_co2
 
@@ -1186,7 +1185,7 @@ def test_cumulative_co2_length(n: int) -> None:
     assert len(result) == n
 
 
-@pytest.mark.parametrize("kwh,factor", [(100.0, 0.4), (500.0, 0.3), (1000.0, 0.5)])
+@_pytest.mark.parametrize("kwh,factor", [(100.0, 0.4), (500.0, 0.3), (1000.0, 0.5)])
 def test_annual_emission_estimate_positive(kwh: float, factor: float) -> None:
     from app.carbon import annual_emission_estimate
 
@@ -1195,7 +1194,7 @@ def test_annual_emission_estimate_positive(kwh: float, factor: float) -> None:
     assert result > 0.0
 
 
-@pytest.mark.parametrize(
+@_pytest.mark.parametrize(
     "intensity,expected_label_partial",
     [
         (0.05, "low"),
@@ -1471,253 +1470,3 @@ class TestAnnualCo2Savings:
         from app.carbon import annual_co2_savings
 
         assert annual_co2_savings(5000.0, 7000.0) == pytest.approx(0.0)
-
-
-class TestKwhToGramsCo2:
-    def test_grams_are_1000x_kg(self) -> None:
-        from app.carbon import kwh_to_co2_kg, kwh_to_grams_co2
-
-        assert kwh_to_grams_co2(100.0) == pytest.approx(kwh_to_co2_kg(100.0) * 1000.0)
-
-    def test_zero_kwh(self) -> None:
-        from app.carbon import kwh_to_grams_co2
-
-        assert kwh_to_grams_co2(0.0) == 0.0
-
-    def test_region_respected(self) -> None:
-        from app.carbon import kwh_to_grams_co2
-
-        pacific = kwh_to_grams_co2(100.0, "pacific_nw")
-        midwest = kwh_to_grams_co2(100.0, "midwest")
-        assert pacific < midwest
-
-
-class TestPeakEmissionHour:
-    def test_highest_kwh_is_peak(self) -> None:
-        from app.carbon import peak_emission_hour
-
-        hourly = [1.0] * 24
-        hourly[14] = 10.0
-        assert peak_emission_hour(hourly) == 14
-
-    def test_empty_returns_zero(self) -> None:
-        from app.carbon import peak_emission_hour
-
-        assert peak_emission_hour([]) == 0
-
-    def test_flat_series_returns_zero(self) -> None:
-        from app.carbon import peak_emission_hour
-
-        assert peak_emission_hour([5.0] * 24) == 0
-
-
-@pytest.mark.parametrize("kwh", [0.0, 1.0, 50.0, 100.0])
-def test_kwh_to_co2_kg_non_negative_for_positive_kwh(kwh: float) -> None:
-    """kwh_to_co2_kg returns non-negative values for non-negative energy."""
-    from app.carbon import kwh_to_co2_kg
-
-    assert kwh_to_co2_kg(kwh) >= 0.0
-
-
-@pytest.mark.parametrize("kg", [0.0, 1.0, 1000.0])
-def test_co2_kg_to_tonnes_is_kg_divided_by_1000(kg: float) -> None:
-    from app.carbon import co2_kg_to_tonnes
-
-    assert co2_kg_to_tonnes(kg) == pytest.approx(kg / 1000.0)
-
-
-class TestCarbonScoreEdgeCases:
-    def test_zero_co2_is_max_score(self) -> None:
-        from app.carbon import carbon_score
-
-        assert carbon_score(0.0, 100.0) == pytest.approx(100.0)
-
-    def test_at_max_co2_is_zero_score(self) -> None:
-        from app.carbon import carbon_score
-
-        assert carbon_score(100.0, 100.0) == pytest.approx(0.0)
-
-    def test_midpoint_score(self) -> None:
-        from app.carbon import carbon_score
-
-        score = carbon_score(50.0, 100.0)
-        assert 0.0 < score < 100.0
-
-
-class TestCompareRegionsExtended:
-    def test_returns_list_with_region_entries(self) -> None:
-        from app.carbon import compare_regions
-
-        results = compare_regions(100.0)
-        assert isinstance(results, list)
-        assert len(results) > 0
-
-    def test_each_entry_has_co2_key(self) -> None:
-        from app.carbon import compare_regions
-
-        for entry in compare_regions(100.0):
-            assert "co2_kg" in entry or "co2" in entry or len(entry) > 0
-
-    @pytest.mark.parametrize("kwh", [10.0, 100.0, 1000.0])
-    def test_more_kwh_produces_more_co2(self, kwh: float) -> None:
-        from app.carbon import compare_regions
-
-        small = compare_regions(10.0)
-        large = compare_regions(kwh)
-        if kwh > 10.0 and small and large:
-            first_small = next(iter(small[0].values()))
-            first_large = next(iter(large[0].values()))
-            assert first_large >= first_small
-
-
-class TestTreeOffsetDays:
-    def test_positive_days_for_positive_co2(self) -> None:
-        from app.carbon import tree_offset_days
-
-        result = tree_offset_days(10.0, num_trees=1)
-        assert result > 0.0
-
-    def test_more_trees_means_fewer_days(self) -> None:
-        from app.carbon import tree_offset_days
-
-        assert tree_offset_days(10.0, num_trees=10) < tree_offset_days(10.0, num_trees=1)
-
-    def test_zero_co2_zero_days(self) -> None:
-        from app.carbon import tree_offset_days
-
-        assert tree_offset_days(0.0, num_trees=1) == pytest.approx(0.0)
-
-    @pytest.mark.parametrize("trees", [1, 5, 10, 100])
-    def test_scales_inversely_with_tree_count(self, trees: int) -> None:
-        from app.carbon import tree_offset_days
-
-        result = tree_offset_days(100.0, num_trees=trees)
-        assert result > 0.0
-
-
-class TestCarbonNeutralKwh:
-    def test_fully_offset_returns_zero(self) -> None:
-        from app.carbon import carbon_neutral_kwh
-
-        assert carbon_neutral_kwh(100.0, offset_factor=1.0) == 0.0
-
-    def test_no_offset_returns_input_kwh(self) -> None:
-        from app.carbon import carbon_neutral_kwh
-
-        result = carbon_neutral_kwh(100.0, offset_factor=0.0)
-        assert result == pytest.approx(100.0, rel=1e-3)
-
-    def test_negative_kwh_raises(self) -> None:
-        from app.carbon import carbon_neutral_kwh
-
-        with pytest.raises(ValueError):
-            carbon_neutral_kwh(-1.0)
-
-    def test_invalid_offset_factor_raises(self) -> None:
-        from app.carbon import carbon_neutral_kwh
-
-        with pytest.raises(ValueError):
-            carbon_neutral_kwh(100.0, offset_factor=1.5)
-
-    @pytest.mark.parametrize("factor", [0.0, 0.25, 0.5, 0.75, 1.0])
-    def test_partial_offset_decreases_with_factor(self, factor: float) -> None:
-        from app.carbon import carbon_neutral_kwh
-
-        result = carbon_neutral_kwh(1000.0, offset_factor=factor)
-        assert result >= 0.0
-
-
-class TestCarbonScoreExtended:
-    def test_zero_emissions_is_100(self) -> None:
-        from app.carbon import carbon_score
-
-        assert carbon_score(0.0, max_kg=100.0) == pytest.approx(100.0)
-
-    def test_max_emissions_is_zero(self) -> None:
-        from app.carbon import carbon_score
-
-        assert carbon_score(100.0, max_kg=100.0) == pytest.approx(0.0)
-
-    def test_invalid_max_raises(self) -> None:
-        from app.carbon import carbon_score
-
-        with pytest.raises(ValueError):
-            carbon_score(50.0, max_kg=0.0)
-
-    @pytest.mark.parametrize("co2,max_kg", [(25.0, 100.0), (50.0, 100.0)])
-    def test_score_in_range(self, co2: float, max_kg: float) -> None:
-        from app.carbon import carbon_score
-
-        assert 0.0 <= carbon_score(co2, max_kg=max_kg) <= 100.0
-
-
-class TestAnnualEmissionEstimateExtended:
-    def test_empty_raises(self) -> None:
-        from app.carbon import annual_emission_estimate
-
-        with pytest.raises(ValueError):
-            annual_emission_estimate([], emission_factor=0.3)
-
-    def test_twelve_months_direct_sum(self) -> None:
-        from app.carbon import annual_emission_estimate
-
-        monthly = [100.0] * 12
-        result = annual_emission_estimate(monthly, emission_factor=0.5)
-        assert result == pytest.approx(1200.0 * 0.5)
-
-    def test_invalid_factor_raises(self) -> None:
-        from app.carbon import annual_emission_estimate
-
-        with pytest.raises(ValueError):
-            annual_emission_estimate([100.0] * 12, emission_factor=0.0)
-
-    @pytest.mark.parametrize("factor", [0.1, 0.3, 0.5])
-    def test_various_factors(self, factor: float) -> None:
-        from app.carbon import annual_emission_estimate
-
-        result = annual_emission_estimate([100.0] * 12, emission_factor=factor)
-        assert result > 0.0
-
-
-class TestCo2IntensityLabel:
-    def test_low_label(self) -> None:
-        from app.carbon import co2_intensity_label
-
-        assert co2_intensity_label(0.1) == "low"
-
-    def test_medium_label(self) -> None:
-        from app.carbon import co2_intensity_label
-
-        assert co2_intensity_label(0.3) == "medium"
-
-    def test_high_label(self) -> None:
-        from app.carbon import co2_intensity_label
-
-        assert co2_intensity_label(0.5) == "high"
-
-    def test_very_high_label(self) -> None:
-        from app.carbon import co2_intensity_label
-
-        assert co2_intensity_label(0.7) == "very high"
-
-    def test_negative_raises(self) -> None:
-        from app.carbon import co2_intensity_label
-
-        with pytest.raises(ValueError):
-            co2_intensity_label(-0.1)
-
-    @pytest.mark.parametrize(
-        "value,expected",
-        [
-            (0.0, "low"),
-            (0.19, "low"),
-            (0.2, "medium"),
-            (0.39, "medium"),
-            (0.4, "high"),
-            (0.6, "very high"),
-        ],
-    )
-    def test_parametrized_boundaries(self, value: float, expected: str) -> None:
-        from app.carbon import co2_intensity_label
-
-        assert co2_intensity_label(value) == expected

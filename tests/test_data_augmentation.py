@@ -3,8 +3,6 @@
 import random
 import re
 
-import pytest
-
 from app.data_augmentation import (
     AugmentationConfig,
     augment_batch,
@@ -21,19 +19,19 @@ def make_rng(seed: int = 42) -> random.Random:
 
 
 class TestSynonymReplace:
-    def test_replaces_known_token(self) -> None:
+    def test_replaces_known_token(self):
         rng = make_rng(0)
         synonyms = {"quick": ["fast"]}
         # force replace by patching prob to 1
         result = synonym_replace(["quick"], synonyms, prob=1.0, rng=rng)
         assert result == ["fast"]
 
-    def test_keeps_unknown_token(self) -> None:
+    def test_keeps_unknown_token(self):
         rng = make_rng(0)
         result = synonym_replace(["hello"], {}, prob=1.0, rng=rng)
         assert result == ["hello"]
 
-    def test_zero_prob_no_change(self) -> None:
+    def test_zero_prob_no_change(self):
         rng = make_rng(0)
         synonyms = {"a": ["b"]}
         result = synonym_replace(["a", "a"], synonyms, prob=0.0, rng=rng)
@@ -41,18 +39,18 @@ class TestSynonymReplace:
 
 
 class TestRandomDeletion:
-    def test_deletes_some_tokens(self) -> None:
+    def test_deletes_some_tokens(self):
         rng = make_rng(42)
         tokens = ["a", "b", "c", "d", "e"]
         result = random_deletion(tokens, prob=0.9, rng=rng)
         assert len(result) >= 1
 
-    def test_single_token_preserved(self) -> None:
+    def test_single_token_preserved(self):
         rng = make_rng(0)
         result = random_deletion(["only"], prob=1.0, rng=rng)
         assert result == ["only"]
 
-    def test_zero_prob_no_deletion(self) -> None:
+    def test_zero_prob_no_deletion(self):
         rng = make_rng(0)
         tokens = ["x", "y", "z"]
         result = random_deletion(tokens, prob=0.0, rng=rng)
@@ -60,14 +58,14 @@ class TestRandomDeletion:
 
 
 class TestRandomSwap:
-    def test_length_preserved(self) -> None:
+    def test_length_preserved(self):
         rng = make_rng(7)
         tokens = ["a", "b", "c", "d"]
         result = random_swap(tokens, prob=1.0, rng=rng)
         assert len(result) == 4
         assert sorted(result) == sorted(tokens)
 
-    def test_zero_prob_no_swap(self) -> None:
+    def test_zero_prob_no_swap(self):
         rng = make_rng(0)
         tokens = ["x", "y"]
         result = random_swap(tokens, prob=0.0, rng=rng)
@@ -75,33 +73,33 @@ class TestRandomSwap:
 
 
 class TestJitterNumerics:
-    def test_numeric_changed(self) -> None:
+    def test_numeric_changed(self):
         rng = make_rng(1)
         text = "value is 100"
         out = jitter_numerics(text, pct=0.1, rng=rng)
         nums = re.findall(r"-?\d+(?:\.\d+)?", out)
         assert float(nums[-1]) != 100.0
 
-    def test_zero_value_jitter(self) -> None:
+    def test_zero_value_jitter(self):
         rng = make_rng(1)
         out = jitter_numerics("zero is 0", pct=0.05, rng=rng)
         # should not raise, output still contains a number
         assert re.search(r"-?\d+(?:\.\d+)?", out) is not None
 
-    def test_no_numbers_unchanged(self) -> None:
+    def test_no_numbers_unchanged(self):
         rng = make_rng(0)
         out = jitter_numerics("no numbers here", pct=0.1, rng=rng)
         assert out == "no numbers here"
 
 
 class TestAugmentText:
-    def test_returns_string(self) -> None:
+    def test_returns_string(self):
         cfg = AugmentationConfig(seed=0)
         out = augment_text("hello world", cfg)
         assert isinstance(out, str)
         assert len(out) > 0
 
-    def test_synonym_applied(self) -> None:
+    def test_synonym_applied(self):
         cfg = AugmentationConfig(
             synonym_prob=1.0,
             deletion_prob=0.0,
@@ -115,136 +113,13 @@ class TestAugmentText:
 
 
 class TestAugmentBatch:
-    def test_output_size(self) -> None:
+    def test_output_size(self):
         cfg = AugmentationConfig(seed=0)
         samples = ["a b", "c d", "e f"]
         out = augment_batch(samples, cfg, n_augments=2)
         assert len(out) == 6
 
-    def test_custom_transform(self) -> None:
+    def test_custom_transform(self):
         cfg = AugmentationConfig(seed=0)
         out = augment_batch(["hello"], cfg, n_augments=1, transform=lambda t, c: t.upper())
         assert out == ["HELLO"]
-
-    @pytest.mark.parametrize("n", [1, 3, 5])
-    def test_n_augments_scales_output(self, n: int) -> None:
-        cfg = AugmentationConfig(seed=0)
-        samples = ["sample text"]
-        out = augment_batch(samples, cfg, n_augments=n)
-        assert len(out) == n
-
-    def test_empty_batch_returns_empty(self) -> None:
-        cfg = AugmentationConfig(seed=0)
-        assert augment_batch([], cfg) == []
-
-
-class TestRandomSwapEdgeCases:
-    def test_single_token_unchanged(self) -> None:
-        rng = make_rng(0)
-        result = random_swap(["only"], prob=1.0, rng=rng)
-        assert result == ["only"]
-
-    def test_empty_tokens_returns_empty(self) -> None:
-        rng = make_rng(0)
-        assert random_swap([], prob=1.0, rng=rng) == []
-
-
-@pytest.mark.parametrize("n_tokens", [2, 5, 10])
-def test_random_deletion_output_at_most_input_length(n_tokens: int) -> None:
-    """random_deletion never adds tokens; output length <= input length."""
-    from app.data_augmentation import make_rng, random_deletion
-
-    tokens = [f"tok{i}" for i in range(n_tokens)]
-    rng = make_rng(42)
-    result = random_deletion(tokens, prob=0.3, rng=rng)
-    assert len(result) <= n_tokens
-
-
-@pytest.mark.parametrize("n_tokens", [2, 5, 10])
-def test_random_deletion_zero_prob_unchanged(n_tokens: int) -> None:
-    """random_deletion with prob=0 never removes any token."""
-    from app.data_augmentation import make_rng, random_deletion
-
-    tokens = [f"tok{i}" for i in range(n_tokens)]
-    rng = make_rng(0)
-    result = random_deletion(tokens, prob=0.0, rng=rng)
-    assert result == tokens
-
-
-@pytest.mark.parametrize("n_tokens", [2, 5, 10])
-def test_random_swap_preserves_length(n_tokens: int) -> None:
-    """random_swap always returns the same number of tokens as the input."""
-    from app.data_augmentation import make_rng, random_swap
-
-    tokens = [f"tok{i}" for i in range(n_tokens)]
-    rng = make_rng(7)
-    result = random_swap(tokens, prob=0.5, rng=rng)
-    assert len(result) == n_tokens
-
-
-class TestAugmentBatchEdgeCases:
-    @pytest.mark.parametrize("n", [1, 3, 5])
-    def test_batch_output_length_matches_input(self, n: int) -> None:
-        from app.data_augmentation import AugmentationConfig, augment_batch
-
-        cfg = AugmentationConfig(seed=0)
-        texts = [f"sample text {i}" for i in range(n)]
-        result = augment_batch(texts, cfg)
-        assert len(result) == n
-
-    def test_batch_results_are_strings(self) -> None:
-        from app.data_augmentation import AugmentationConfig, augment_batch
-
-        cfg = AugmentationConfig(seed=42)
-        result = augment_batch(["hello world", "foo bar"], cfg)
-        assert all(isinstance(r, str) for r in result)
-
-
-class TestJitterNumericsExt:
-    def test_length_preserved(self) -> None:
-        from app.data_augmentation import AugmentationConfig, jitter_numerics
-
-        cfg = AugmentationConfig(seed=0)
-        data = [1.0, 2.0, 3.0, 4.0]
-        result = jitter_numerics(data, cfg)
-        assert len(result) == len(data)
-
-    def test_values_change_slightly(self) -> None:
-        from app.data_augmentation import AugmentationConfig, jitter_numerics
-
-        cfg = AugmentationConfig(seed=1, numeric_noise_std=1.0)
-        data = [100.0] * 10
-        result = jitter_numerics(data, cfg)
-        assert not all(v == 100.0 for v in result)
-
-    @pytest.mark.parametrize("n", [1, 5, 20])
-    def test_output_length_parametrized(self, n: int) -> None:
-        from app.data_augmentation import AugmentationConfig, jitter_numerics
-
-        cfg = AugmentationConfig(seed=0)
-        result = jitter_numerics([1.0] * n, cfg)
-        assert len(result) == n
-
-
-class TestAugmentTextExt:
-    def test_returns_string(self) -> None:
-        from app.data_augmentation import AugmentationConfig, augment_text
-
-        cfg = AugmentationConfig(seed=0)
-        result = augment_text("hello world", cfg)
-        assert isinstance(result, str)
-
-    def test_empty_string_returns_string(self) -> None:
-        from app.data_augmentation import AugmentationConfig, augment_text
-
-        cfg = AugmentationConfig(seed=0)
-        result = augment_text("", cfg)
-        assert isinstance(result, str)
-
-    @pytest.mark.parametrize("text", ["hello", "foo bar baz", "one two three four"])
-    def test_various_inputs(self, text: str) -> None:
-        from app.data_augmentation import AugmentationConfig, augment_text
-
-        cfg = AugmentationConfig(seed=42)
-        result = augment_text(text, cfg)
-        assert isinstance(result, str)

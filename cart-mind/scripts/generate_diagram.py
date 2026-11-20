@@ -1,12 +1,9 @@
 """Generate Cart-Mind system architecture diagram."""
 
-import logging
 import os
 
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
-
-logger = logging.getLogger(__name__)
 
 os.makedirs("screenshots", exist_ok=True)
 
@@ -77,8 +74,6 @@ ax.text(
     style="italic",
 )
 
-logger = logging.getLogger(__name__)
-
 plt.tight_layout()
 plt.savefig("screenshots/architecture.png", dpi=150, bbox_inches="tight")
-logger.info("Saved screenshots/architecture.png")
+print("Saved screenshots/architecture.png")

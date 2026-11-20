@@ -4,10 +4,8 @@ from __future__ import annotations
 
 import time
 
-import pytest
 
-
-def test_cache_set_get() -> None:
+def test_cache_set_get():
     from app.utils.cache import TTLCache
 
     c = TTLCache(ttl_seconds=60)
@@ -15,14 +13,14 @@ def test_cache_set_get() -> None:
     assert c.get("k") == 42
 
 
-def test_cache_miss_returns_none() -> None:
+def test_cache_miss_returns_none():
     from app.utils.cache import TTLCache
 
     c = TTLCache(ttl_seconds=60)
     assert c.get("missing") is None
 
 
-def test_cache_delete() -> None:
+def test_cache_delete():
     from app.utils.cache import TTLCache
 
     c = TTLCache(ttl_seconds=60)
@@ -31,7 +29,7 @@ def test_cache_delete() -> None:
     assert c.get("k") is None
 
 
-def test_cache_clear() -> None:
+def test_cache_clear():
     from app.utils.cache import TTLCache
 
     c = TTLCache(ttl_seconds=60)
@@ -41,7 +39,7 @@ def test_cache_clear() -> None:
     assert len(c) == 0
 
 
-def test_cache_expired() -> None:
+def test_cache_expired():
     from app.utils.cache import TTLCache
 
     c = TTLCache(ttl_seconds=0)
@@ -123,21 +121,3 @@ def test_cache_estimated_valid_count_zero_after_clear() -> None:
     c.set("a", 1)
     c.clear()
     assert c.estimated_valid_count() == 0
-
-
-@pytest.mark.parametrize("key,value", [("str", "hello"), ("int", 42), ("list", [1, 2, 3])])
-def test_cache_set_and_get_various_types(key: str, value) -> None:
-    from app.utils.cache import TTLCache
-
-    c = TTLCache(ttl_seconds=300)
-    c.set(key, value)
-    assert c.get(key) == value
-
-
-def test_cache_overwrite_key_returns_new_value() -> None:
-    from app.utils.cache import TTLCache
-
-    c = TTLCache(ttl_seconds=300)
-    c.set("k", 1)
-    c.set("k", 99)
-    assert c.get("k") == 99

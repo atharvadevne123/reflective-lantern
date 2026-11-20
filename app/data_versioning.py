@@ -6,7 +6,6 @@ import hashlib
 import json
 import logging
 from dataclasses import dataclass, field
-from pathlib import Path
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -29,7 +28,7 @@ class DataSnapshot:
 
     name: str
     version: str
-    source: str = ""
+    source: str
     schema: dict[str, str] = field(default_factory=dict)
     row_count: int = 0
     checksum: str = ""
@@ -54,7 +53,6 @@ class DataLineage:
     """Tracks dataset snapshots and their lineage graph."""
 
     def __init__(self) -> None:
-        """Initialise an empty lineage store."""
         self._snapshots: dict[str, list[DataSnapshot]] = {}
 
     def record(self, snapshot: DataSnapshot) -> None:
@@ -131,59 +129,5 @@ class DataLineage:
         """Return all dataset names."""
         return list(self._snapshots.keys())
 
-    def snapshot_count(self, name: str) -> int:
-        """Return the number of recorded snapshots for a dataset."""
-        return len(self._snapshots.get(name, []))
 
-    def total_rows(self, name: str) -> int:
-        """Return the sum of row_count across all snapshots for a dataset."""
-        return sum(s.row_count for s in self._snapshots.get(name, []))
-
-    def delete(self, name: str, version: str | None = None) -> bool:
-        """Delete a snapshot or all snapshots for a dataset. Returns True if something was removed."""
-        if name not in self._snapshots:
-            return False
-        if version is None:
-            del self._snapshots[name]
-            return True
-        before = len(self._snapshots[name])
-        self._snapshots[name] = [s for s in self._snapshots[name] if s.version != version]
-        if not self._snapshots[name]:
-            del self._snapshots[name]
-        return len(self._snapshots.get(name, [])) < before
-
-
-def export_lineage_json(lineage: DataLineage, path: Path | str) -> Path:
-    """Serialise *lineage* to a JSON file at *path*.
-
-    Parent directories are created automatically via
-    :func:`pathlib.Path.mkdir`.  The file is written with UTF-8 encoding and
-    a two-space indent for readability.
-
-    Args:
-        lineage: The :class:`DataLineage` registry to export.
-        path: Destination file path (string or :class:`~pathlib.Path`).
-
-    Returns:
-        The resolved :class:`~pathlib.Path` of the written file.
-    """
-    dest = Path(path)
-    dest.parent.mkdir(parents=True, exist_ok=True)
-    payload: dict[str, list[dict]] = {}
-    for dataset in lineage.list_datasets():
-        payload[dataset] = [
-            {
-                "version": snap.version,
-                "row_count": snap.row_count,
-                "source": snap.source,
-                "checksum": snap.checksum,
-                "created_at": snap.created_at,
-                "metadata": snap.metadata,
-            }
-            for snap in lineage._snapshots[dataset]
-        ]
-    dest.write_text(json.dumps(payload, indent=2), encoding="utf-8")
-    return dest
-
-
-__all__ = ["DataLineage", "DataSnapshot", "export_lineage_json"]
+__all__ = ["DataLineage", "DataSnapshot"]

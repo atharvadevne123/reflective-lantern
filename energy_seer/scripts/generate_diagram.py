@@ -1,13 +1,10 @@
 """Generate Energy-Seer system architecture diagram."""
 
-import logging
 import os
 
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 from matplotlib.patches import FancyBboxPatch
-
-logger = logging.getLogger(__name__)
 
 os.makedirs("screenshots", exist_ok=True)
 
@@ -32,9 +29,7 @@ COLORS = {
 }
 
 
-def box(
-    ax, x: float, y: float, w: float, h: float, color: str, label: str, sublabel: str = ""
-) -> None:
+def box(ax, x, y, w, h, color, label, sublabel=""):
     rect = FancyBboxPatch(
         (x, y),
         w,
@@ -67,7 +62,7 @@ def box(
         )
 
 
-def arrow(ax, x1: float, y1: float, x2: float, y2: float) -> None:
+def arrow(ax, x1, y1, x2, y2):
     ax.annotate(
         "",
         xy=(x2, y2),
@@ -220,4 +215,4 @@ ax.legend(
 
 plt.tight_layout()
 plt.savefig("screenshots/architecture.png", dpi=150, bbox_inches="tight", facecolor="#0d1117")
-logger.info("Architecture diagram saved to screenshots/architecture.png")
+print("Architecture diagram saved to screenshots/architecture.png")

@@ -10,12 +10,10 @@ DEFAULT_TTL = 60.0
 
 
 def set_cache(key: str, value: Any, ttl: float = DEFAULT_TTL) -> None:
-    """Store *value* under *key* with a time-to-live of *ttl* seconds."""
     _store[key] = (value, time.monotonic() + ttl)
 
 
 def get_cache(key: str) -> Any | None:
-    """Return the cached value for *key*, or None if missing or expired."""
     entry = _store.get(key)
     if entry is None:
         return None
@@ -27,89 +25,13 @@ def get_cache(key: str) -> Any | None:
 
 
 def invalidate(key: str) -> None:
-    """Remove *key* from the cache (no-op if absent)."""
     _store.pop(key, None)
 
 
 def clear_all() -> None:
-    """Evict every entry from the cache."""
     _store.clear()
 
 
 def cache_size() -> int:
-    """Return the number of non-expired entries currently in the cache."""
     now = time.monotonic()
     return sum(1 for _, (_, exp) in _store.items() if now <= exp)
-
-
-def evict_expired() -> int:
-    """Remove all expired entries and return the count removed."""
-    now = time.monotonic()
-    expired_keys = [k for k, (_, exp) in _store.items() if now > exp]
-    for k in expired_keys:
-        del _store[k]
-    return len(expired_keys)
-
-
-def get_with_default(key: str, default: Any = None) -> Any:
-    """Return the cached value for *key*, or *default* if missing or expired.
-
-    Args:
-        key: Cache key to look up.
-        default: Value to return when the key is absent or expired.
-
-    Returns:
-        Cached value or *default*.
-    """
-    result = get_cache(key)
-    return result if result is not None else default
-
-
-def keys() -> list[str]:
-    """Return the keys of all non-expired cache entries."""
-    now = time.monotonic()
-    return [k for k, (_, exp) in _store.items() if now <= exp]
-
-
-__all__ = [
-    "DEFAULT_TTL",
-    "cache_size",
-    "clear_all",
-    "evict_expired",
-    "get_cache",
-    "get_or_set",
-    "get_with_default",
-    "invalidate",
-    "keys",
-    "set_cache",
-    "update_many",
-]
-
-
-def get_or_set(key: str, value: object, ttl: float = DEFAULT_TTL) -> object:
-    """Return the cached value for *key*, or set it to *value* and return *value*.
-
-    Args:
-        key: Cache key to look up or populate.
-        value: Value to store if the key is not present or has expired.
-        ttl: Time-to-live in seconds for a new entry (default DEFAULT_TTL).
-
-    Returns:
-        The existing cached value if present and unexpired, otherwise *value*.
-    """
-    existing = get_cache(key)
-    if existing is not None:
-        return existing
-    set_cache(key, value, ttl=ttl)
-    return value
-
-
-def update_many(entries: dict[str, object], ttl: float = DEFAULT_TTL) -> None:
-    """Bulk-set multiple cache entries with the same TTL.
-
-    Args:
-        entries: Mapping of key → value to store.
-        ttl: Time-to-live in seconds for each entry (default DEFAULT_TTL).
-    """
-    for key, value in entries.items():
-        set_cache(key, value, ttl=ttl)

@@ -42,7 +42,6 @@ class FeatureStore:
     """
 
     def __init__(self) -> None:
-        """Initialise an empty feature store."""
         self._store: dict[str, list[FeatureSet]] = {}
 
     def publish(self, feature_set: FeatureSet) -> None:
@@ -56,9 +55,7 @@ class FeatureStore:
         versions = self._store[feature_set.name]
         existing_versions = {fs.version for fs in versions}
         if feature_set.version in existing_versions:
-            raise ValueError(
-                f"Version '{feature_set.version}' already exists for '{feature_set.name}'"
-            )
+            raise ValueError(f"Version '{feature_set.version}' already exists for '{feature_set.name}'")
         versions.append(feature_set)
         logger.info("Published feature set '%s' v%s", feature_set.name, feature_set.version)
 
@@ -100,10 +97,6 @@ class FeatureStore:
         """Return all registered feature set names."""
         return list(self._store.keys())
 
-    def list_datasets(self) -> list[str]:
-        """Alias for :meth:`list_names`; return all registered feature set names."""
-        return self.list_names()
-
     def delete(self, name: str, version: str | None = None) -> bool:
         """Delete a feature set or a specific version.
 
@@ -124,18 +117,6 @@ class FeatureStore:
         if not self._store[name]:
             del self._store[name]
         return len(self._store.get(name, [])) < before
-
-    def version_count(self, name: str) -> int:
-        """Return the number of published versions for a feature set."""
-        return len(self._store.get(name, []))
-
-    def __len__(self) -> int:
-        """Return the number of distinct feature set names in the store."""
-        return len(self._store)
-
-    def total_versions(self) -> int:
-        """Return the total number of feature set versions across all names."""
-        return sum(len(v) for v in self._store.values())
 
 
 __all__ = ["FeatureSet", "FeatureStore"]

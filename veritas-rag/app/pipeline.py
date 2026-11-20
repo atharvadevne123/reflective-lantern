@@ -33,12 +33,6 @@ class RagPipeline:
     """In-process implementation of the ten-stage architecture."""
 
     def __init__(self, config: Settings | None = None, generator: Any | None = None) -> None:
-        """Initialise all ten pipeline stages from *config*.
-
-        Args:
-            config: Runtime settings; uses module defaults when None.
-            generator: Pre-built answer generator; auto-selected from config when None.
-        """
         self.config = config or default_settings
 
         # Stage 1 state
@@ -164,7 +158,6 @@ class RagPipeline:
         }
 
     def _index_chunks(self, new_chunks: list[Chunk]) -> None:
-        """Add new chunks to BM25 and vector indices; no-op for empty lists."""
         if not new_chunks:
             return
         for chunk in new_chunks:
@@ -174,7 +167,6 @@ class RagPipeline:
         self.vectors.add([c.chunk_id for c in new_chunks], vectors)
 
     def _remove_document_chunks(self, doc_id: str) -> None:
-        """Evict all chunks belonging to *doc_id* from in-memory and index stores."""
         stale = [cid for cid, chunk in self.chunks.items() if chunk.doc_id == doc_id]
         for cid in stale:
             del self.chunks[cid]
@@ -289,21 +281,16 @@ class RagPipeline:
         fused = fused[: self.config.rerank_top_k]
         recorder.end_stage("fusion", candidates=[c for c, _, _, _ in fused])
 
-        candidates = []
-        for cid, score, b_rank, v_rank in fused:
-            chunk = self.chunks.get(cid)
-            if chunk is None:
-                # Chunk evicted between retrieval and fusion (e.g. version superseded)
-                logger.debug("Skipping evicted chunk %s in fusion results", cid)
-                continue
-            candidates.append(
-                ScoredChunk(
-                    chunk=chunk,
-                    bm25_rank=b_rank,
-                    vector_rank=v_rank,
-                    fused_score=round(score, 6),
-                )
+        candidates = [
+            ScoredChunk(
+                chunk=self.chunks[cid],
+                bm25_rank=b_rank,
+                vector_rank=v_rank,
+                fused_score=round(score, 6),
             )
+            for cid, score, b_rank, v_rank in fused
+            if cid in self.chunks
+        ]
 
         # Stage 3b — deep scoring
         recorder.start_stage("rerank")
@@ -338,36 +325,9 @@ class RagPipeline:
         )
         return candidates
 
-    def query_batch(self, questions: list[str]) -> list[Answer]:
-        """Answer multiple questions in sequence, sharing cache state.
-
-        Args:
-            questions: List of query strings.
-
-        Returns:
-            One :class:`Answer` per query, in the same order.
-        """
-        return [self.query(q) for q in questions]
-
     # ------------------------------------------------------------------
     # Introspection
     # ------------------------------------------------------------------
-
-    def sources(self) -> list[str]:
-        """Return the source names of all currently indexed documents.
-
-        Returns:
-            List of source strings, one per unique ingested source.
-        """
-        return list(self.versions._chains.keys())
-
-    def document_count(self) -> int:
-        """Return the number of unique sources currently indexed.
-
-        Returns:
-            Integer count of indexed document sources.
-        """
-        return len(self.versions)
 
     def metrics(self) -> dict[str, Any]:
         """Operational counters for the /metrics endpoint."""

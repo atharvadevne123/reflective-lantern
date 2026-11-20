@@ -42,7 +42,6 @@ class WebhookHandler:
     """Verifies and dispatches inbound webhook requests."""
 
     def __init__(self, secret: str, algorithm: str = "sha256") -> None:
-        """Initialise with HMAC secret, optional algorithm, and empty handler registry."""
         self._secret = secret.encode() if isinstance(secret, str) else secret
         self._algorithm = algorithm
         self._handlers: dict[str, list[EventHandler]] = {}
@@ -53,20 +52,11 @@ class WebhookHandler:
     # ------------------------------------------------------------------
 
     def on(self, event_type: str, handler: EventHandler) -> None:
-        """Register *handler* for a specific event type.
-
-        Args:
-            event_type: String key identifying the event (e.g. ``push``).
-            handler: Callable that accepts a :class:`WebhookEvent`.
-        """
+        """Register *handler* for a specific event type."""
         self._handlers.setdefault(event_type, []).append(handler)
 
     def on_any(self, handler: EventHandler) -> None:
-        """Register *handler* for every event type.
-
-        Args:
-            handler: Callable invoked for all dispatched events.
-        """
+        """Register *handler* for every event type."""
         self._catch_all.append(handler)
 
     # ------------------------------------------------------------------
@@ -137,49 +127,3 @@ class WebhookHandler:
                 logger.exception("Catch-all handler error for event '%s'", event_type)
 
         return event
-
-    def event_types(self) -> list[str]:
-        """Return sorted list of event types that have registered handlers.
-
-        Returns:
-            Alphabetically sorted list of registered event type strings.
-        """
-        return sorted(self._handlers)
-
-    def handler_count(self, event_type: str | None = None) -> int:
-        """Return total handler count, optionally for a specific event type.
-
-        Args:
-            event_type: When given, count only handlers for this event type.
-
-        Returns:
-            Integer count of matching handlers (including catch-all when
-            *event_type* is ``None``).
-        """
-        if event_type is not None:
-            return len(self._handlers.get(event_type, []))
-        return sum(len(hs) for hs in self._handlers.values()) + len(self._catch_all)
-
-    def clear_handlers(self, event_type: str | None = None) -> None:
-        """Remove all handlers for *event_type*, or all handlers if None.
-
-        Args:
-            event_type: Event type to clear. Pass ``None`` to remove every
-                registered handler including catch-all handlers.
-        """
-        if event_type is not None:
-            self._handlers.pop(event_type, None)
-        else:
-            self._handlers.clear()
-            self._catch_all.clear()
-
-    def has_handler(self, event_type: str) -> bool:
-        """Return True if at least one handler is registered for *event_type*.
-
-        Args:
-            event_type: The event type string to check.
-
-        Returns:
-            True when a specific or catch-all handler exists for the type.
-        """
-        return event_type in self._handlers or len(self._catch_all) > 0

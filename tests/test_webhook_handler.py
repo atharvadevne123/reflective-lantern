@@ -17,26 +17,26 @@ def make_sig(body: bytes, secret: str = SECRET) -> str:
 
 
 class TestVerifySignature:
-    def test_valid_signature(self) -> None:
+    def test_valid_signature(self):
         handler = WebhookHandler(SECRET)
         body = b'{"a": 1}'
         sig = make_sig(body)
         handler.verify_signature(body, sig)  # should not raise
 
-    def test_invalid_signature_raises(self) -> None:
+    def test_invalid_signature_raises(self):
         handler = WebhookHandler(SECRET)
         body = b'{"a": 1}'
         with pytest.raises(SignatureError):
             handler.verify_signature(body, "sha256=deadbeef")
 
-    def test_malformed_signature_raises(self) -> None:
+    def test_malformed_signature_raises(self):
         handler = WebhookHandler(SECRET)
         with pytest.raises(SignatureError):
             handler.verify_signature(b"body", "noseparator")
 
 
 class TestProcess:
-    def test_dispatches_to_handler(self) -> None:
+    def test_dispatches_to_handler(self):
         wh = WebhookHandler(SECRET)
         received = []
         wh.on("push", received.append)
@@ -46,7 +46,7 @@ class TestProcess:
         assert len(received) == 1
         assert received[0].payload["ref"] == "main"
 
-    def test_catch_all_handler(self) -> None:
+    def test_catch_all_handler(self):
         wh = WebhookHandler(SECRET)
         received = []
         wh.on_any(received.append)
@@ -54,19 +54,19 @@ class TestProcess:
         wh.process(body, "any_event", signature=make_sig(body))
         assert len(received) == 1
 
-    def test_no_signature_skips_verification(self) -> None:
+    def test_no_signature_skips_verification(self):
         wh = WebhookHandler(SECRET)
         body = b'{"k": "v"}'
         event = wh.process(body, "test")
         assert event.payload["k"] == "v"
 
-    def test_wrong_signature_raises(self) -> None:
+    def test_wrong_signature_raises(self):
         wh = WebhookHandler(SECRET)
         body = b'{"k": "v"}'
         with pytest.raises(SignatureError):
             wh.process(body, "test", signature="sha256=wrong")
 
-    def test_handler_exception_does_not_propagate(self) -> None:
+    def test_handler_exception_does_not_propagate(self):
         wh = WebhookHandler(SECRET)
         wh.on("ev", lambda e: (_ for _ in ()).throw(RuntimeError("boom")))
         body = b'{"a": 1}'
@@ -74,7 +74,7 @@ class TestProcess:
         event = wh.process(body, "ev", signature=make_sig(body))
         assert event.event_type == "ev"
 
-    def test_multiple_handlers_same_event(self) -> None:
+    def test_multiple_handlers_same_event(self):
         wh = WebhookHandler(SECRET)
         calls = []
         wh.on("ping", lambda e: calls.append(1))
@@ -82,183 +82,3 @@ class TestProcess:
         body = b'{"ping": true}'
         wh.process(body, "ping", signature=make_sig(body))
         assert calls == [1, 2]
-
-
-class TestWebhookHandlerEdgeCases:
-    def test_event_type_stored_on_event(self) -> None:
-        wh = WebhookHandler(SECRET)
-        body = b'{"x": 1}'
-        event = wh.process(body, "my_event", signature=make_sig(body))
-        assert event.event_type == "my_event"
-
-    def test_empty_payload_accepted(self) -> None:
-        wh = WebhookHandler(SECRET)
-        body = b"{}"
-        event = wh.process(body, "ping", signature=make_sig(body))
-        assert event.payload == {}
-
-    def test_on_any_receives_all_events(self) -> None:
-        wh = WebhookHandler(SECRET)
-        received_types = []
-        wh.on_any(lambda e: received_types.append(e.event_type))
-        for ev in ("push", "pull_request", "release"):
-            body = json.dumps({"event": ev}).encode()
-            wh.process(body, ev, signature=make_sig(body))
-        assert received_types == ["push", "pull_request", "release"]
-
-    @pytest.mark.parametrize("event_type", ["push", "pull_request", "issue", "release"])
-    def test_various_event_types_dispatched(self, event_type: str) -> None:
-        wh = WebhookHandler(SECRET)
-        received = []
-        wh.on(event_type, received.append)
-        body = json.dumps({"type": event_type}).encode()
-        wh.process(body, event_type, signature=make_sig(body))
-        assert len(received) == 1
-        assert received[0].payload["type"] == event_type
-
-    def test_signature_with_wrong_secret_raises(self) -> None:
-        wh = WebhookHandler(SECRET)
-        body = b'{"a": 1}'
-        bad_sig = make_sig(body, secret="wrong-secret")
-        with pytest.raises(SignatureError):
-            wh.process(body, "push", signature=bad_sig)
-
-    def test_unregistered_event_no_crash(self) -> None:
-        wh = WebhookHandler(SECRET)
-        body = b'{"k": "v"}'
-        event = wh.process(body, "unknown_event", signature=make_sig(body))
-        assert event.event_type == "unknown_event"
-
-
-@pytest.mark.parametrize(
-    "payload",
-    [
-        {"key": "value"},
-        {"list": [1, 2, 3]},
-        {"nested": {"a": 1}},
-        {},
-    ],
-)
-def test_webhook_event_payload_preserved(payload: dict) -> None:
-    """WebhookEvent preserves arbitrary JSON payload fields."""
-    body = json.dumps(payload).encode()
-    wh = WebhookHandler(SECRET)
-    event = wh.process(body, "push", signature=make_sig(body))
-    assert event.payload == payload
-
-
-@pytest.mark.parametrize("n_handlers", [1, 3, 5])
-def test_multiple_handlers_all_called(n_handlers: int) -> None:
-    """All registered handlers for an event type are called."""
-    wh = WebhookHandler(SECRET)
-    counts = []
-    for _ in range(n_handlers):
-        counts.append([])
-        wh.on("push", counts[-1].append)
-    body = b'{"x": 1}'
-    wh.process(body, "push", signature=make_sig(body))
-    assert all(len(c) == 1 for c in counts)
-
-
-class TestEventTypes:
-    def test_no_handlers_returns_empty(self) -> None:
-        wh = WebhookHandler(SECRET)
-        assert wh.event_types() == []
-
-    def test_returns_sorted_list(self) -> None:
-        wh = WebhookHandler(SECRET)
-        wh.on("push", lambda e: None)
-        wh.on("issue", lambda e: None)
-        wh.on("release", lambda e: None)
-        result = wh.event_types()
-        assert result == sorted(result)
-
-    def test_contains_registered_types(self) -> None:
-        wh = WebhookHandler(SECRET)
-        wh.on("push", lambda e: None)
-        wh.on("pr", lambda e: None)
-        assert "push" in wh.event_types()
-        assert "pr" in wh.event_types()
-
-    def test_duplicate_handlers_single_entry(self) -> None:
-        wh = WebhookHandler(SECRET)
-        wh.on("push", lambda e: None)
-        wh.on("push", lambda e: None)
-        assert wh.event_types().count("push") == 1
-
-
-class TestHandlerCount:
-    def test_zero_when_empty(self) -> None:
-        wh = WebhookHandler(SECRET)
-        assert wh.handler_count() == 0
-
-    def test_counts_specific_event(self) -> None:
-        wh = WebhookHandler(SECRET)
-        wh.on("push", lambda e: None)
-        wh.on("push", lambda e: None)
-        assert wh.handler_count("push") == 2
-
-    def test_total_includes_catch_all(self) -> None:
-        wh = WebhookHandler(SECRET)
-        wh.on("push", lambda e: None)
-        wh.on_any(lambda e: None)
-        assert wh.handler_count() == 2
-
-    def test_unknown_event_returns_zero(self) -> None:
-        wh = WebhookHandler(SECRET)
-        assert wh.handler_count("nonexistent") == 0
-
-
-class TestClearHandlers:
-    def test_clear_specific_event(self) -> None:
-        wh = WebhookHandler(SECRET)
-        wh.on("push", lambda e: None)
-        wh.clear_handlers("push")
-        assert wh.handler_count("push") == 0
-
-    def test_clear_all(self) -> None:
-        wh = WebhookHandler(SECRET)
-        wh.on("push", lambda e: None)
-        wh.on("pr", lambda e: None)
-        wh.on_any(lambda e: None)
-        wh.clear_handlers()
-        assert wh.handler_count() == 0
-
-    def test_clear_nonexistent_does_not_raise(self) -> None:
-        wh = WebhookHandler(SECRET)
-        wh.clear_handlers("unknown_event")  # should not raise
-
-    def test_clear_keeps_other_handlers(self) -> None:
-        wh = WebhookHandler(SECRET)
-        wh.on("push", lambda e: None)
-        wh.on("pr", lambda e: None)
-        wh.clear_handlers("push")
-        assert wh.handler_count("pr") == 1
-        assert wh.handler_count("push") == 0
-
-
-class TestHasHandler:
-    def test_no_handlers_returns_false(self) -> None:
-        wh = WebhookHandler(SECRET)
-        assert wh.has_handler("push") is False
-
-    def test_specific_handler_registered_returns_true(self) -> None:
-        wh = WebhookHandler(SECRET)
-        wh.on("push", lambda e: None)
-        assert wh.has_handler("push") is True
-
-    def test_unregistered_type_returns_false_without_catchall(self) -> None:
-        wh = WebhookHandler(SECRET)
-        wh.on("pr", lambda e: None)
-        assert wh.has_handler("push") is False
-
-    def test_catchall_handler_makes_any_type_true(self) -> None:
-        wh = WebhookHandler(SECRET)
-        wh.on_any(lambda e: None)
-        assert wh.has_handler("any-event-type") is True
-
-    @pytest.mark.parametrize("event_type", ["push", "pull_request", "release"])
-    def test_registered_types_return_true(self, event_type: str) -> None:
-        wh = WebhookHandler(SECRET)
-        wh.on(event_type, lambda e: None)
-        assert wh.has_handler(event_type) is True

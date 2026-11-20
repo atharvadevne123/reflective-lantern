@@ -1,81 +1,64 @@
-"""Rate limiting middleware backed by an in-process sliding window."""
+"""Rate limiting and correlation-ID middleware."""
 
 from __future__ import annotations
 
-import logging
 import time
 import uuid
-from collections import deque
+from collections import defaultdict, deque
 from types import SimpleNamespace
 from typing import Any
 
+from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.requests import Request
-from starlette.responses import JSONResponse, Response
 
-logger = logging.getLogger(__name__)
+settings = SimpleNamespace(rate_limit_per_minute=200)
 
-WINDOW_SECONDS = 60.0
-
-settings: Any = SimpleNamespace(rate_limit_per_minute=120)
-
-# Module-level request store: {client_key: deque[timestamp]}
-_requests: dict[str, deque[float]] = {}
+_request_counts: dict[str, list[float]] = defaultdict(list)
+_rate_buckets: dict[str, deque[float]] = defaultdict(deque)
+_requests = _request_counts
 
 
 def reset_rate_limiter() -> None:
-    """Clear all recorded request windows (used in tests and on startup)."""
-    _requests.clear()
+    """Clear all rate-limit tracking state (useful in tests)."""
+    _request_counts.clear()
+    _rate_buckets.clear()
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
-    """Reject clients exceeding `limit` requests per rolling minute.
-
-    The window is per-process and in-memory, which is sufficient for a single
-    replica. Multi-replica deployments should move this to Redis.
-    """
-
-    def __init__(self, app: Any, limit: int = 120) -> None:
-        """Initialise the middleware with the ASGI app and per-minute request limit."""
-        super().__init__(app)
-        self.limit = limit
-
-    def _client_key(self, request: Request) -> str:
-        """Return the originating IP, preferring X-Forwarded-For over direct client."""
-        forwarded = request.headers.get("X-Forwarded-For")
-        if forwarded:
-            return forwarded.split(",")[0].strip()
-        return request.client.host if request.client else "unknown"
+    """Reject requests exceeding settings.rate_limit_per_minute per IP per minute."""
 
     async def dispatch(self, request: Request, call_next: Any) -> Response:
-        """Enforce per-client request rate limits using a sliding window."""
-        key = self._client_key(request)
-        now = time.monotonic()
+        ip = request.client.host if request.client else "unknown"
+        now = time.time()
+        limit = settings.rate_limit_per_minute
+        window = [t for t in _request_counts[ip] if now - t < 60]
+        _request_counts[ip] = window
+        if len(window) >= limit:
+            from fastapi.responses import JSONResponse
 
-        if key not in _requests:
-            _requests[key] = deque()
-        bucket = _requests[key]
-
-        current_limit = getattr(settings, "rate_limit_per_minute", self.limit)
-        while bucket and now - bucket[0] > WINDOW_SECONDS:
-            bucket.popleft()
-
-        if len(bucket) >= current_limit:
-            retry_after = int(WINDOW_SECONDS - (now - bucket[0])) + 1
-            logger.warning("Rate limit exceeded for %s (%d hits)", key, len(bucket))
             return JSONResponse(
+                {"detail": f"Rate limit exceeded. Max {limit} req/min."},
                 status_code=429,
-                content={"error": "RateLimitExceeded", "detail": "Too many requests"},
-                headers={"Retry-After": str(retry_after)},
+                headers={"Retry-After": "60"},
             )
+        _request_counts[ip].append(now)
+        return await call_next(request)
 
-        bucket.append(now)
-        correlation_id = request.headers.get("X-Correlation-ID") or str(uuid.uuid4())
+
+class CorrelationIDMiddleware(BaseHTTPMiddleware):
+    """Attach X-Correlation-ID to every request/response."""
+
+    async def dispatch(self, request: Request, call_next: Any) -> Response:
+        correlation_id = request.headers.get("X-Correlation-ID", str(uuid.uuid4()))
+        request.state.correlation_id = correlation_id
         response = await call_next(request)
-        response.headers["X-RateLimit-Limit"] = str(current_limit)
-        response.headers["X-RateLimit-Remaining"] = str(max(0, current_limit - len(bucket)))
-        response.headers["x-correlation-id"] = correlation_id
+        response.headers["X-Correlation-ID"] = correlation_id
         return response
 
 
-__all__ = ["RateLimitMiddleware", "reset_rate_limiter"]
+__all__ = [
+    "CorrelationIDMiddleware",
+    "RateLimitMiddleware",
+    "reset_rate_limiter",
+    "settings",
+]

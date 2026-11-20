@@ -30,1281 +30,174 @@
       "app/notification_dispatcher.py",
       "app/webhook_handler.py"
     ],
+    "tests_added": [
+      "tests/test_retry.py",
+      "tests/test_circuit_breaker.py",
+      "tests/test_pagination.py",
+      "tests/test_event_bus.py",
+      "tests/test_profiler.py",
+      "tests/test_token_bucket.py",
+      "tests/test_alerting.py",
+      "tests/test_experiment_tracker.py",
+      "tests/test_feature_store.py",
+      "tests/test_model_registry.py",
+      "tests/test_data_versioning.py",
+      "tests/test_batch_processor.py",
+      "tests/test_geo_utils.py",
+      "tests/test_compression.py",
+      "tests/test_cost_estimator.py",
+      "tests/test_shadow_mode.py",
+      "tests/test_data_augmentation.py",
+      "tests/test_correlation_id.py",
+      "tests/test_health_check.py",
+      "tests/test_metrics_collector.py",
+      "tests/test_task_queue.py",
+      "tests/test_config_validator.py",
+      "tests/test_audit_log.py",
+      "tests/test_notification_dispatcher.py",
+      "tests/test_webhook_handler.py"
+    ],
+    "docs_added": [
+      "docs/architecture.md",
+      "docs/api_reference.md",
+      "docs/deployment.md",
+      "docs/monitoring.md"
+    ],
+    "scripts_added": [
+      "scripts/benchmark.py",
+      "scripts/seed_data.py"
+    ],
+    "other_added": [
+      "CHANGELOG.md",
+      "Makefile"
+    ],
     "summary": "60 atomic commits: 25 new utility modules with Google-style docstrings and type annotations, 25 pytest test suites, 4 documentation files, 2 developer scripts, CHANGELOG and Makefile.",
     "email_status": "sent"
   },
   {
-    "date": "2026-10-13",
+    "date": "2026-08-25",
     "mode": "IMPROVEMENT",
-    "commits": 160,
-    "branch": "improvement/2026-10-13",
-    "pr_number": 105,
-    "pr_url": "https://github.com/atharvadevne123/reflective-lantern/pull/105",
-    "new_modules": [
-      "app/math_utils.py",
-      "app/string_utils.py",
-      "app/time_utils.py",
-      "app/collection_utils.py",
-      "app/validation_utils.py"
-    ],
-    "enhanced_modules": [
-      "app/token_bucket.py",
-      "app/alerting.py",
-      "app/correlation_id.py",
-      "app/compression.py",
-      "app/battery.py",
-      "app/aws_stub.py",
-      "app/benchmarks.py",
-      "app/carbon.py",
-      "app/anomaly.py"
-    ],
-    "push_status": "success",
-    "email_status": "blocked_by_smtp_proxy"
-  },
-  {
-    "date": "2026-10-06",
-    "mode": "improvement",
-    "improvements": [
-      "fix: upgraded upload-artifact action from v7 to v4 in CI workflow",
-      "fix: combined nested with statements (SIM117) in 5 test files",
-      "style: applied ruff format across 125+ files in app, tests, scripts, alembic",
-      "chore: expanded .env.example with security, performance, rate-limit, and drift vars",
-      "feat: added 8 new settings fields to Settings dataclass (secret_key, max_workers, etc.)",
-      "docs: updated CHANGELOG.md with unreleased improvements section",
-      "ci: added coverage reporting with XML/terminal output to CI workflow",
-      "chore: added typecheck, coverage, audit, seed, validate targets to Makefile",
-      "chore: added mypy configuration section to pyproject.toml",
-      "docs: expanded SECURITY.md with credential guidance and dependency management",
-      "docs: expanded README with configuration table and make target descriptions",
-      "test: added 35+ parametrized tests across monitoring, features, model, API, anomaly, retry, validation, stats, time_series, alerting, solar, geo_utils, date_utils, tariff, cost_estimator, forecasting, cache modules"
+    "commits": 71,
+    "repo": "reflective-lantern",
+    "changes": [
+      "fix: health_check.check() falsy-registry bug \u2014 'registry or default' -> 'registry is None' check",
+      "fix: webhook_handler.py B904 \u2014 add raise...from exc",
+      "fix: metrics_collector.py RUF002 en-dash in docstring",
+      "fix: test_shadow_mode.py match_rate_none_matched \u2014 use range(1,5) to avoid 0*2==0*3 edge case",
+      "fix: test_task_queue.py B026 star-arg after keyword arg",
+      "fix: history/reflective-lantern.json restructured to flat list for schema tests",
+      "style: ruff --fix + format applied to 33 app/ modules",
+      "style: ruff --fix + format applied to 33 tests/ modules",
+      "style: ruff format applied to docs/, scripts/, README.md",
+      "chore: merged dependabot branches (anthropic, httpx, pydantic-settings, pytest-cov, sqlalchemy)",
+      "chore: merged innovation/quake-net test files"
     ],
     "tests_passed": true,
-    "commits": 60,
-    "email_status": "blocked_by_classifier",
-    "session": "https://claude.ai/code/session_01YBM82yRrBB6Z1JRMBJXQCA"
+    "email_status": "network_blocked"
   },
   {
-    "date": "2026-10-08",
-    "mode": "improvement",
-    "improvements": [
-      "test(51/60): add parametrized start-hour and profile-class tests to test_api_analytics",
-      "test(52/60): add parametrized credential and URL-normalisation tests to test_foundry_client",
-      "test(53/60): add parametrized mode-normalisation and commits-field tests to test_foundry_export",
-      "test(54/60): add parametrized format and summary-key tests to test_foundry_sync",
-      "test(55/60): add parametrized validate_history exit-code tests to test_integration",
-      "feat(56/60): add end_of_month and elapsed_seconds helpers to date_utils",
-      "test(57/60): add parametrized end_of_month and elapsed_seconds tests to test_date_utils",
-      "feat(58/60): add haversine_distance tuple-based wrapper to geo_utils",
-      "docs(59/60): update CHANGELOG with new helpers and parametrized test additions",
-      "docs(60/60): add utility modules reference table to README",
-      "fix: remove duplicate elapsed_seconds definition in date_utils"
+    "date": "2026-08-27",
+    "mode": "IMPROVEMENT",
+    "commits": 60,
+    "repo": "reflective-lantern",
+    "changes": [
+      "feat: app/tariff.py \u2014 flat, time-of-use and tiered electricity pricing with scheme comparison",
+      "feat: app/load_profile.py \u2014 base load, load factor, peak-to-average, ramp rate, profile class",
+      "feat: app/weather_normalization.py \u2014 degree-day adjustment separating weather from efficiency",
+      "feat: app/demand_response.py \u2014 customer baseline load, curtailment, event settlement",
+      "feat: app/power_quality.py \u2014 power factor, reactive power, voltage imbalance, capacitor sizing",
+      "feat: app/solar.py \u2014 PV generation, hourly self-consumption split, payback with degradation",
+      "feat: app/battery.py \u2014 storage dispatch simulation, peak shaving, capacity sizing",
+      "feat: app/energy_benchmark.py \u2014 peer-cohort EUI ranking with 1-100 score and letter grade",
+      "feat: 11 new /api/v1/ endpoints exposing the analytics modules, all validating to HTTP 422",
+      "fix: tests/conftest.py \u2014 restore root logger state between tests; configure_logging cleared pytest's capture handler and silently broke caplog for every later test",
+      "fix: tests/test_event_bus.py \u2014 two appended classes shadowed earlier same-named classes, silently dropping 5 tests from the run",
+      "chore: Makefile \u2014 test-cov and typecheck were missing from .PHONY; added check/serve/lint-fix",
+      "test: 397 new tests across new modules, endpoints and expanded existing suites",
+      "test: expanded thin suites \u2014 circuit_breaker 13->29, retry 8->25, event_bus 14->37",
+      "test: veritas-rag +45 trust scoring tests with injected clock",
+      "test: quake-net +66 validation edge-case tests",
+      "test: suite-cast +27 drift detection tests with seeded RNG",
+      "test: forge-guard +27 defect risk and sensor range tests",
+      "docs: docs/energy_analytics.md, docs/known_issues.md, API.md +10 endpoints, README, CHANGELOG",
+      "docs: price-prophet governance set \u2014 README, LICENSE, CHANGELOG, CONTRIBUTING, SECURITY, CODE_OF_CONDUCT, Makefile, .env.example, pre-commit, Dockerfile, docker-compose",
+      "docs: SECURITY.md and CODE_OF_CONDUCT.md for suite-cast and veritas-rag"
     ],
     "tests_passed": true,
-    "commits": 61,
-    "email_status": "network_blocked"
+    "test_summary": "root suite 5767 passed (was 5615, and 3 failures fixed); quake-net 359 passed",
+    "known_issues": "Pre-existing sub-project failures documented in docs/known_issues.md; verified present at f7a3249 so they predate this run",
+    "email_status": "pending"
   },
   {
-    "date": "2026-10-12",
-    "mode": "improvement",
-    "improvements": [
-      "fix(1/60): add \\_\\_len\\_\\_ to TTLCache to support len() calls in tests",
-      "fix(2/60): correct p_value_to_confidence return percentage and update drift test parameters",
-      "fix(3/60): update model metric key assertions from rmse/r2 to rmse_mean/r2_mean",
-      "fix(4/60): fix anomaly_density test to check last result instead of first",
-      "fix(5/60): fix daily_average_consumption to use arithmetic mean",
-      "fix(6/60): reject whitespace-only hostname/token in FoundryClient.__init__",
-      "fix(7/60): fix p_value_to_confidence_extended assertion to use 0-100 scale",
-      "docs(8/60): add docstrings to private helpers and validators in analytics_router.py",
-      "docs(9-35)/60: add docstrings to all app, config, and scripts modules",
-      "chore(36/60): add __all__ export list to app/middleware.py",
-      "test(37/60): add parametrized capacity_factor and self_consumption tests to test_solar.py",
-      "test(38/60): add parametrized usable_capacity_kwh tests to test_battery.py",
-      "test(39/60): add parametrized peak_hour_fraction tests to test_tariff.py",
-      "test(40/60): add parametrized off_peak_load_fraction tests to test_load_profile.py",
-      "test(41/60): add parametrized power_factor and correction_kvar tests to test_power_quality.py",
-      "test(42/60): add parametrized curtailment_rate tests to test_demand_response.py",
-      "test(43/60): add parametrized heating_degree_days tests to test_weather_normalization.py",
-      "test(44/60): add parametrized grade_from_score and percentile_rank tests to test_energy_benchmark.py",
-      "test(45/60): add parametrized severity filtering tests to test_notification_dispatcher.py",
-      "test(46/60): add parametrized state transition tests to test_circuit_breaker.py",
-      "test(47/60): add status code and attribute tests for exception classes in test_exceptions.py",
-      "test(48/60): add parametrized timed and tracked decorator tests to test_profiler.py",
-      "test(49/60): add parametrized mismatch detection tests to test_shadow_mode.py",
-      "test(50/60): add parametrized cost estimation tests to test_cost_estimator.py",
-      "test(51/60): add roundtrip, ratio and gzip detection tests to test_compression.py",
-      "test(52/60): add k_nearest and bearing tests to test_geo_utils.py",
-      "test(53/60): add parametrized log_level and rate_limit tests to test_config.py",
-      "test(54/60): add count_anomalies and get_recent_anomalies tests to test_database.py",
-      "test(55/60): add registry len and unregister tests to test_health_check.py",
-      "test(56/60): add days_in_month and is_leap_year parametrized tests to test_date_utils.py",
-      "test(57/60): add bucket_fill_percentage and client_exists tests to test_rate_limiter.py",
-      "test(58/60): add max_attempts and exception-type tests to test_retry.py",
-      "test(59/60): add remaining_capacity and is_cache_empty tests to test_cache.py",
-      "test(60/60): add available_tokens and per_key bucket_count tests to test_token_bucket.py"
+    "date": "2026-08-28",
+    "mode": "IMPROVEMENT",
+    "commits": 60,
+    "repo": "reflective-lantern",
+    "changes": [
+      "docs: add __init__, fit, transform docstrings to sklearn transformer classes in forge-guard/app/features.py",
+      "docs: add return type and docstring to _patched_xgb_tags in forge-guard/app/model.py",
+      "docs: add docstrings to lifespan, middleware, validator functions in forge-guard/app/main.py",
+      "docs: add docstrings to dispatch methods in forge-guard/app/middleware.py",
+      "docs: add docstrings to telemetry methods in energy_seer/app/telemetry.py",
+      "docs: add docstrings to cache methods in energy_seer/app/cache.py",
+      "docs: add __init__, fit, transform docstrings to transformers in energy_seer/app/features.py",
+      "docs: add docstrings to model functions in energy_seer/app/model.py",
+      "docs: add docstrings to monitoring methods in energy_seer/app/monitoring.py",
+      "docs: add docstrings to observability classes in veritas-rag/app/observability.py",
+      "docs: add docstrings to dedup functions in veritas-rag/app/ingestion/dedup.py",
+      "docs: add docstrings to extractors in veritas-rag/app/ingestion/extractors.py",
+      "docs: add docstrings to versioning classes in veritas-rag/app/ingestion/versioning.py",
+      "docs: add docstrings to BM25Index in veritas-rag/app/retrieval/bm25.py",
+      "docs: add docstrings to VectorIndex in veritas-rag/app/retrieval/ann.py",
+      "docs: add docstrings to HashingEmbedder in veritas-rag/app/retrieval/embedder.py",
+      "docs: add docstrings to feature transformer methods in cart-mind/app/features.py",
+      "docs: add docstrings to BruteForceIndex in cart-mind/app/model.py",
+      "docs: add docstring to MetricsCollector.__init__ in cart-mind/app/monitoring.py",
+      "docs: add docstring to TTLCache.__init__ in cart-mind/app/cache.py",
+      "docs: add docstring to ValidationError.__init__ in cart-mind/app/validation.py",
+      "docs: add docstrings to pipeline functions in suite-cast/app/model.py",
+      "fix: add AsyncGenerator return type to lifespan in suite-cast/app/main.py",
+      "fix: add Generator[Session,None,None] return type to get_db in suite-cast/app/database.py",
+      "fix: add return type annotations and docstrings to RateLimitMiddleware in temporal-pulse/app/middleware.py",
+      "docs: add docstrings to EnsemblePricingModel.__init__ and __repr__ in price-prophet/app/models/ensemble.py",
+      "docs: add docstrings to GradientBoostPricingModel.__init__ and __repr__ in price-prophet/app/models/gradient_boost.py",
+      "docs: add docstrings to LinearPricingModel.__init__ and __repr__ in price-prophet/app/models/linear.py",
+      "docs: add docstrings to TTLCache.__init__, _is_expired, __len__ in price-prophet/app/utils/cache.py",
+      "docs: add docstring to log_call.wrapper in price-prophet/app/utils/logging.py",
+      "docs: add docstrings to ModelRegistry.__init__, __len__, __repr__ in price-prophet/app/models/registry.py",
+      "docs: add docstrings to Backtester.__init__ and _run_simple in price-prophet/app/evaluation/backtester.py",
+      "docs: add docstring to PriceOptimizer.__init__ in price-prophet/app/pricing/optimizer.py",
+      "docs: add docstring to MetricsCollector.__init__ in price-prophet/app/utils/metrics_collector.py",
+      "docs: add docstrings to fixtures in price-prophet/tests/conftest.py",
+      "docs: add docstring to JsonFormatter.format in temporal-pulse/app/logging_config.py",
+      "docs: add docstrings to upgrade and downgrade in temporal-pulse/migrations/versions/0001_initial_schema.py",
+      "docs: add docstring to main in temporal-pulse/scripts/seed_data.py",
+      "docs: add docstrings to CircuitBreaker in app/circuit_breaker.py",
+      "docs: add docstrings to TaskQueue in app/task_queue.py",
+      "docs: add docstrings to profiler internals in app/profiler.py",
+      "docs: add docstrings to AuditLog in app/audit_log.py",
+      "docs: add docstrings to BatchProcessor in app/batch_processor.py",
+      "docs: add docstrings to retry closures in app/retry.py",
+      "docs: add docstring to EventBus.__init__ in app/event_bus.py",
+      "docs: add docstrings to TokenBucket in app/token_bucket.py",
+      "docs: add docstrings to HealthRegistry in app/health_check.py",
+      "docs: add docstring to DataLineage.__init__ in app/data_versioning.py",
+      "docs: add docstrings to Experiment and ExperimentRegistry in app/experiment_tracker.py",
+      "docs: add docstrings to ModelRegistry in app/model_registry.py",
+      "docs: add docstring to TTLCache.__init__ in app/cache.py",
+      "docs: add docstring to AlertManager.__init__ in app/alerting.py",
+      "docs: add docstring to _key closure in app/anomaly.py",
+      "docs: add docstring to _jitter closure in app/data_augmentation.py",
+      "docs: add docstrings to ResourceSpec and CostBreakdown in app/cost_estimator.py",
+      "docs: add docstrings to TraceIdFilter in app/logging_config.py",
+      "docs: add docstrings to middleware dispatch methods in app/middleware.py",
+      "docs: add docstrings to LoadPatternIndex and get_pattern_index in app/faiss_index.py",
+      "docs: add docstring to FeatureStore.__init__ in app/feature_store.py",
+      "docs: add docstring to BuildingSimilarityIndex.__init__ in app/similarity.py",
+      "style: apply ruff import cleanup and remove unused imports"
     ],
+    "focus": "docstring coverage across all sub-projects and main app modules",
     "tests_passed": true,
-    "commits": 60,
     "email_status": "network_blocked"
-  },
-  {
-    "date": "2026-10-19",
-    "mode": "IMPROVEMENT",
-    "commits": 61,
-    "focus": "new energy domain utility modules with full test coverage",
-    "modules_added": [
-      "app/solar_pv.py",
-      "app/battery_storage.py",
-      "app/wind_power.py",
-      "app/carbon_budget.py",
-      "app/heat_pump.py",
-      "app/insulation_calculator.py",
-      "app/demand_forecaster.py",
-      "app/power_quality.py",
-      "app/energy_audit.py",
-      "app/microGrid_controller.py",
-      "app/voltage_drop.py"
-    ],
-    "tests_added": [
-      "tests/test_solar_pv.py",
-      "tests/test_battery_storage.py",
-      "tests/test_wind_power.py",
-      "tests/test_carbon_budget.py",
-      "tests/test_heat_pump.py",
-      "tests/test_insulation_calculator.py",
-      "tests/test_demand_forecaster.py",
-      "tests/test_power_quality.py",
-      "tests/test_energy_audit.py",
-      "tests/test_microGrid_controller.py",
-      "tests/test_voltage_drop.py",
-      "tests/test_energy_poverty.py"
-    ],
-    "tests_passed": 495,
-    "ruff_clean": true,
-    "push_status": "success",
-    "email_status": "sent",
-    "session": "https://claude.ai/code/session_01GsCkDoghP6HqZcJrjHCCey"
-  },
-  {
-    "date": "2026-10-20",
-    "mode": "IMPROVEMENT",
-    "commits": 61,
-    "modules_added": [
-      "app/fuel_cell.py",
-      "app/tidal_power.py",
-      "app/geothermal.py",
-      "app/peak_shaving.py",
-      "app/cogeneration.py",
-      "app/energy_storage_degradation.py",
-      "app/renewable_curtailment.py",
-      "app/distributed_energy.py",
-      "app/energy_intensity.py",
-      "app/grid_balancing.py"
-    ],
-    "tests_added": [
-      "tests/test_fuel_cell.py",
-      "tests/test_tidal_power.py",
-      "tests/test_geothermal.py",
-      "tests/test_peak_shaving.py",
-      "tests/test_cogeneration.py",
-      "tests/test_energy_storage_degradation.py",
-      "tests/test_renewable_curtailment.py",
-      "tests/test_distributed_energy.py",
-      "tests/test_energy_intensity.py",
-      "tests/test_grid_balancing.py"
-    ],
-    "tests_expanded": [
-      "test_ev_charging",
-      "test_power_quality",
-      "test_voltage_drop",
-      "test_energy_audit",
-      "test_flexibility_score",
-      "test_tariff",
-      "test_roi_calculator",
-      "test_microGrid_controller",
-      "test_load_profile",
-      "test_lighting_efficiency",
-      "test_demand_response",
-      "test_energy_label"
-    ],
-    "functions_enhanced": {
-      "app/fuel_cell.py": [
-        "degradation_rate_per_hour",
-        "water_production_rate",
-        "stack_voltage"
-      ],
-      "app/tidal_power.py": [
-        "tidal_energy_density",
-        "annual_tidal_energy_kwh",
-        "tidal_resource_score"
-      ],
-      "app/geothermal.py": [
-        "levelised_cost_of_energy",
-        "brine_enthalpy_kj_per_kg",
-        "geothermal_gradient"
-      ],
-      "app/peak_shaving.py": [
-        "battery_cycles_per_year",
-        "revenue_from_peak_shaving",
-        "shaving_effectiveness"
-      ],
-      "app/cogeneration.py": [
-        "heat_to_power_ratio",
-        "primary_energy_saving",
-        "annual_fuel_cost"
-      ],
-      "app/energy_storage_degradation.py": [
-        "state_of_health",
-        "energy_throughput_kwh",
-        "replacement_cost_per_kwh"
-      ],
-      "app/renewable_curtailment.py": [
-        "carbon_abatement_lost",
-        "curtailment_forecast_accuracy",
-        "value_of_curtailment_reduction"
-      ],
-      "app/distributed_energy.py": [
-        "capacity_factor",
-        "net_metering_credit",
-        "portfolio_availability"
-      ],
-      "app/energy_intensity.py": [
-        "floor_area_from_eui",
-        "carbon_from_eui",
-        "eui_reduction_needed"
-      ],
-      "app/grid_balancing.py": [
-        "frequency_response_capability",
-        "synchronous_inertia_mwh",
-        "frequency_nadir"
-      ],
-      "app/carbon_budget.py": [
-        "scope_breakdown_percentage",
-        "net_zero_year",
-        "emissions_per_unit"
-      ],
-      "app/demand_forecaster.py": [
-        "forecast_accuracy_summary",
-        "bias",
-        "ensemble_forecast"
-      ],
-      "app/ev_charging.py": [
-        "charging_cost",
-        "v2g_discharge_kw",
-        "co2_saved_vs_ice"
-      ]
-    },
-    "docs_updated": [
-      "CHANGELOG.md",
-      "README.md",
-      "pyproject.toml"
-    ],
-    "summary": "10 new energy domain modules, 10 new test suites, 12 test file expansions, 39 new utility functions across 13 modules, plus docs updates."
-  },
-  {
-    "date": "2026-10-22",
-    "mode": "IMPROVEMENT",
-    "repo": "veritas-rag",
-    "commits": 60,
-    "new_endpoints": [
-      "GET /api/v1/sources",
-      "GET /api/v1/version",
-      "GET /api/v1/documents",
-      "DELETE /api/v1/documents/{source}",
-      "POST /api/v1/ingest/batch"
-    ],
-    "new_features": [
-      "query_batch() on RagPipeline",
-      "sources() on RagPipeline",
-      "document_count() on RagPipeline",
-      "settings_summary() in config.py",
-      "cache_age_seconds() in caching.py",
-      "normalize_trust_scores() in scoring/trust.py",
-      "truncate_to_bytes() in ingestion/normalize.py",
-      "trust_tier(), weighted_answer_confidence(), min_trust_gate(), trust_variance(), above_threshold_ratio(), top_k_trust()",
-      "__repr__ on ScoredChunk",
-      "CORS middleware",
-      "Correlation ID middleware"
-    ],
-    "test_expansion": "+238 new tests (346 total, 1 pre-existing env failure)",
-    "new_test_files": [
-      "tests/test_config.py",
-      "tests/test_pipeline_edge_cases.py"
-    ],
-    "security_fixes": [
-      "PDF extraction with proper error handling",
-      "LLM retry logic with exponential backoff",
-      "Config validation in __post_init__",
-      "Safe chunk lookup with .get() in fusion"
-    ],
-    "logging_improvements": [
-      "fallback.py",
-      "extractive.py",
-      "dedup.py",
-      "chunker.py",
-      "versioning.py",
-      "rerank.py",
-      "hybrid.py"
-    ],
-    "version_bump": "1.0.0 -> 1.1.0",
-    "docs_updated": [
-      "CHANGELOG.md",
-      "README.md",
-      "pyproject.toml"
-    ],
-    "adversarial_cases_added": 2,
-    "summary": "60 atomic commits to veritas-rag: 5 new API endpoints, 11 new utility functions, 2 new pipeline methods, 238 new tests, structured logging across 7 modules, version bump to 1.1.0."
-  },
-  {
-    "date": "2026-10-27",
-    "mode": "IMPROVEMENT",
-    "day_of_week": "Tuesday",
-    "commit_count": 60,
-    "ruff_autofix_commit": true,
-    "total_commits_pushed": 61,
-    "projects_touched": [
-      "temporal-pulse",
-      "sport-cast",
-      "suite-cast",
-      "ops-vision",
-      "Cyber-Guard",
-      "forge-guard",
-      "cart-mind",
-      "veritas-rag",
-      "signal-forge",
-      "social-pulse",
-      "trade-sage",
-      "quake-net",
-      "threat-lens",
-      "ticket-oracle",
-      "sports-oracle",
-      "Property-Sage",
-      "energy_seer",
-      "price-prophet"
-    ],
-    "new_test_files": [
-      "temporal-pulse/tests/test_forecaster_extended.py",
-      "Property-Sage/tests/test_validators_extended.py",
-      "energy_seer/tests/test_psi_extended.py",
-      "social-pulse/tests/test_trend_scorer_extended.py",
-      "sports-oracle/tests/test_stats_extended.py",
-      "price-prophet/tests/test_elasticity_extended.py",
-      "ticket-oracle/tests/test_priority_rules_extended.py",
-      "cart-mind/tests/test_validation_extended.py",
-      "forge-guard/tests/test_validators_extended.py",
-      "quake-net/tests/test_forecasting_extended.py",
-      "signal-forge/tests/test_data_utils_extended.py"
-    ],
-    "test_focus": "Extended edge-case tests: PSI drift, elasticity, Omori aftershock, sensor validation, trend scoring, priority overrides, cart coherence, OHLCV utils",
-    "ruff_fixes": 314,
-    "summary": "60 atomic extended test file commits across 18 sub-projects plus ruff autofix (314 fixes). Test coverage expanded with edge-case and boundary tests for forecasters, validators, drift detectors, and domain logic."
-  },
-  {
-    "date": "2026-10-29",
-    "mode": "IMPROVEMENT",
-    "commits": 60,
-    "project": "trade-sage",
-    "description": "Equity trading signal prediction and portfolio risk scoring API (XGBoost + LightGBM + RandomForest ensemble)",
-    "modules_added": [
-      "trade-sage/app/utils.py"
-    ],
-    "functions_added": [
-      "portfolio.compute_sortino_ratio",
-      "preprocessing.normalize_features",
-      "utils.safe_round",
-      "utils.flatten_dict",
-      "utils.hash_payload",
-      "utils.clamp",
-      "utils.percentage_change",
-      "utils.truncate_string",
-      "utils.retry_with_backoff",
-      "cache.TTLCache.peek",
-      "cache.TTLCache.keys",
-      "cache.get_cache_key",
-      "config.get_config_value",
-      "config.set_config_override",
-      "model.model_is_loaded",
-      "model.safe_predict"
-    ],
-    "new_test_files": [
-      "trade-sage/tests/test_utils.py",
-      "trade-sage/tests/test_utils_extended.py",
-      "trade-sage/tests/test_portfolio_sortino.py",
-      "trade-sage/tests/test_preprocessing_normalize.py",
-      "trade-sage/tests/test_cache_peek.py",
-      "trade-sage/tests/test_config_value.py",
-      "trade-sage/tests/test_model_helpers.py"
-    ],
-    "ruff_fixes": 11,
-    "summary": "60 atomic improvement commits for trade-sage: 7 ruff import-sort fixes, 17 new utility functions across 10 existing modules, 7 new test files with 150+ test cases, documentation updates (README v1.1.0, CHANGELOG), and residual lint cleanup."
-  },
-  {
-    "date": "2026-10-30",
-    "mode": "IMPROVEMENT",
-    "day_of_week": "Friday",
-    "commit_count": 60,
-    "project": "Property-Sage",
-    "description": "Real estate valuation API with XGBoost+LightGBM+RF ensemble, KS-test drift detection, SQLAlchemy ORM",
-    "modules_added": [
-      "Property-Sage/app/utils.py",
-      "Property-Sage/app/stats.py",
-      "Property-Sage/app/formatters.py",
-      "Property-Sage/app/reports.py",
-      "Property-Sage/app/price_index.py",
-      "Property-Sage/app/cache.py",
-      "Property-Sage/app/version.py",
-      "Property-Sage/SECURITY.md"
-    ],
-    "functions_added": [
-      "experiment_tracking.get_recent_runs",
-      "experiment_tracking.log_model_version",
-      "experiment_tracking.list_experiments",
-      "model.calculate_confidence_score",
-      "model.batch_predict",
-      "model.get_model_version",
-      "validators.validate_year_built_value",
-      "validators.sanitize_request_id",
-      "validators.normalize_neighborhood",
-      "utils.format_currency",
-      "utils.clamp",
-      "utils.slugify",
-      "utils.percentage_change",
-      "utils.is_finite_positive",
-      "features.compute_cap_rate",
-      "features.property_age_category",
-      "features.compute_price_per_sqft",
-      "features.compute_gross_yield",
-      "features.encode_property_features",
-      "features.sqft_percentile",
-      "features.property_type_to_multiplier",
-      "monitoring.yield_category",
-      "monitoring.anomaly_score",
-      "monitoring.detect_outlier_predictions",
-      "monitoring.prediction_summary_stats",
-      "monitoring.get_drift_history",
-      "health.is_healthy",
-      "health.get_unhealthy_components",
-      "database.get_prediction_count",
-      "database.get_recent_predictions",
-      "reports.property_valuation_report",
-      "stats.neighborhood_price_stats",
-      "stats.neighborhood_benchmark",
-      "formatters.format_prediction_response",
-      "formatters.format_metrics_response",
-      "price_index.NeighborhoodPriceIndex",
-      "cache.PredictionCache"
-    ],
-    "new_test_files": [
-      "Property-Sage/tests/test_experiment_tracking_extended.py",
-      "Property-Sage/tests/test_model_confidence.py",
-      "Property-Sage/tests/test_model_batch.py",
-      "Property-Sage/tests/test_model_version.py",
-      "Property-Sage/tests/test_validators_year_built.py",
-      "Property-Sage/tests/test_validators_request_id.py",
-      "Property-Sage/tests/test_utils.py",
-      "Property-Sage/tests/test_features_cap_rate.py",
-      "Property-Sage/tests/test_features_age.py",
-      "Property-Sage/tests/test_features_price_sqft.py",
-      "Property-Sage/tests/test_stats.py",
-      "Property-Sage/tests/test_formatters.py",
-      "Property-Sage/tests/test_monitoring_helpers.py",
-      "Property-Sage/tests/test_monitoring_outliers.py",
-      "Property-Sage/tests/test_monitoring_stats.py",
-      "Property-Sage/tests/test_reports.py",
-      "Property-Sage/tests/test_price_index.py",
-      "Property-Sage/tests/test_cache.py",
-      "Property-Sage/tests/test_version.py",
-      "Property-Sage/tests/test_experiment_tracking_v2.py"
-    ],
-    "docs_updated": [
-      "Property-Sage/CHANGELOG.md",
-      "Property-Sage/README.md",
-      "Property-Sage/SECURITY.md"
-    ],
-    "version_bump": "1.0.0 -> 1.2.0",
-    "summary": "60+ atomic improvement commits for Property-Sage: 37 new utility functions across 10 modules, 6 new source modules, 20 new test files with comprehensive coverage, SECURITY.md, CHANGELOG v1.2.0, README utilities section.",
-    "email_status": "blocked_smtp",
-    "ruff_status": "pass"
-  },
-  {
-    "date": "2026-11-05",
-    "mode": "IMPROVEMENT",
-    "commits": 60,
-    "summary": "Fixed pyproject.toml duplicate mypy section, resolved 6 missing constants in constants.py, corrected z_scores/weighted_median implementations in stats_utils, fixed cors_origins field in config.py, resolved E402 import order in forge-guard. Added utility functions to compression, geo_utils, date_utils, event_bus, string_utils, stats_utils, validation_utils, collection_utils, time_utils, health_check, emissions_factor, cache_utils, math_utils, correlation_id, retry_utils. Added corresponding test classes for all new functions.",
-    "files_changed": [
-      "pyproject.toml",
-      "app/constants.py",
-      "app/stats_utils.py",
-      "app/config.py",
-      "app/math_utils.py",
-      "app/time_utils.py",
-      "app/string_utils.py",
-      "app/collection_utils.py",
-      "app/validation_utils.py",
-      "app/retry_utils.py",
-      "app/cache_utils.py",
-      "app/config_schema.py",
-      "app/compression.py",
-      "app/geo_utils.py",
-      "app/date_utils.py",
-      "app/event_bus.py",
-      "app/health_check.py",
-      "app/emissions_factor.py",
-      "app/correlation_id.py",
-      "forge-guard/app/main.py",
-      "forge-guard/app/model.py",
-      "README.md"
-    ],
-    "ruff_status": "passing"
-  },
-  {
-    "date": "2026-11-06",
-    "mode": "IMPROVEMENT",
-    "commits": 60,
-    "repo": "energy_seer",
-    "summary": "Expanded energy_seer sub-project: added 11 new helper functions across demand_spike, monitoring, forecaster, features, grid_report, psi, aws_stub, validators, cache, telemetry, efficiency_score, peak_demand modules. Created 15+ new test files with 200+ test cases covering all public API. Added CHANGELOG.md and Testing section to README.",
-    "files_changed": [
-      "energy_seer/tests/test_demand_spike_extended.py",
-      "energy_seer/tests/test_validators_extended.py",
-      "energy_seer/tests/test_peak_demand_extended.py",
-      "energy_seer/tests/test_efficiency_score_extended.py",
-      "energy_seer/tests/test_cache_extended.py",
-      "energy_seer/tests/test_telemetry_extended.py",
-      "energy_seer/tests/test_psi_extended.py",
-      "energy_seer/tests/test_grid_report_extended.py",
-      "energy_seer/tests/test_mlflow_stub_extended.py",
-      "energy_seer/tests/test_forecaster_extended.py",
-      "energy_seer/tests/test_monitoring_extended.py",
-      "energy_seer/tests/test_aws_stub_extended.py",
-      "energy_seer/app/demand_spike.py",
-      "energy_seer/app/monitoring.py",
-      "energy_seer/app/forecaster.py",
-      "energy_seer/app/features.py",
-      "energy_seer/app/grid_report.py",
-      "energy_seer/app/psi.py",
-      "energy_seer/app/aws_stub.py",
-      "energy_seer/app/validators.py",
-      "energy_seer/app/cache.py",
-      "energy_seer/app/telemetry.py",
-      "energy_seer/app/efficiency_score.py",
-      "energy_seer/app/peak_demand.py",
-      "energy_seer/CHANGELOG.md",
-      "energy_seer/README.md"
-    ],
-    "ruff_status": "passing",
-    "email_status": "network_blocked"
-  },
-  {
-    "date": "2026-11-10",
-    "mode": "improvement",
-    "commit_count": 60,
-    "commits": [
-      {
-        "hash": "942a1599",
-        "subject": "docs(60/60): update cart-mind CHANGELOG with 2026-11-10 test additions"
-      },
-      {
-        "hash": "6e4dad89",
-        "subject": "docs(59/60): update ops-vision CHANGELOG with 2026-11-10 test additions"
-      },
-      {
-        "hash": "ace9899f",
-        "subject": "docs(58/60): update forge-guard CHANGELOG with 2026-11-10 test additions"
-      },
-      {
-        "hash": "20c936f8",
-        "subject": "test(57/60): add is_valid_severity, severity_from_confidence, and constant tests in ops-vision"
-      },
-      {
-        "hash": "c69ce22f",
-        "subject": "test(56/60): add OpsVisionError hierarchy and message tests in ops-vision exceptions"
-      },
-      {
-        "hash": "99f23374",
-        "subject": "test(55/60): add defect_risk_index and sensor_range_feature extended tests in forge-guard"
-      },
-      {
-        "hash": "14029cab",
-        "subject": "test(54/60): add Settings defaults and env-var override tests in suite-cast config"
-      },
-      {
-        "hash": "25e6c49e",
-        "subject": "test(53/60): add UserItemFeatures, RecommendRequest, SimilarItemsRequest validation tests in cart-mind"
-      },
-      {
-        "hash": "38fc4d64",
-        "subject": "test(52/60): add MetricsPayload and RunbookSearchRequest validation tests in ops-vision schemas"
-      },
-      {
-        "hash": "ebfbbc27",
-        "subject": "test(51/60): add model_fingerprint and predict_intent tests in cart-mind model"
-      },
-      {
-        "hash": "8caec266",
-        "subject": "test(50/60): add IncidentRateBuffer record, as_array, and property tests in ops-vision"
-      },
-      {
-        "hash": "d536d293",
-        "subject": "test(49/60): add predict_demand and generate_sample_data tests in suite-cast model"
-      },
-      {
-        "hash": "ee239cea",
-        "subject": "test(48/60): add compute_drift and compute_zscore_outliers tests in forge-guard monitoring"
-      },
-      {
-        "hash": "88009b88",
-        "subject": "test(47/60): add format_defect_rate_pct parametrized tests in forge-guard reporting"
-      },
-      {
-        "hash": "b8a52e05",
-        "subject": "test(46/60): add rolling_mean, compute_psi, drift_summary, reference_window tests in cart-mind"
-      },
-      {
-        "hash": "bb737238",
-        "subject": "test(45/60): add DriftMonitor reference_size, drift_rate, and DriftResult tests in ops-vision"
-      },
-      {
-        "hash": "d9987fbd",
-        "subject": "test(44/60): add sensor_z_score, clamp_reading, missing_rate, field_statistics tests in forge-guard"
-      },
-      {
-        "hash": "ec16fc95",
-        "subject": "test(43/60): add revpar, adr, occupancy_delta, seasonality tests in suite-cast features"
-      },
-      {
-        "hash": "c4052a15",
-        "subject": "test(42/60): add price_discount_pct, cart_value_tier, revenue_impact_score tests in cart-mind"
-      },
-      {
-        "hash": "2d4ac46e",
-        "subject": "test(41/60): add count_predictions, avg_confidence, bulk_create tests in ops-vision crud"
-      },
-      {
-        "hash": "f0e4f03e",
-        "subject": "test(40/60): add cache_hit_rate, warm_cache, evict_expired tests in cart-mind"
-      },
-      {
-        "hash": "10766760",
-        "subject": "test(39/60): add validate_positive_float and clip_to_unit_interval tests in ops-vision"
-      },
-      {
-        "hash": "eea7ec03",
-        "subject": "test(38/60): add TTLCache get, size, and purge tests in forge-guard"
-      },
-      {
-        "hash": "5ce024be",
-        "subject": "test(37/60): add rate_spread and drift_severity tests in suite-cast monitoring"
-      },
-      {
-        "hash": "c3bfd9e4",
-        "subject": "test(36/60): add feature_importance_report and clip_outlier_features tests in cart-mind"
-      },
-      {
-        "hash": "ab85ced4",
-        "subject": "test(35/60): add rolling_mean tests in cart-mind monitoring"
-      },
-      {
-        "hash": "372cf31d",
-        "subject": "test(34/60): add Settings field type validation tests in ops-vision config"
-      },
-      {
-        "hash": "38fcf745",
-        "subject": "test(33/60): add validate_batch and missing_rate tests in forge-guard validators"
-      },
-      {
-        "hash": "31fd3a86",
-        "subject": "test(32/60): add download_artifact and S3KeyFor extra tests in Cyber-Guard storage"
-      },
-      {
-        "hash": "c7847a61",
-        "subject": "test(31/60): add PredictionLog query and filter tests in Cyber-Guard database"
-      },
-      {
-        "hash": "075e5e82",
-        "subject": "test(30/60): add prune ordering and reset isolation tests in Cyber-Guard rate_limit"
-      },
-      {
-        "hash": "66a6a8ee",
-        "subject": "test(29/60): add exists and list_artifacts tests in threat-lens aws_stub"
-      },
-      {
-        "hash": "c14d2f0b",
-        "subject": "chore(28/60): add test-cov and check-all targets to energy_seer Makefile"
-      },
-      {
-        "hash": "6fe2d542",
-        "subject": "chore(27/60): add test-cov, test-fast, typecheck, check-all targets to suite-cast Makefile"
-      },
-      {
-        "hash": "00d7eef0",
-        "subject": "chore(26/60): add test-fast and check-all Makefile targets to forge-guard"
-      },
-      {
-        "hash": "ae287647",
-        "subject": "docs(25/60): update energy_seer CHANGELOG with 2026-11-10 test additions"
-      },
-      {
-        "hash": "85d95f58",
-        "subject": "docs(24/60): add v1.1.0 CHANGELOG entry for suite-cast feature test improvements"
-      },
-      {
-        "hash": "6ee4f89c",
-        "subject": "docs(23/60): add v1.1.0 CHANGELOG entry for cart-mind validation test improvements"
-      },
-      {
-        "hash": "1e780678",
-        "subject": "docs(22/60): add v1.1.0 CHANGELOG entry for ops-vision test improvements"
-      },
-      {
-        "hash": "8b1a9364",
-        "subject": "docs(21/60): add v1.2.0 CHANGELOG entry for forge-guard test improvements"
-      },
-      {
-        "hash": "7a811f82",
-        "subject": "test(20/60): add get_or_set and update_many cache tests in energy_seer"
-      },
-      {
-        "hash": "30408f61",
-        "subject": "test(19/60): add temperature, humidity, positive_int validator tests in energy_seer"
-      },
-      {
-        "hash": "d61ded94",
-        "subject": "test(18/60): add batch_increment, get_many, reset_prefix tests in energy_seer telemetry"
-      },
-      {
-        "hash": "b380aa68",
-        "subject": "test(17/60): add report_trend, alert_frequency, compute_anomaly_rate tests in energy_seer"
-      },
-      {
-        "hash": "6c94b54e",
-        "subject": "test(16/60): add psi_series_trend and psi_feature_rank tests in energy_seer"
-      },
-      {
-        "hash": "d09d20cf",
-        "subject": "test(15/60): add load_factor, off_peak_average, rolling_peak_sums tests in energy_seer"
-      },
-      {
-        "hash": "caca9925",
-        "subject": "test(14/60): add demand_percentile and smooth_demand tests in energy_seer"
-      },
-      {
-        "hash": "34326638",
-        "subject": "test(13/60): add competitor_rate_ratio and occupancy_yoy_delta tests in suite-cast"
-      },
-      {
-        "hash": "db528d37",
-        "subject": "test(12/60): add revenue_impact_score and price_discount_pct tests in cart-mind"
-      },
-      {
-        "hash": "396fe756",
-        "subject": "test(11/60): add repr and FeatureEngineeringError tests in ops-vision exceptions"
-      },
-      {
-        "hash": "5560a384",
-        "subject": "test(10/60): add severity_from_confidence parametrized tests in ops-vision"
-      },
-      {
-        "hash": "3115235d",
-        "subject": "test(9/60): add format_defect_rate_pct and reporting edge-case tests in forge-guard"
-      },
-      {
-        "hash": "92724a53",
-        "subject": "test(8/60): add model_prediction_summary and defect_rate tests in forge-guard"
-      },
-      {
-        "hash": "fafa54a8",
-        "subject": "test(7/60): add sensor_range_feature and synthetic data tests in forge-guard"
-      },
-      {
-        "hash": "509b43ca",
-        "subject": "fix(6/60): relax pinned dependency versions in ops-vision and energy-seer to fix install conflicts"
-      },
-      {
-        "hash": "9fe8b5fd",
-        "subject": "fix(5/60): fix Cyber-Guard tests - correct column names, endpoint paths, stale pruning, boto3 mock"
-      },
-      {
-        "hash": "ad8f607e",
-        "subject": "fix(4/60): fix threat-lens test endpoint paths and aws_stub str/Path handling"
-      },
-      {
-        "hash": "95a93821",
-        "subject": "fix(3/60): fix cart-mind test - correct column names and endpoint path"
-      },
-      {
-        "hash": "8a8a18bb",
-        "subject": "fix(2/60): fix suite-cast tests - correct API prefix and test fixture"
-      },
-      {
-        "hash": "640703b0",
-        "subject": "ci: fix ruff lint errors in root CI workflow (1/60)"
-      }
-    ],
-    "files_changed": [
-      "Cyber-Guard/tests/test_database.py",
-      "Cyber-Guard/tests/test_main.py",
-      "Cyber-Guard/tests/test_rate_limit_extended.py",
-      "Cyber-Guard/tests/test_storage.py",
-      "app/cache_utils.py",
-      "app/retry_utils.py",
-      "cart-mind/CHANGELOG.md",
-      "cart-mind/tests/test_cache_extended.py",
-      "cart-mind/tests/test_database.py",
-      "cart-mind/tests/test_features.py",
-      "cart-mind/tests/test_main.py",
-      "cart-mind/tests/test_model_extended.py",
-      "cart-mind/tests/test_monitoring.py",
-      "cart-mind/tests/test_monitoring_extended2.py",
-      "cart-mind/tests/test_schemas_extended.py",
-      "cart-mind/tests/test_validation_extended.py",
-      "cart-mind/tests/test_validation_helpers_extended.py",
-      "energy_seer/CHANGELOG.md",
-      "energy_seer/Makefile",
-      "energy_seer/requirements.txt",
-      "energy_seer/tests/test_cache_extended.py",
-      "energy_seer/tests/test_demand_spike_extended.py",
-      "energy_seer/tests/test_grid_report_extended.py",
-      "energy_seer/tests/test_peak_demand_extended.py",
-      "energy_seer/tests/test_psi_extended.py",
-      "energy_seer/tests/test_telemetry_extended.py",
-      "energy_seer/tests/test_validators_extended.py",
-      "forge-guard/CHANGELOG.md",
-      "forge-guard/Makefile",
-      "forge-guard/app/model.py",
-      "forge-guard/tests/test_cache_extended.py",
-      "forge-guard/tests/test_features.py",
-      "forge-guard/tests/test_features_extended.py",
-      "forge-guard/tests/test_monitoring.py",
-      "forge-guard/tests/test_monitoring_extended.py",
-      "forge-guard/tests/test_reporting.py",
-      "forge-guard/tests/test_reporting_extended.py",
-      "forge-guard/tests/test_validators_extended.py",
-      "forge-guard/tests/test_validators_extended2.py",
-      "ops-vision/CHANGELOG.md",
-      "ops-vision/requirements.txt",
-      "ops-vision/tests/test_config_extended.py",
-      "ops-vision/tests/test_constants.py",
-      "ops-vision/tests/test_constants_extended.py",
-      "ops-vision/tests/test_crud_extended.py",
-      "ops-vision/tests/test_exceptions_extended.py",
-      "ops-vision/tests/test_exceptions_extended2.py",
-      "ops-vision/tests/test_features_extended.py",
-      "ops-vision/tests/test_forecasting.py",
-      "ops-vision/tests/test_forecasting_extended2.py",
-      "ops-vision/tests/test_monitoring.py",
-      "ops-vision/tests/test_monitoring_extended.py",
-      "ops-vision/tests/test_schemas_extended.py",
-      "suite-cast/CHANGELOG.md",
-      "suite-cast/Makefile",
-      "suite-cast/app/features.py",
-      "suite-cast/tests/test_config_extended.py",
-      "suite-cast/tests/test_features_extended.py",
-      "suite-cast/tests/test_features_metrics_extended.py",
-      "suite-cast/tests/test_main.py",
-      "suite-cast/tests/test_model_extended.py",
-      "suite-cast/tests/test_monitoring_extended.py",
-      "threat-lens/app/aws_stub.py",
-      "threat-lens/tests/test_aws_stub.py",
-      "threat-lens/tests/test_main.py"
-    ],
-    "ruff_status": "passing",
-    "email_status": "network_blocked"
-  },
-  {
-    "date": "2026-11-17",
-    "mode": "improvement",
-    "commit_count": 60,
-    "commits": [
-      {
-        "hash": "96b1dfe6",
-        "subject": "ci: apply ruff auto-fixes for import ordering and style issues"
-      },
-      {
-        "hash": "f5c7d475",
-        "subject": "test(60/60): add extended HealthResponse, PredictionResponse, DriftCheckResponse, and NeighbourhoodReport schema tests in Property-Sage"
-      },
-      {
-        "hash": "4b5f701f",
-        "subject": "test(59/60): add extended sma, linear_trend, and forecast_form time-series tests in sports-oracle"
-      },
-      {
-        "hash": "e1b12601",
-        "subject": "test(58/60): add extended TelemetryInput field validation and BatchPredictionResponse tests in fleet-mind"
-      },
-      {
-        "hash": "0de7bb86",
-        "subject": "test(57/60): add extended content_hash, minhash_signature, and DuplicateDetector tests in veritas-rag"
-      },
-      {
-        "hash": "70153515",
-        "subject": "test(56/60): add extended MetricsCollector thread-safety, latency percentile, and counter tests in sports-oracle"
-      },
-      {
-        "hash": "95fafbc5",
-        "subject": "test(55/60): add extended retry decorator backoff, exception-filter, and attempt-count tests in fleet-mind"
-      },
-      {
-        "hash": "a877d4ad",
-        "subject": "test(54/60): add extended efficiency score grading and building type tests in energy_seer"
-      },
-      {
-        "hash": "6031b71d",
-        "subject": "test(53/60): add extended alerting threshold and drift alert tests in fleet-mind"
-      },
-      {
-        "hash": "933750ea",
-        "subject": "test(52/60): add extended compute_drift and compute_psi drift detection tests in sports-oracle"
-      },
-      {
-        "hash": "5041373f",
-        "subject": "test(51/60): add extended validate_match_features, validate_probability, and validate_positive tests in sports-oracle"
-      },
-      {
-        "hash": "11a99246",
-        "subject": "test(50/60): add validate_year_built, normalize_neighborhood, sanitize_request_id tests in Property-Sage"
-      },
-      {
-        "hash": "cd2bd1c0",
-        "subject": "test(49/60): add extended chunk_document page-aware chunking tests in veritas-rag"
-      },
-      {
-        "hash": "c772cbce",
-        "subject": "test(48/60): add extended BM25Index and tokenize coverage tests in veritas-rag"
-      },
-      {
-        "hash": "b47a4bd6",
-        "subject": "test(47/60): add CorrelationIDMiddleware and RateLimitMiddleware tests in fleet-mind"
-      },
-      {
-        "hash": "6296a79f",
-        "subject": "test(46/60): add VehiclePrediction and DriftReport ORM model tests in fleet-mind"
-      },
-      {
-        "hash": "4faaddab",
-        "subject": "test(45/60): add EnergyReading, PredictionLog, AnomalyLog, DriftLog model tests in energy_seer"
-      },
-      {
-        "hash": "a0eaba8e",
-        "subject": "test(44/60): add Match model, create_tables, and session management tests in sports-oracle"
-      },
-      {
-        "hash": "3048504a",
-        "subject": "test(43/60): add build_index and search_similar brute-force fallback tests in sports-oracle"
-      },
-      {
-        "hash": "61e1bcc4",
-        "subject": "test(42/60): add AnthropicGenerator mocked API tests in veritas-rag"
-      },
-      {
-        "hash": "2af4d22d",
-        "subject": "test(41/60): add EvalCase and EvalReport dataclass tests in veritas-rag"
-      },
-      {
-        "hash": "92f50a2e",
-        "subject": "test(40/60): add extract_html, extract_text, and detect_source_type tests in veritas-rag"
-      },
-      {
-        "hash": "20363c8c",
-        "subject": "test(39/60): add ExtractiveGenerator sentence selection and citation tests in veritas-rag"
-      },
-      {
-        "hash": "55e9709b",
-        "subject": "test(38/60): add set_cache, get_cache, evict_expired, and cache_size tests in energy_seer"
-      },
-      {
-        "hash": "3f499e36",
-        "subject": "test(37/60): add upload_model, download_model, delete_model, and list_model_versions tests in energy_seer"
-      },
-      {
-        "hash": "69a522e0",
-        "subject": "test(36/60): add CONSTRAINED_SYSTEM_PROMPT and INSUFFICIENT_EVIDENCE_MESSAGE tests in veritas-rag"
-      },
-      {
-        "hash": "15decea4",
-        "subject": "test(35/60): add ADVERSARIAL_QUERIES structure, uniqueness, and injection document tests in veritas-rag"
-      },
-      {
-        "hash": "799fdfb9",
-        "subject": "test(34/60): add check_db and build_health_payload status tests in fleet-mind"
-      },
-      {
-        "hash": "eb538e40",
-        "subject": "test(33/60): add HealthResponse, PredictionResponse, and DriftCheckResponse tests in Property-Sage"
-      },
-      {
-        "hash": "a42ee554",
-        "subject": "test(32/60): add validate_neighborhood, validate_property_type, and sqft_vs_bedrooms tests in Property-Sage"
-      },
-      {
-        "hash": "07bded0b",
-        "subject": "test(31/60): add upload_model and download_model boto3-mock and error tests in sports-oracle"
-      },
-      {
-        "hash": "d16f721a",
-        "subject": "test(30/60): add log_run metrics, tags, and unique run_id tests in sports-oracle"
-      },
-      {
-        "hash": "10bc269e",
-        "subject": "test(29/60): add configure_logging and suppressed-logger tests in sports-oracle"
-      },
-      {
-        "hash": "d64e5b4d",
-        "subject": "test(28/60): add TAGS_METADATA structure and uniqueness tests in energy_seer"
-      },
-      {
-        "hash": "62804d2d",
-        "subject": "test(27/60): add log_params, log_metrics, start_run, and end_run tests in energy_seer"
-      },
-      {
-        "hash": "d0bd186e",
-        "subject": "test(26/60): add compute_efficiency_score grade, range, and boundary tests in energy_seer"
-      },
-      {
-        "hash": "a9e8cbf2",
-        "subject": "test(25/60): add freshness_score decay, half-life, and source_quality_score tests in veritas-rag"
-      },
-      {
-        "hash": "4c952708",
-        "subject": "test(24/60): add VectorIndex add, search, remove, and top_k tests in veritas-rag"
-      },
-      {
-        "hash": "f7443256",
-        "subject": "test(23/60): add evaluate_evidence gate allowed, threshold, and min-chunks tests in veritas-rag"
-      },
-      {
-        "hash": "e31c5bc0",
-        "subject": "test(22/60): add make_doc_id, VersionStore next_version, and is_unchanged tests in veritas-rag"
-      },
-      {
-        "hash": "7a03e4c7",
-        "subject": "test(21/60): add LexicalReranker coverage, relevance, and edge-case tests in veritas-rag"
-      },
-      {
-        "hash": "eb0113e9",
-        "subject": "test(20/60): add normalize_text, strip_email_quotes, and truncate_to_bytes tests in veritas-rag"
-      },
-      {
-        "hash": "2de8c1a0",
-        "subject": "test(19/60): add HashingEmbedder shape, norm, determinism, and dim tests in veritas-rag"
-      },
-      {
-        "hash": "4f86223b",
-        "subject": "test(18/60): add reciprocal_rank_fusion overlap, rank, and k-parameter tests in veritas-rag"
-      },
-      {
-        "hash": "cd72dbfa",
-        "subject": "test(17/60): add ensure_tables_exist, column_exists, and add_column_if_missing tests in fleet-mind"
-      },
-      {
-        "hash": "3ecc5447",
-        "subject": "test(16/60): add domain constant ordering and positivity tests in fleet-mind"
-      },
-      {
-        "hash": "fb4f3661",
-        "subject": "test(15/60): add Settings defaults, env-override, and get_settings tests in fleet-mind"
-      },
-      {
-        "hash": "222deb2a",
-        "subject": "test(14/60): add TelemetryInput validation and BatchTelemetryInput tests in fleet-mind"
-      },
-      {
-        "hash": "7798934e",
-        "subject": "test(13/60): add register_model, list_models, and get_latest_model tests in fleet-mind"
-      },
-      {
-        "hash": "e2822730",
-        "subject": "test(12/60): add log_training_run fallback and tag tests in fleet-mind mlflow_compat"
-      },
-      {
-        "hash": "897007b4",
-        "subject": "test(11/60): add configure_logging and JSON formatter tests in fleet-mind"
-      },
-      {
-        "hash": "51b3ee15",
-        "subject": "test(10/60): add record_prediction, record_drift, and avg_latency tests in fleet-mind"
-      },
-      {
-        "hash": "470d2283",
-        "subject": "test(9/60): add store_features, get_features, and evict_expired tests in fleet-mind"
-      },
-      {
-        "hash": "32979e75",
-        "subject": "test(8/60): add log_prediction_request, log_retrain_event, recent_audit_entries tests in fleet-mind"
-      },
-      {
-        "hash": "df72f67e",
-        "subject": "test(7/60): add get_feature_importances and VotingClassifier tests in fleet-mind"
-      },
-      {
-        "hash": "1e8acb97",
-        "subject": "test(6/60): add register_challenger, shadow_predict, and get_shadow_stats tests in fleet-mind"
-      },
-      {
-        "hash": "ba5a0f00",
-        "subject": "test(5/60): add check_critical_thresholds and alert_on_drift tests in fleet-mind"
-      },
-      {
-        "hash": "f34a66cf",
-        "subject": "test(4/60): add retry decorator success, failure, and exception-filter tests in fleet-mind"
-      },
-      {
-        "hash": "a9524cd2",
-        "subject": "test(3/60): add PaginationParams offset and Page.from_items tests in fleet-mind"
-      },
-      {
-        "hash": "1bfbbe8f",
-        "subject": "test(2/60): add version_info and constant tests in fleet-mind version module"
-      },
-      {
-        "hash": "f172432c",
-        "subject": "test(1/60): add FleetMindError hierarchy and exception attribute tests in fleet-mind"
-      }
-    ],
-    "files_changed": [
-      "Property-Sage/tests/test_schemas.py",
-      "Property-Sage/tests/test_schemas_extended.py",
-      "Property-Sage/tests/test_validators.py",
-      "Property-Sage/tests/test_validators_extended.py",
-      "energy_seer/tests/test_aws_stub.py",
-      "energy_seer/tests/test_cache.py",
-      "energy_seer/tests/test_database.py",
-      "energy_seer/tests/test_efficiency_score.py",
-      "energy_seer/tests/test_efficiency_score_extended.py",
-      "energy_seer/tests/test_mlflow_stub.py",
-      "energy_seer/tests/test_openapi_meta.py",
-      "fleet-mind/tests/test_alerting.py",
-      "fleet-mind/tests/test_alerting_extended.py",
-      "fleet-mind/tests/test_audit_log.py",
-      "fleet-mind/tests/test_config.py",
-      "fleet-mind/tests/test_constants.py",
-      "fleet-mind/tests/test_database.py",
-      "fleet-mind/tests/test_exceptions.py",
-      "fleet-mind/tests/test_feature_store.py",
-      "fleet-mind/tests/test_health.py",
-      "fleet-mind/tests/test_logging_config.py",
-      "fleet-mind/tests/test_metrics_collector.py",
-      "fleet-mind/tests/test_middleware.py",
-      "fleet-mind/tests/test_mlflow_compat.py",
-      "fleet-mind/tests/test_model_explainability.py",
-      "fleet-mind/tests/test_model_registry.py",
-      "fleet-mind/tests/test_pagination.py",
-      "fleet-mind/tests/test_retry.py",
-      "fleet-mind/tests/test_retry_extended.py",
-      "fleet-mind/tests/test_schema_migrations.py",
-      "fleet-mind/tests/test_schemas.py",
-      "fleet-mind/tests/test_schemas_extended.py",
-      "fleet-mind/tests/test_shadow_mode.py",
-      "fleet-mind/tests/test_version.py",
-      "sports-oracle/tests/test_aws_stub_extended.py",
-      "sports-oracle/tests/test_database.py",
-      "sports-oracle/tests/test_faiss_index.py",
-      "sports-oracle/tests/test_logging_config.py",
-      "sports-oracle/tests/test_mlflow_stub.py",
-      "sports-oracle/tests/test_monitoring_extended.py",
-      "sports-oracle/tests/test_stats_extended.py",
-      "sports-oracle/tests/test_timeseries_extended.py",
-      "sports-oracle/tests/test_validation_extended.py",
-      "veritas-rag/tests/test_adversarial.py",
-      "veritas-rag/tests/test_ann.py",
-      "veritas-rag/tests/test_bm25_extended.py",
-      "veritas-rag/tests/test_chunker_extended.py",
-      "veritas-rag/tests/test_dedup_extended.py",
-      "veritas-rag/tests/test_embedder.py",
-      "veritas-rag/tests/test_extractive.py",
-      "veritas-rag/tests/test_extractors.py",
-      "veritas-rag/tests/test_fallback.py",
-      "veritas-rag/tests/test_harness.py",
-      "veritas-rag/tests/test_hybrid.py",
-      "veritas-rag/tests/test_llm.py",
-      "veritas-rag/tests/test_normalize.py",
-      "veritas-rag/tests/test_prompts.py",
-      "veritas-rag/tests/test_rerank.py",
-      "veritas-rag/tests/test_trust.py",
-      "veritas-rag/tests/test_versioning.py"
-    ],
-    "ruff_status": "passing",
-    "email_status": "failed_smtp_blocked_by_proxy"
-  },
-  {
-    "date": "2026-11-19",
-    "mode": "IMPROVEMENT",
-    "commits": 61,
-    "repo": "fleet-mind",
-    "branch": "improvement/2026-11-19",
-    "pr_number": 115,
-    "pr_url": "https://github.com/atharvadevne123/reflective-lantern/pull/115",
-    "new_modules": [
-      "fleet-mind/app/fuel_efficiency.py",
-      "fleet-mind/app/maintenance_scheduler.py",
-      "fleet-mind/app/risk_scorer.py",
-      "fleet-mind/app/driver_behavior.py",
-      "fleet-mind/app/telemetry_aggregator.py",
-      "fleet-mind/app/parts_inventory.py",
-      "fleet-mind/app/emissions_calculator.py",
-      "fleet-mind/app/geospatial_utils.py",
-      "fleet-mind/app/warranty_tracker.py",
-      "fleet-mind/app/noise_filter.py",
-      "fleet-mind/app/cost_optimizer.py",
-      "fleet-mind/app/fleet_analytics.py",
-      "fleet-mind/app/threshold_manager.py",
-      "fleet-mind/app/report_builder.py",
-      "fleet-mind/app/seasonal_adjustment.py",
-      "fleet-mind/app/benchmark_comparator.py",
-      "fleet-mind/app/validation_helpers.py",
-      "fleet-mind/app/predictive_analytics.py",
-      "fleet-mind/app/event_aggregator.py",
-      "fleet-mind/app/data_drift.py"
-    ],
-    "tests_added": [
-      "fleet-mind/tests/test_fuel_efficiency.py",
-      "fleet-mind/tests/test_maintenance_scheduler.py",
-      "fleet-mind/tests/test_risk_scorer.py",
-      "fleet-mind/tests/test_driver_behavior.py",
-      "fleet-mind/tests/test_telemetry_aggregator.py",
-      "fleet-mind/tests/test_parts_inventory.py",
-      "fleet-mind/tests/test_emissions_calculator.py",
-      "fleet-mind/tests/test_geospatial_utils.py",
-      "fleet-mind/tests/test_warranty_tracker.py",
-      "fleet-mind/tests/test_noise_filter.py",
-      "fleet-mind/tests/test_cost_optimizer.py",
-      "fleet-mind/tests/test_fleet_analytics.py",
-      "fleet-mind/tests/test_threshold_manager.py",
-      "fleet-mind/tests/test_report_builder.py",
-      "fleet-mind/tests/test_seasonal_adjustment.py",
-      "fleet-mind/tests/test_benchmark_comparator.py",
-      "fleet-mind/tests/test_validation_helpers.py",
-      "fleet-mind/tests/test_predictive_analytics.py",
-      "fleet-mind/tests/test_event_aggregator.py",
-      "fleet-mind/tests/test_data_drift.py"
-    ],
-    "enhanced_modules": [
-      "fleet-mind/app/alerting.py",
-      "fleet-mind/app/cache.py",
-      "fleet-mind/app/validators.py",
-      "fleet-mind/app/time_series.py",
-      "fleet-mind/app/shadow_mode.py",
-      "fleet-mind/app/data_quality.py",
-      "fleet-mind/app/batch_processor.py",
-      "fleet-mind/app/health.py",
-      "fleet-mind/app/retry.py",
-      "fleet-mind/app/pagination.py",
-      "fleet-mind/app/metrics_collector.py",
-      "fleet-mind/app/model_registry.py",
-      "fleet-mind/app/exceptions.py",
-      "fleet-mind/app/anomaly_types.py",
-      "fleet-mind/app/monitoring.py",
-      "fleet-mind/app/model_explainability.py",
-      "fleet-mind/app/feature_store.py",
-      "fleet-mind/app/constants.py",
-      "fleet-mind/app/schema_migrations.py",
-      "fleet-mind/app/audit_log.py"
-    ],
-    "pre_flight": {
-      "ci_fixes": "ruff E741 and format fixes across fleet-mind, sports-oracle, Cyber-Guard, energy_seer, veritas-rag, cart-mind",
-      "merges": "7 dependabot PRs merged (#107-#113)",
-      "releases": "skipped — session proxy restrictions"
-    },
-    "ruff_status": "passing",
-    "email_status": "not_attempted",
-    "summary": "61 atomic commits to fleet-mind: 20 new domain modules (fuel efficiency, maintenance scheduling, risk scoring, driver behaviour, telemetry aggregation, parts inventory, emissions, geospatial, warranty, noise filtering, cost optimisation, fleet analytics, thresholds, reporting, seasonal adjustment, benchmarking, validation helpers, predictive analytics, event aggregation, data drift), 20 test suites, enhancements to 20 existing modules, ruff lint clean pass."
   }
 ]

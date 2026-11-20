@@ -14,12 +14,14 @@ from app.model import generate_synthetic_data
 
 TEST_DATABASE_URL = "sqlite:///./test_ops_vision.db"
 
-test_engine = create_engine(TEST_DATABASE_URL, connect_args={"check_same_thread": False})
+test_engine = create_engine(
+    TEST_DATABASE_URL, connect_args={"check_same_thread": False}
+)
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
 
 
 @pytest.fixture(scope="session", autouse=True)
-def setup_test_db() -> None:
+def setup_test_db():
     """Create all tables in the SQLite test database."""
     Base.metadata.create_all(bind=test_engine)
     yield
@@ -27,7 +29,7 @@ def setup_test_db() -> None:
 
 
 @pytest.fixture
-def db_session() -> None:
+def db_session():
     """Yield a test database session, rolling back after each test."""
     connection = test_engine.connect()
     transaction = connection.begin()
@@ -41,10 +43,10 @@ def db_session() -> None:
 
 
 @pytest.fixture
-def client(db_session) -> None:
+def client(db_session):
     """Return a TestClient with the DB dependency overridden."""
 
-    def override_get_db() -> None:
+    def override_get_db():
         try:
             yield db_session
         finally:
@@ -99,7 +101,7 @@ def synthetic_labels(synthetic_dataframe) -> np.ndarray:
 
 
 @pytest.fixture
-def fitted_pipeline(synthetic_dataframe) -> None:
+def fitted_pipeline(synthetic_dataframe):
     """Return a pipeline fitted on synthetic data."""
     pipeline = build_feature_pipeline()
     pipeline.fit(synthetic_dataframe)
@@ -113,7 +115,7 @@ def transformed_X(fitted_pipeline, synthetic_dataframe) -> np.ndarray:
 
 
 @pytest.fixture
-def trained_model(transformed_X, synthetic_labels) -> None:
+def trained_model(transformed_X, synthetic_labels):
     """Return a trained VotingClassifier on synthetic data."""
     from app.model import train
 

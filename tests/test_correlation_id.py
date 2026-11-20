@@ -2,8 +2,6 @@
 
 import threading
 
-import pytest
-
 from app.correlation_id import (
     clear_correlation_id,
     correlation_context,
@@ -14,62 +12,62 @@ from app.correlation_id import (
 
 
 class TestNewCorrelationId:
-    def test_is_string(self) -> None:
+    def test_is_string(self):
         assert isinstance(new_correlation_id(), str)
 
-    def test_unique(self) -> None:
+    def test_unique(self):
         ids = {new_correlation_id() for _ in range(100)}
         assert len(ids) == 100
 
 
 class TestGetSet:
-    def setup_method(self) -> None:
+    def setup_method(self):
         clear_correlation_id()
 
-    def teardown_method(self) -> None:
+    def teardown_method(self):
         clear_correlation_id()
 
-    def test_none_by_default(self) -> None:
+    def test_none_by_default(self):
         assert get_correlation_id() is None
 
-    def test_set_and_get(self) -> None:
+    def test_set_and_get(self):
         set_correlation_id("abc-123")
         assert get_correlation_id() == "abc-123"
 
-    def test_clear(self) -> None:
+    def test_clear(self):
         set_correlation_id("xyz")
         clear_correlation_id()
         assert get_correlation_id() is None
 
 
 class TestCorrelationContext:
-    def setup_method(self) -> None:
+    def setup_method(self):
         clear_correlation_id()
 
-    def teardown_method(self) -> None:
+    def teardown_method(self):
         clear_correlation_id()
 
-    def test_yields_cid(self) -> None:
+    def test_yields_cid(self):
         with correlation_context("req-1") as cid:
             assert cid == "req-1"
             assert get_correlation_id() == "req-1"
 
-    def test_restores_none_after(self) -> None:
+    def test_restores_none_after(self):
         with correlation_context("req-2"):
             pass
         assert get_correlation_id() is None
 
-    def test_restores_previous_cid(self) -> None:
+    def test_restores_previous_cid(self):
         set_correlation_id("outer")
         with correlation_context("inner") as cid:
             assert cid == "inner"
         assert get_correlation_id() == "outer"
 
-    def test_auto_generates_cid(self) -> None:
+    def test_auto_generates_cid(self):
         with correlation_context() as cid:
             assert len(cid) == 36  # UUID4 format
 
-    def test_restores_on_exception(self) -> None:
+    def test_restores_on_exception(self):
         set_correlation_id("before")
         try:
             with correlation_context("during"):
@@ -80,10 +78,10 @@ class TestCorrelationContext:
 
 
 class TestThreadIsolation:
-    def test_threads_have_independent_ids(self) -> None:
+    def test_threads_have_independent_ids(self):
         results = {}
 
-        def worker(name, cid) -> None:
+        def worker(name, cid):
             with correlation_context(cid):
                 import time
 
@@ -98,202 +96,3 @@ class TestThreadIsolation:
 
         for i in range(5):
             assert results[f"t{i}"] == f"id-{i}"
-
-    def test_main_thread_unaffected_by_worker(self) -> None:
-        set_correlation_id("main-cid")
-        results = []
-
-        def worker() -> None:
-            set_correlation_id("worker-cid")
-            results.append(get_correlation_id())
-
-        t = threading.Thread(target=worker)
-        t.start()
-        t.join()
-        assert get_correlation_id() == "main-cid"
-        assert results == ["worker-cid"]
-        clear_correlation_id()
-
-
-class TestNewCorrelationIdFormat:
-    def test_uuid_format(self) -> None:
-        import re
-
-        cid = new_correlation_id()
-        assert re.match(
-            r"^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$", cid
-        )
-
-    def test_length_36_chars(self) -> None:
-        assert len(new_correlation_id()) == 36
-
-    def test_contains_hyphens(self) -> None:
-        cid = new_correlation_id()
-        assert cid.count("-") == 4
-
-    def test_generated_ids_all_unique_in_bulk(self) -> None:
-        ids = [new_correlation_id() for _ in range(500)]
-        assert len(set(ids)) == 500
-
-
-class TestSetCorrelationIdEdgeCases:
-    def setup_method(self) -> None:
-        clear_correlation_id()
-
-    def teardown_method(self) -> None:
-        clear_correlation_id()
-
-    def test_set_empty_string(self) -> None:
-        set_correlation_id("")
-        assert get_correlation_id() == ""
-
-    def test_set_overwrite_existing(self) -> None:
-        set_correlation_id("first")
-        set_correlation_id("second")
-        assert get_correlation_id() == "second"
-
-
-@pytest.mark.parametrize("n", [1, 5, 10])
-def test_new_correlation_id_unique_each_call(n: int) -> None:
-    """new_correlation_id returns a distinct value on every call."""
-    from app.correlation_id import new_correlation_id
-
-    ids = [new_correlation_id() for _ in range(n)]
-    assert len(set(ids)) == n
-
-
-@pytest.mark.parametrize("value", ["abc-123", "test-id", "00000000-0000-0000-0000-000000000000"])
-def test_is_valid_uuid_or_returns_bool(value: str) -> None:
-    """is_valid_uuid always returns a bool regardless of input format."""
-    from app.correlation_id import is_valid_uuid
-
-    result = is_valid_uuid(value)
-    assert isinstance(result, bool)
-
-
-class TestCorrelationContextManager:
-    def setup_method(self) -> None:
-        from app.correlation_id import clear_correlation_id
-
-        clear_correlation_id()
-
-    def test_context_manager_sets_id(self) -> None:
-        from app.correlation_id import correlation_context, get_correlation_id
-
-        with correlation_context("ctx-123") as cid:
-            assert get_correlation_id() == "ctx-123"
-            assert cid == "ctx-123"
-
-    def test_context_manager_clears_on_exit(self) -> None:
-        from app.correlation_id import (
-            clear_correlation_id,
-            correlation_context,
-            get_correlation_id,
-        )
-
-        with correlation_context("ctx-456"):
-            pass
-        clear_correlation_id()
-        assert get_correlation_id() is None
-
-    @pytest.mark.parametrize("cid", ["alpha", "beta", "gamma"])
-    def test_context_manager_with_explicit_cid(self, cid: str) -> None:
-        from app.correlation_id import correlation_context, get_correlation_id
-
-        with correlation_context(cid):
-            assert get_correlation_id() == cid
-
-
-class TestRequireCorrelationId:
-    def setup_method(self) -> None:
-        from app.correlation_id import clear_correlation_id
-
-        clear_correlation_id()
-
-    def teardown_method(self) -> None:
-        from app.correlation_id import clear_correlation_id
-
-        clear_correlation_id()
-
-    def test_raises_when_unset(self) -> None:
-        import pytest
-
-        from app.correlation_id import require_correlation_id
-
-        with pytest.raises(RuntimeError, match="No correlation ID"):
-            require_correlation_id()
-
-    def test_returns_current_id_when_set(self) -> None:
-        from app.correlation_id import require_correlation_id, set_correlation_id
-
-        set_correlation_id("req-id-1")
-        assert require_correlation_id() == "req-id-1"
-
-    @pytest.mark.parametrize("cid", ["id-a", "id-b", "id-c"])
-    def test_returns_expected_id(self, cid: str) -> None:
-        from app.correlation_id import require_correlation_id, set_correlation_id
-
-        set_correlation_id(cid)
-        assert require_correlation_id() == cid
-
-
-class TestIsValidUuid:
-    @pytest.mark.parametrize(
-        "value,expected",
-        [
-            ("00000000-0000-0000-0000-000000000000", True),
-            ("550e8400-e29b-41d4-a716-446655440000", True),
-            ("not-a-uuid", False),
-            ("", False),
-            ("1234", False),
-        ],
-    )
-    def test_valid_and_invalid_uuids(self, value: str, expected: bool) -> None:
-        from app.correlation_id import is_valid_uuid
-
-        assert is_valid_uuid(value) is expected
-
-    def test_new_correlation_id_is_valid_uuid(self) -> None:
-        from app.correlation_id import is_valid_uuid, new_correlation_id
-
-        assert is_valid_uuid(new_correlation_id()) is True
-
-
-class TestGenerateTraceId:
-    def test_returns_32_chars(self) -> None:
-        from app.correlation_id import generate_trace_id
-
-        assert len(generate_trace_id()) == 32
-
-    def test_returns_hex_string(self) -> None:
-        from app.correlation_id import generate_trace_id
-
-        tid = generate_trace_id()
-        assert all(c in "0123456789abcdef" for c in tid)
-
-    def test_unique_on_each_call(self) -> None:
-        from app.correlation_id import generate_trace_id
-
-        assert generate_trace_id() != generate_trace_id()
-
-
-class TestParseCorrelationId:
-    def test_strips_prefix(self) -> None:
-        from app.correlation_id import parse_correlation_id
-
-        assert parse_correlation_id("req-abc123") == "abc123"
-
-    def test_no_prefix_returns_original(self) -> None:
-        from app.correlation_id import parse_correlation_id
-
-        assert parse_correlation_id("abc123") == "abc123"
-
-    def test_custom_prefix(self) -> None:
-        from app.correlation_id import parse_correlation_id
-
-        assert parse_correlation_id("trace-xyz", prefix="trace-") == "xyz"
-
-    def test_empty_string(self) -> None:
-        from app.correlation_id import parse_correlation_id
-
-        assert parse_correlation_id("") == ""

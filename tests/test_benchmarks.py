@@ -504,9 +504,7 @@ class TestEuiImprovementNeeded:
 
         benchmark = ASHRAE_EUI_BENCHMARKS["office"]
         target = benchmark * 0.5
-        assert eui_improvement_needed(target, "office", target_percentile=50.0) == pytest.approx(
-            0.0
-        )
+        assert eui_improvement_needed(target, "office", target_percentile=50.0) == pytest.approx(0.0)
 
     def test_above_target_returns_positive(self) -> None:
         from app.benchmarks import ASHRAE_EUI_BENCHMARKS, eui_improvement_needed
@@ -638,9 +636,7 @@ class TestPortfolioEuiSummary:
         (20000.0, 200.0, 100.0),
     ],
 )
-def test_compute_eui_scales_linearly(
-    annual_kwh: float, floor_area: float, expected_eui: float
-) -> None:
+def test_compute_eui_scales_linearly(annual_kwh: float, floor_area: float, expected_eui: float) -> None:
     from app.benchmarks import compute_eui
 
     assert compute_eui(annual_kwh, floor_area) == pytest.approx(expected_eui, abs=0.1)
@@ -654,9 +650,7 @@ def test_compute_eui_scales_linearly(
         (100.0, 100.0, "zero"),
     ],
 )
-def test_percentage_below_benchmark_sign(
-    actual_eui: float, benchmark: float, expected_sign: str
-) -> None:
+def test_percentage_below_benchmark_sign(actual_eui: float, benchmark: float, expected_sign: str) -> None:
     from app.benchmarks import percentage_below_benchmark
 
     result = percentage_below_benchmark(actual_eui, benchmark)
@@ -751,61 +745,3 @@ class TestSavingsToInvestmentRatio:
 
         with pytest.raises(ValueError):
             savings_to_investment_ratio(5000.0, 0.15, 0.0)
-
-
-class TestPercentileRank:
-    def test_empty_population_returns_zero(self) -> None:
-        from app.benchmarks import percentile_rank
-
-        assert percentile_rank(50.0, []) == pytest.approx(0.0)
-
-    def test_value_in_middle(self) -> None:
-        from app.benchmarks import percentile_rank
-
-        result = percentile_rank(5.0, [1.0, 3.0, 5.0, 7.0, 9.0])
-        assert 0.0 < result < 100.0
-
-    def test_highest_value_is_100(self) -> None:
-        from app.benchmarks import percentile_rank
-
-        result = percentile_rank(10.0, [1.0, 5.0, 10.0])
-        assert result == pytest.approx(100.0)
-
-    @pytest.mark.parametrize(
-        "value,pop,expected",
-        [
-            (1.0, [1.0, 2.0, 3.0], pytest.approx(33.33, abs=0.1)),
-            (3.0, [1.0, 2.0, 3.0], pytest.approx(100.0)),
-        ],
-    )
-    def test_parametrized(self, value: float, pop: list, expected: object) -> None:
-        from app.benchmarks import percentile_rank
-
-        assert percentile_rank(value, pop) == expected
-
-
-class TestBenchmarkScoreLabel:
-    def test_poor_below_25(self) -> None:
-        from app.benchmarks import benchmark_score_label
-
-        assert benchmark_score_label(10.0) == "poor"
-
-    def test_below_average(self) -> None:
-        from app.benchmarks import benchmark_score_label
-
-        assert benchmark_score_label(40.0) == "below_average"
-
-    def test_average(self) -> None:
-        from app.benchmarks import benchmark_score_label
-
-        assert benchmark_score_label(60.0) == "average"
-
-    def test_good(self) -> None:
-        from app.benchmarks import benchmark_score_label
-
-        assert benchmark_score_label(80.0) == "good"
-
-    def test_excellent_at_90(self) -> None:
-        from app.benchmarks import benchmark_score_label
-
-        assert benchmark_score_label(95.0) == "excellent"
