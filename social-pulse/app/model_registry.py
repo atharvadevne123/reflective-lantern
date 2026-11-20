@@ -93,6 +93,25 @@ def get_latest_promoted() -> dict[str, Any] | None:
     return None
 
 
+def delete_model(run_id: str) -> bool:
+    """Remove the registry entry with *run_id*.
+
+    Args:
+        run_id: The run ID of the model to remove.
+
+    Returns:
+        True if the entry was found and removed, False otherwise.
+    """
+    entries = _load_registry()
+    new_entries = [e for e in entries if e["run_id"] != run_id]
+    if len(new_entries) == len(entries):
+        logger.warning("delete_model: run_id=%s not found", run_id)
+        return False
+    _save_registry(new_entries)
+    logger.info("Deleted model run_id=%s", run_id)
+    return True
+
+
 def promote_model(run_id: str) -> bool:
     """Mark the model with *run_id* as promoted and demote all others.
 
