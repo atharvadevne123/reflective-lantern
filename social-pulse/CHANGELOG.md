@@ -2,6 +2,29 @@
 
 All notable changes to Social-Pulse are documented here.
 
+## [Unreleased] — 2026-11-20
+
+### Added
+- `PostIndex.bulk_add()` for batch vector insertion in `faiss_index.py`
+- `PostIndex.clear()` for resetting the index state in `faiss_index.py`
+- `is_valid_level()` utility to `logging_config.py` for validating log level strings
+- `ContentSecurityPolicyMiddleware` to `middleware.py` with configurable CSP directives
+- `SimilaritySearchRequest` Pydantic schema to `schemas.py`
+- `is_valid_model_version()` semver validator to `config.py`
+- `is_alpha_text()` and `word_count()` helpers to `validators.py`
+- `avg_score()` and `get_trending_hashtags()` to `trend_scorer.py`
+- `sanitize_text()` and `safe_json_dumps()` to `utils.py`
+- `FeatureCache.get_all_keys()` for key introspection in `feature_store.py`
+- `get_feature_distribution()` descriptive stats helper to `monitoring.py`
+- `compute_confidence_distribution()` to `metrics.py`
+- `get_model_by_id()` lookup to `model_registry.py`
+- `sentiment_score()` rule-based sentiment signal to `features.py`
+- `char_ngram_density()` lexical diversity metric to `features.py`
+- `rate_per_minute()` convenience method to `RateLimitMiddleware`
+- `RateLimitExceededError` and `InvalidFeatureVectorError` custom exceptions
+- `table_names()` introspection helper to `database.py`
+- 38 new test methods across 20 test files; 60 total improvement commits
+
 ## [1.0.0] — 2026-10-14
 
 ### Added
