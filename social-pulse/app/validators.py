@@ -112,6 +112,30 @@ def estimate_reading_time_seconds(text: str, wpm: int = 238) -> float:
     return max(1.0, word_count / wpm * 60.0)
 
 
+def is_alpha_text(text: str) -> bool:
+    """Return True if *text* contains at least one alphabetic character.
+
+    Args:
+        text: String to test.
+
+    Returns:
+        True when at least one letter (any script) is present.
+    """
+    return any(c.isalpha() for c in text)
+
+
+def word_count(text: str) -> int:
+    """Return the number of whitespace-separated tokens in *text*.
+
+    Args:
+        text: Input string.
+
+    Returns:
+        Number of words; 0 for an empty or whitespace-only string.
+    """
+    return len(text.split())
+
+
 def validate_sample(sample: dict[str, Any]) -> dict[str, Any]:
     """Validate and normalise a feature dict before inference.
 
