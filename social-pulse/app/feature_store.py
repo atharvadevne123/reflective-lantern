@@ -123,6 +123,14 @@ class FeatureCache:
             "hit_rate": round(self.hit_rate, 4),
         }
 
+    def get_all_keys(self) -> list[str]:
+        """Return all currently cached keys in LRU order (oldest first).
+
+        Returns:
+            List of cache key strings.
+        """
+        return list(self._store.keys())
+
     def warm(self, entries: dict[str, dict[str, Any]]) -> int:
         """Pre-populate the cache from a mapping of key → feature-dict.
 
