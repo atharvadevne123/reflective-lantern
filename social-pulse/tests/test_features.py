@@ -12,6 +12,7 @@ from app.features import (
     avg_word_length,
     build_feature_pipeline,
     capitalisation_ratio,
+    char_ngram_density,
     count_emojis,
     count_hashtags,
     count_mentions,
@@ -240,6 +241,38 @@ def test_follower_bucket_parametrized(followers: int, expected_bucket: int) -> N
 def test_capitalisation_ratio_parametrized(text: str, expected: float) -> None:
     import math
     assert math.isclose(capitalisation_ratio(text), expected)
+
+
+class TestCharNgramDensity:
+    def test_too_short_returns_zero(self) -> None:
+        assert char_ngram_density("ab", n=3) == 0.0
+
+    def test_all_unique_ngrams(self) -> None:
+        result = char_ngram_density("abcdef", n=3)
+        assert result == pytest.approx(1.0)
+
+    def test_repetitive_text_low_density(self) -> None:
+        result = char_ngram_density("aaaaaa", n=3)
+        assert result < 0.5
+
+    def test_result_in_unit_interval(self) -> None:
+        result = char_ngram_density("hello world today", n=3)
+        assert 0.0 <= result <= 1.0
+
+    def test_empty_string_returns_zero(self) -> None:
+        assert char_ngram_density("", n=3) == 0.0
+
+    @pytest.mark.parametrize(
+        "text,n,expected_min",
+        [
+            ("abcde", 2, 0.5),
+            ("aaaaa", 3, 0.0),
+            ("hello world", 4, 0.1),
+        ],
+    )
+    def test_parametrized(self, text: str, n: int, expected_min: float) -> None:
+        result = char_ngram_density(text, n=n)
+        assert result >= expected_min
 
 
 class TestSentimentScore:
