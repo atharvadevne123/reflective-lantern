@@ -12,6 +12,7 @@ from app.database import DriftRecord, Prediction
 from app.monitoring import (
     MIN_SAMPLE_SIZE,
     get_drift_summary,
+    get_feature_distribution,
     get_prediction_percentiles,
     log_prediction,
     run_drift_check,
@@ -195,6 +196,39 @@ def test_log_prediction_label_threshold(
         latency_ms=1.0,
     )
     assert record.viral_label == expected_label
+
+
+class TestGetFeatureDistribution:
+    def test_empty_db_returns_empty(self, db_session: Session) -> None:
+        result = get_feature_distribution(db_session)
+        assert result == {}
+
+    def test_returns_required_keys(self, db_session: Session) -> None:
+        for p in [0.1, 0.5, 0.9]:
+            _make_prediction(db_session, viral_prob=p)
+        result = get_feature_distribution(db_session, feature="viral_probability")
+        assert "mean" in result
+        assert "std" in result
+        assert "min" in result
+        assert "max" in result
+        assert "count" in result
+
+    def test_count_matches_rows(self, db_session: Session) -> None:
+        for p in [0.1, 0.4, 0.7]:
+            _make_prediction(db_session, viral_prob=p)
+        result = get_feature_distribution(db_session, feature="viral_probability")
+        assert result["count"] == 3
+
+    def test_min_less_than_max(self, db_session: Session) -> None:
+        for p in [0.1, 0.9]:
+            _make_prediction(db_session, viral_prob=p)
+        result = get_feature_distribution(db_session, feature="viral_probability")
+        assert result["min"] < result["max"]
+
+    def test_unknown_feature_returns_empty(self, db_session: Session) -> None:
+        _make_prediction(db_session)
+        result = get_feature_distribution(db_session, feature="no_such_field")
+        assert result == {}
 
 
 class TestGetPredictionPercentiles:
