@@ -8,11 +8,13 @@ import pytest
 
 from app.utils import (
     Timer,
+    batch_normalise,
     clamp,
     content_hash,
     generate_request_id,
     normalise_text,
     safe_divide,
+    truncate_text,
 )
 
 
@@ -115,3 +117,49 @@ class TestSafeDivide:
 )
 def test_clamp_parametrized(value: float, lo: float, hi: float, expected: float) -> None:
     assert clamp(value, lo, hi) == expected
+
+
+class TestTruncateText:
+    def test_short_text_unchanged(self) -> None:
+        t = "hello world"
+        assert truncate_text(t, max_chars=50) == t
+
+    def test_long_text_truncated(self) -> None:
+        t = "a" * 300
+        result = truncate_text(t, max_chars=280)
+        assert len(result) <= 280
+
+    def test_truncated_ends_with_ellipsis(self) -> None:
+        result = truncate_text("x" * 300, max_chars=50)
+        assert result.endswith("…")
+
+    def test_exact_max_not_truncated(self) -> None:
+        t = "b" * 280
+        assert truncate_text(t, max_chars=280) == t
+
+    @pytest.mark.parametrize("length", [10, 100, 500])
+    def test_various_lengths(self, length: int) -> None:
+        t = "z" * length
+        result = truncate_text(t, max_chars=50)
+        assert len(result) <= 50
+
+
+class TestBatchNormalise:
+    def test_returns_list(self) -> None:
+        result = batch_normalise(["Hello", "World"])
+        assert isinstance(result, list)
+
+    def test_same_length(self) -> None:
+        texts = ["Hello", "WORLD", "foo bar"]
+        assert len(batch_normalise(texts)) == len(texts)
+
+    def test_normalises_each(self) -> None:
+        result = batch_normalise(["HELLO", "WORLD"])
+        assert result == ["hello", "world"]
+
+    def test_empty_list(self) -> None:
+        assert batch_normalise([]) == []
+
+    def test_whitespace_collapsed(self) -> None:
+        result = batch_normalise(["  hi   there  "])
+        assert result == ["hi there"]
