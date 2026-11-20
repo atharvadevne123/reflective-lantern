@@ -52,6 +52,40 @@ class CorrelationIdMiddleware(BaseHTTPMiddleware):
         return response
 
 
+class ContentSecurityPolicyMiddleware(BaseHTTPMiddleware):
+    """Add a Content-Security-Policy header to every HTTP response.
+
+    The default policy restricts resources to the same origin and disables
+    inline scripts, providing a strong baseline against XSS.
+    """
+
+    DEFAULT_POLICY = "default-src 'self'; script-src 'self'; object-src 'none'"
+
+    def __init__(self, app: Any, policy: str | None = None) -> None:
+        """Initialise with an optional CSP policy string.
+
+        Args:
+            app: The ASGI application to wrap.
+            policy: Custom CSP directive string; uses DEFAULT_POLICY if None.
+        """
+        super().__init__(app)
+        self.policy = policy or self.DEFAULT_POLICY
+
+    async def dispatch(self, request: Request, call_next: Any) -> Response:
+        """Attach Content-Security-Policy header to the response.
+
+        Args:
+            request: The incoming HTTP request.
+            call_next: ASGI callable for the next handler.
+
+        Returns:
+            Response with Content-Security-Policy header added.
+        """
+        response: Response = await call_next(request)
+        response.headers["Content-Security-Policy"] = self.policy
+        return response
+
+
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     """Add minimal security response headers to every HTTP response.
 
