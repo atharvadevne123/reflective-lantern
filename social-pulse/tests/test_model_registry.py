@@ -11,6 +11,7 @@ import app.model_registry as registry_module
 from app.model_registry import (
     delete_model,
     get_latest_promoted,
+    get_model_by_id,
     list_models,
     promote_model,
     register_model,
@@ -94,6 +95,31 @@ def test_register_various_metrics(auc: float, f1: float) -> None:
     entry = register_model("run-v", "1.0.0", auc, f1, 100)
     assert entry["auc_roc"] == pytest.approx(auc, abs=1e-4)
     assert entry["f1"] == pytest.approx(f1, abs=1e-4)
+
+
+class TestGetModelById:
+    def test_returns_entry_for_known_id(self) -> None:
+        register_model("lookup-01", "1.0.0", 0.8, 0.7, 100)
+        result = get_model_by_id("lookup-01")
+        assert result is not None
+        assert result["run_id"] == "lookup-01"
+
+    def test_returns_none_for_unknown_id(self) -> None:
+        result = get_model_by_id("does-not-exist")
+        assert result is None
+
+    def test_returns_correct_metrics(self) -> None:
+        register_model("lookup-02", "1.0.0", 0.92, 0.85, 500)
+        result = get_model_by_id("lookup-02")
+        assert result is not None
+        assert result["auc_roc"] == pytest.approx(0.92, abs=1e-4)
+
+    def test_multiple_entries_returns_correct(self) -> None:
+        register_model("r1", "1.0.0", 0.7, 0.6, 100)
+        register_model("r2", "1.0.1", 0.8, 0.7, 200)
+        result = get_model_by_id("r1")
+        assert result is not None
+        assert result["run_id"] == "r1"
 
 
 class TestDeleteModel:
