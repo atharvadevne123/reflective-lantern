@@ -8,7 +8,7 @@ import pytest
 from sqlalchemy.orm import Session
 
 from app.database import Prediction
-from app.metrics import PredictionMetrics, compute_metrics, format_metrics_prometheus
+from app.metrics import PredictionMetrics, compute_confidence_distribution, compute_metrics, format_metrics_prometheus
 
 
 def _insert_prediction(db: Session, viral: bool = False, latency: float = 10.0) -> Prediction:
@@ -104,6 +104,34 @@ def test_viral_rate_parametrized(
         _insert_prediction(db_session, viral=(i < n_viral))
     m = compute_metrics(db_session, "1.0.0")
     assert abs(m.viral_rate - expected_rate) < 0.01
+
+
+class TestComputeConfidenceDistribution:
+    def test_empty_db_returns_zeros(self, db_session: Session) -> None:
+        result = compute_confidence_distribution(db_session)
+        assert result == {"low": 0, "medium": 0, "high": 0}
+
+    def test_low_bucket(self, db_session: Session) -> None:
+        _insert_prediction(db_session, latency=10.0)  # confidence=0.8 (viral=False)
+        result = compute_confidence_distribution(db_session)
+        total = result["low"] + result["medium"] + result["high"]
+        assert total == 1
+
+    def test_all_buckets_present(self, db_session: Session) -> None:
+        result = compute_confidence_distribution(db_session)
+        assert "low" in result
+        assert "medium" in result
+        assert "high" in result
+
+    def test_counts_sum_to_total(self, db_session: Session) -> None:
+        for _ in range(5):
+            _insert_prediction(db_session)
+        result = compute_confidence_distribution(db_session)
+        assert sum(result.values()) == 5
+
+    def test_returns_dict(self, db_session: Session) -> None:
+        result = compute_confidence_distribution(db_session)
+        assert isinstance(result, dict)
 
 
 class TestFormatMetricsPrometheus:
