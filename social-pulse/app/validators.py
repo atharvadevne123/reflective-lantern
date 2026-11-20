@@ -86,6 +86,32 @@ def check_repetitive_content(text: str, threshold: int = _MAX_CONSECUTIVE_CHARS)
     return False
 
 
+def validate_url(text: str) -> bool:
+    """Return True if *text* contains at least one well-formed HTTP/HTTPS URL.
+
+    Args:
+        text: Raw string to scan.
+
+    Returns:
+        True when a URL starting with http:// or https:// is found.
+    """
+    return bool(re.search(r"https?://[^\s]{4,}", text))
+
+
+def estimate_reading_time_seconds(text: str, wpm: int = 238) -> float:
+    """Estimate how long it would take to read *text* at *wpm* words per minute.
+
+    Args:
+        text: Post content.
+        wpm: Average reading speed in words per minute.
+
+    Returns:
+        Estimated reading duration in seconds (minimum 1 s).
+    """
+    word_count = max(1, len(text.split()))
+    return max(1.0, word_count / wpm * 60.0)
+
+
 def validate_sample(sample: dict[str, Any]) -> dict[str, Any]:
     """Validate and normalise a feature dict before inference.
 
