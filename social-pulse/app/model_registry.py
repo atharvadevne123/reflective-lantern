@@ -112,6 +112,21 @@ def delete_model(run_id: str) -> bool:
     return True
 
 
+def get_model_by_id(run_id: str) -> dict[str, Any] | None:
+    """Return the registry entry for *run_id*, or None if not found.
+
+    Args:
+        run_id: The run ID to look up.
+
+    Returns:
+        The matching entry dict, or None if the run ID is not registered.
+    """
+    for entry in _load_registry():
+        if entry["run_id"] == run_id:
+            return entry
+    return None
+
+
 def promote_model(run_id: str) -> bool:
     """Mark the model with *run_id* as promoted and demote all others.
 
