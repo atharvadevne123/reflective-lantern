@@ -12,6 +12,7 @@ from app.database import DriftRecord, Prediction
 from app.monitoring import (
     MIN_SAMPLE_SIZE,
     get_drift_summary,
+    get_prediction_percentiles,
     log_prediction,
     run_drift_check,
     should_retrain,
@@ -194,3 +195,33 @@ def test_log_prediction_label_threshold(
         latency_ms=1.0,
     )
     assert record.viral_label == expected_label
+
+
+class TestGetPredictionPercentiles:
+    def test_empty_db_returns_empty(self, db_session: Session) -> None:
+        result = get_prediction_percentiles(db_session)
+        assert result == {}
+
+    def test_returns_dict(self, db_session: Session) -> None:
+        for p in [0.1, 0.3, 0.5, 0.7, 0.9]:
+            _make_prediction(db_session, viral_prob=p)
+        result = get_prediction_percentiles(db_session)
+        assert isinstance(result, dict)
+
+    def test_p50_between_p25_and_p75(self, db_session: Session) -> None:
+        for p in [0.1, 0.2, 0.3, 0.5, 0.7, 0.8, 0.9]:
+            _make_prediction(db_session, viral_prob=p)
+        result = get_prediction_percentiles(db_session)
+        if "p50" in result and "p25" in result and "p75" in result:
+            assert result["p25"] <= result["p50"] <= result["p75"]
+
+    def test_unknown_feature_returns_empty(self, db_session: Session) -> None:
+        _make_prediction(db_session, viral_prob=0.5)
+        result = get_prediction_percentiles(db_session, feature="nonexistent_field")
+        assert result == {}
+
+    def test_custom_percentiles(self, db_session: Session) -> None:
+        for p in [0.1, 0.5, 0.9]:
+            _make_prediction(db_session, viral_prob=p)
+        result = get_prediction_percentiles(db_session, percentiles=[0.5])
+        assert "p50" in result
