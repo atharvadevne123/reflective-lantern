@@ -200,6 +200,23 @@ def build_tfidf_pipeline(max_features: int = 500) -> Pipeline:
     )
 
 
+def hashtag_diversity_score(text: str) -> float:
+    """Return the ratio of unique hashtags to total hashtags in *text*.
+
+    A score of 1.0 means every hashtag is distinct; 0.0 means no hashtags.
+
+    Args:
+        text: Raw post text.
+
+    Returns:
+        Float in [0, 1].
+    """
+    all_tags = [t.lower() for t in re.findall(r"#\w+", text)]
+    if not all_tags:
+        return 0.0
+    return len(set(all_tags)) / len(all_tags)
+
+
 def build_feature_pipeline(tfidf_features: int = 200) -> FeatureUnion:
     """Combine hand-crafted stats with TF-IDF into a single transformer.
 
