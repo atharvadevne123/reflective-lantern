@@ -67,7 +67,8 @@ def get_shadow_stats() -> dict[str, Any]:
     """Return aggregate agreement statistics between production and challenger.
 
     Returns:
-        Dict with 'total_compared', 'agreement_rate', and 'challenger_available'.
+        Dict with 'total_compared', 'agreement_rate', 'challenger_available',
+        'mean_score_delta', and 'max_score_delta'.
     """
     with _lock:
         log_copy = list(_shadow_log)
@@ -77,11 +78,27 @@ def get_shadow_stats() -> dict[str, Any]:
             "total_compared": 0,
             "agreement_rate": None,
             "challenger_available": _challenger_model is not None,
+            "mean_score_delta": None,
+            "max_score_delta": None,
         }
 
     agreement_rate = sum(1 for e in log_copy if e["agreement"]) / len(log_copy)
+    deltas = [
+        abs(e["challenger_score"] - e["prod_score"])
+        for e in log_copy
+        if e["prod_score"] is not None and e["challenger_score"] is not None
+    ]
     return {
         "total_compared": len(log_copy),
         "agreement_rate": round(agreement_rate, 4),
         "challenger_available": _challenger_model is not None,
+        "mean_score_delta": round(sum(deltas) / len(deltas), 4) if deltas else None,
+        "max_score_delta": round(max(deltas), 4) if deltas else None,
     }
+
+
+def clear_shadow_log() -> None:
+    """Clear the shadow comparison log (useful during tests or model switches)."""
+    with _lock:
+        _shadow_log.clear()
+    logger.info("Shadow mode: comparison log cleared")

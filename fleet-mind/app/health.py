@@ -41,3 +41,41 @@ def build_health_payload(model_loaded: bool, db: Session) -> dict[str, Any]:
         "model_version": MODEL_VERSION,
         "db_ok": db_ok,
     }
+
+
+def check_model(model: Any) -> bool:
+    """Return True if model exposes predict_proba and appears healthy.
+
+    Args:
+        model: Inference model object to verify.
+
+    Returns:
+        True when the model has a callable predict_proba attribute.
+    """
+    return model is not None and callable(getattr(model, "predict_proba", None))
+
+
+def readiness_summary(model_loaded: bool, db: Session, model: Any = None) -> dict[str, Any]:
+    """Return a detailed readiness dict for the /ready endpoint.
+
+    Args:
+        model_loaded: Whether the model flag is set.
+        db: Active SQLAlchemy session.
+        model: Optional model object for deeper health check.
+
+    Returns:
+        Dict with 'ready', 'db_ok', 'model_ok', and 'issues' list.
+    """
+    db_ok = check_db(db)
+    model_ok = model_loaded and check_model(model)
+    issues = []
+    if not db_ok:
+        issues.append("database unreachable")
+    if not model_ok:
+        issues.append("model not loaded or invalid")
+    return {
+        "ready": db_ok and model_ok,
+        "db_ok": db_ok,
+        "model_ok": model_ok,
+        "issues": issues,
+    }

@@ -75,3 +75,33 @@ def store_size() -> int:
         until evict_expired() is called).
     """
     return len(_STORE)
+
+
+def clear_store() -> None:
+    """Remove all entries from the feature store."""
+    _STORE.clear()
+    logger.info("Feature store cleared")
+
+
+def ttl_remaining(vehicle_id: str) -> float | None:
+    """Return seconds until a vehicle's features expire, or None if not stored.
+
+    Args:
+        vehicle_id: Vehicle to check.
+
+    Returns:
+        Remaining TTL in seconds (may be negative if already expired), or None.
+    """
+    entry = _STORE.get(vehicle_id)
+    if entry is None:
+        return None
+    return entry["expires_at"] - time.monotonic()
+
+
+def all_vehicle_ids() -> list[str]:
+    """Return the vehicle IDs currently held in the feature store.
+
+    Returns:
+        List of vehicle IDs including those with expired entries.
+    """
+    return list(_STORE.keys())

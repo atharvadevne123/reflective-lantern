@@ -84,3 +84,52 @@ def summarise_batch_results(results: list[dict[str, Any]]) -> dict[str, Any]:
         else 0.0,
         "anomaly_types_found": anomaly_types,
     }
+
+
+def filter_batch(
+    readings: list[dict[str, Any]],
+    predicate: Any,
+) -> list[dict[str, Any]]:
+    """Return only readings that satisfy predicate(reading) == True.
+
+    Args:
+        readings: Input list of telemetry dicts.
+        predicate: Callable accepting a dict and returning bool.
+
+    Returns:
+        Filtered list of readings.
+    """
+    return [r for r in readings if predicate(r)]
+
+
+def partition_batch(
+    readings: list[dict[str, Any]],
+    predicate: Any,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Split readings into (matching, not-matching) based on predicate.
+
+    Args:
+        readings: Input list of telemetry dicts.
+        predicate: Callable accepting a dict and returning bool.
+
+    Returns:
+        Tuple of (matching_list, non_matching_list).
+    """
+    matching, rest = [], []
+    for r in readings:
+        (matching if predicate(r) else rest).append(r)
+    return matching, rest
+
+
+def batch_error_rate(results: list[dict[str, Any]]) -> float:
+    """Return fraction of results that contain an 'error' key.
+
+    Args:
+        results: List of result dicts from process_batch_with_chunking.
+
+    Returns:
+        Error fraction in [0, 1].
+    """
+    if not results:
+        return 0.0
+    return sum(1 for r in results if "error" in r) / len(results)

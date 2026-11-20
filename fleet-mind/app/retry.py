@@ -67,3 +67,51 @@ def retry(
         return wrapper  # type: ignore[return-value]
 
     return decorator
+
+
+def retry_with_jitter(
+    max_attempts: int = 3,
+    base_delay: float = 1.0,
+    backoff: float = 2.0,
+    jitter: float = 0.5,
+    exceptions: tuple[type[Exception], ...] = (Exception,),
+) -> Callable[[F], F]:
+    """Retry decorator with exponential backoff and random jitter.
+
+    Args:
+        max_attempts: Total number of attempts before re-raising.
+        base_delay: Initial sleep duration in seconds.
+        backoff: Multiplier applied to delay on each failure.
+        jitter: Maximum random seconds added to each delay (uniform [0, jitter]).
+        exceptions: Exception types that trigger a retry.
+
+    Returns:
+        Decorated function with jittered retry behaviour.
+    """
+    import random
+
+    def decorator(func: F) -> F:
+        @wraps(func)
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
+            delay = base_delay
+            for attempt in range(1, max_attempts + 1):
+                try:
+                    return func(*args, **kwargs)
+                except exceptions as exc:
+                    if attempt == max_attempts:
+                        raise
+                    sleep_time = delay + random.uniform(0, jitter)
+                    logger.warning(
+                        "%s attempt %d/%d failed: %s — retrying in %.2fs",
+                        func.__name__,
+                        attempt,
+                        max_attempts,
+                        exc,
+                        sleep_time,
+                    )
+                    time.sleep(sleep_time)
+                    delay *= backoff
+
+        return wrapper  # type: ignore[return-value]
+
+    return decorator

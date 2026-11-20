@@ -94,3 +94,32 @@ def recent_audit_entries(n: int = 50) -> list[dict[str, Any]]:
     except (OSError, json.JSONDecodeError) as exc:
         logger.error("Failed to read audit log: %s", exc)
         return []
+
+
+def audit_entry_count() -> int:
+    """Return the total number of lines in the audit log.
+
+    Returns:
+        Line count, or 0 if the log does not exist or is empty.
+    """
+    if not _AUDIT_LOG_PATH.exists():
+        return 0
+    try:
+        return sum(1 for _ in _AUDIT_LOG_PATH.open())
+    except OSError as exc:
+        logger.error("Failed to count audit log entries: %s", exc)
+        return 0
+
+
+def filter_audit_entries(event_type: str, n: int = 100) -> list[dict[str, Any]]:
+    """Return recent audit entries filtered by event type.
+
+    Args:
+        event_type: Event type string to match (e.g. 'prediction', 'model_retrain').
+        n: Maximum number of entries to scan from the tail of the log.
+
+    Returns:
+        List of matching entry dicts, most recent last.
+    """
+    entries = recent_audit_entries(n)
+    return [e for e in entries if e.get("event") == event_type]

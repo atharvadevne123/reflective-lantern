@@ -148,3 +148,39 @@ def classify_anomalies(reading: dict[str, float]) -> list[dict[str, Any]]:
         logger.info("Anomalies detected: %s", [a["name"] for a in triggered])
 
     return triggered
+
+
+def has_critical_anomaly(reading: dict[str, float]) -> bool:
+    """Return True if any critical anomaly rule fires for the reading.
+
+    Args:
+        reading: Dict mapping feature name to observed float value.
+
+    Returns:
+        True when at least one critical-severity rule is triggered.
+    """
+    return any(r.check(reading) for r in ANOMALY_RULES if r.severity == "critical")
+
+
+def anomaly_names(reading: dict[str, float]) -> list[str]:
+    """Return the names of all triggered anomaly rules.
+
+    Args:
+        reading: Dict mapping feature name to observed float value.
+
+    Returns:
+        List of anomaly name strings (may be empty).
+    """
+    return [r.name for r in ANOMALY_RULES if r.check(reading)]
+
+
+def rules_by_severity(severity: str) -> list[AnomalyRule]:
+    """Return all rules that match a given severity level.
+
+    Args:
+        severity: One of 'critical', 'warning', or 'info'.
+
+    Returns:
+        Filtered list of AnomalyRule objects.
+    """
+    return [r for r in ANOMALY_RULES if r.severity == severity]
