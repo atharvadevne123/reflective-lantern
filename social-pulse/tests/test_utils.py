@@ -14,6 +14,8 @@ from app.utils import (
     generate_request_id,
     normalise_text,
     safe_divide,
+    safe_json_dumps,
+    sanitize_text,
     truncate_text,
 )
 
@@ -163,3 +165,57 @@ class TestBatchNormalise:
     def test_whitespace_collapsed(self) -> None:
         result = batch_normalise(["  hi   there  "])
         assert result == ["hi there"]
+
+
+class TestSanitizeText:
+    def test_strips_whitespace(self) -> None:
+        assert sanitize_text("  hello  ") == "hello"
+
+    def test_respects_max_length(self) -> None:
+        t = "a" * 3000
+        result = sanitize_text(t, max_length=2000)
+        assert len(result) == 2000
+
+    def test_short_text_unchanged(self) -> None:
+        t = "hi there"
+        assert sanitize_text(t) == t
+
+    def test_empty_string(self) -> None:
+        assert sanitize_text("") == ""
+
+    def test_default_max_2000(self) -> None:
+        t = "x" * 2001
+        assert len(sanitize_text(t)) == 2000
+
+
+class TestSafeJsonDumps:
+    def test_serialises_dict(self) -> None:
+        result = safe_json_dumps({"key": "value"})
+        assert '"key"' in result
+
+    def test_serialises_list(self) -> None:
+        result = safe_json_dumps([1, 2, 3])
+        assert result == "[1, 2, 3]"
+
+    def test_non_serialisable_returns_default(self) -> None:
+        result = safe_json_dumps(object(), default="{}")
+        assert result == "{}"
+
+    def test_custom_default(self) -> None:
+        result = safe_json_dumps(set(), default="null")
+        assert result == "null"
+
+    def test_empty_dict(self) -> None:
+        assert safe_json_dumps({}) == "{}"
+
+    @pytest.mark.parametrize(
+        "data,expected_in",
+        [
+            ({"a": 1}, '"a"'),
+            (True, "true"),
+            (None, "null"),
+        ],
+    )
+    def test_parametrized(self, data, expected_in: str) -> None:
+        result = safe_json_dumps(data)
+        assert expected_in in result
