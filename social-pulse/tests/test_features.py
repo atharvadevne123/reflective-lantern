@@ -18,6 +18,7 @@ from app.features import (
     encode_cyclical,
     follower_bucket,
     has_url,
+    hashtag_diversity_score,
 )
 
 
@@ -208,3 +209,33 @@ class TestBuildFeaturePipeline:
 )
 def test_count_hashtags_parametrized(text: str, expected_min: int) -> None:
     assert count_hashtags(text) >= expected_min
+
+
+class TestHashtagDiversityScore:
+    def test_no_hashtags_returns_zero(self) -> None:
+        assert hashtag_diversity_score("no tags here") == 0.0
+
+    def test_all_unique_returns_one(self) -> None:
+        assert hashtag_diversity_score("#a #b #c") == pytest.approx(1.0)
+
+    def test_all_same_returns_one(self) -> None:
+        assert hashtag_diversity_score("#same #same #same") == pytest.approx(1.0 / 3.0)
+
+    def test_mixed_returns_fraction(self) -> None:
+        score = hashtag_diversity_score("#a #a #b")
+        assert 0.0 < score < 1.0
+
+    def test_result_in_unit_interval(self) -> None:
+        score = hashtag_diversity_score("#x #y #x #z")
+        assert 0.0 <= score <= 1.0
+
+    @pytest.mark.parametrize(
+        "text,expected",
+        [
+            ("#a #b #c #d", 1.0),
+            ("#a #a #a #a", 0.25),
+            ("no tags", 0.0),
+        ],
+    )
+    def test_parametrized(self, text: str, expected: float) -> None:
+        assert hashtag_diversity_score(text) == pytest.approx(expected, abs=0.01)
