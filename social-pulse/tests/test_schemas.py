@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
-from app.schemas import BatchPredictRequest, PostFeaturesFull
+from app.schemas import BatchPredictRequest, PostFeaturesFull, SimilaritySearchRequest
 
 
 def _valid_post(**overrides) -> dict:
@@ -102,3 +102,45 @@ def test_valid_hours(hour: int) -> None:
 def test_valid_days(dow: int) -> None:
     post = PostFeaturesFull(**_valid_post(day_of_week=dow))
     assert post.day_of_week == dow
+
+
+class TestSimilaritySearchRequest:
+    def test_valid_request_parses(self) -> None:
+        req = SimilaritySearchRequest(text="hello world")
+        assert req.text == "hello world"
+
+    def test_blank_text_raises(self) -> None:
+        with pytest.raises(ValidationError):
+            SimilaritySearchRequest(text="  ")
+
+    def test_default_top_k(self) -> None:
+        req = SimilaritySearchRequest(text="hello")
+        assert req.top_k == 5
+
+    def test_custom_top_k(self) -> None:
+        req = SimilaritySearchRequest(text="hello", top_k=10)
+        assert req.top_k == 10
+
+    def test_top_k_zero_raises(self) -> None:
+        with pytest.raises(ValidationError):
+            SimilaritySearchRequest(text="hello", top_k=0)
+
+    def test_top_k_above_50_raises(self) -> None:
+        with pytest.raises(ValidationError):
+            SimilaritySearchRequest(text="hello", top_k=51)
+
+    def test_text_stripped(self) -> None:
+        req = SimilaritySearchRequest(text="  stripped  ")
+        assert req.text == "stripped"
+
+    def test_defaults_applied(self) -> None:
+        req = SimilaritySearchRequest(text="test")
+        assert req.has_media is False
+        assert req.has_link is False
+        assert req.hour_of_day == 12
+        assert req.day_of_week == 0
+
+    @pytest.mark.parametrize("k", [1, 5, 50])
+    def test_valid_top_k_values(self, k: int) -> None:
+        req = SimilaritySearchRequest(text="test", top_k=k)
+        assert req.top_k == k
