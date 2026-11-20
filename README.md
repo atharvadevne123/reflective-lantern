@@ -1,364 +1,65 @@
-# Logistics-Flow
+![Python Package](https://github.com/atharvadevne123/reflective-lantern/actions/workflows/python-publish.yml/badge.svg) ![npm](https://github.com/atharvadevne123/reflective-lantern/actions/workflows/npm-publish.yml/badge.svg) ![Bump Version](https://github.com/atharvadevne123/reflective-lantern/actions/workflows/bump-version.yml/badge.svg)
 
-![CI](https://github.com/atharvadevne123/Logistics-Flow/actions/workflows/ci.yml/badge.svg)
-![Python](https://img.shields.io/badge/python-3.11-blue.svg)
-![License](https://img.shields.io/badge/license-MIT-green.svg)
+# Reflective Lantern
 
-Last-mile delivery time prediction and logistics optimization API using an
-XGBoost + LightGBM + RandomForest ensemble, with route risk scoring, carrier
-performance analytics, KS-test drift monitoring, and Airflow retraining.
+Autonomous Mon–Fri code improvement agent powered by Claude Code Cloud Routines.
 
-![Architecture](screenshots/architecture.png)
+Every weekday at 9 AM CST, Reflective Lantern wakes up, picks one of @atharvadevne123's
+GitHub repositories, implements 5+ improvements, runs tests, updates docs, pushes to main,
+and sends an email digest — all with zero human intervention.
 
----
+## What It Does
 
-## Overview
+Each daily run:
+1. **Discovers** all active GitHub repos (skips archived/forks)
+2. **Rotates** through repos on a deterministic weekly schedule
+3. **Analyzes** the codebase for improvement opportunities
+4. **Implements** 5+ changes across these priority tiers:
+   - Security & correctness (hardcoded secrets, missing error handling)
+   - Test coverage (creates pytest/jest suites from scratch if needed)
+   - Code quality (type hints, docstrings, logging)
+   - Developer experience (CI/CD, .env.example, Dockerfile)
+   - Performance (caching, N+1 queries)
+5. **Tests** all changes before pushing
+6. **Pushes** directly to `main`
+7. **Notifies** via Gmail digest to devneatharva@gmail.com
 
-Logistics-Flow estimates how long a parcel will take to reach its destination,
-given carrier, distance, weight, route type, and dispatch time. It is built as
-a production service rather than a notebook: every prediction is validated,
-logged, and monitored for distribution drift, and the model retrains itself on
-a weekly Airflow schedule.
+## Structure
 
-**What it does**
-
-- Predicts delivery duration in minutes with an ensemble confidence score
-- Scores carrier-specific delay risk (DHL, FedEx, UPS, USPS, Amazon)
-- Engineers 13 features including cyclical time encoding and distance buckets
-- Detects feature drift with a two-sample Kolmogorov–Smirnov test
-- Logs every inference to SQLite (dev) or PostgreSQL (prod) for auditing
-- Retrains automatically when 30 days of fresh data accumulate
-
-## Features
-
-- **REST API** — versioned `/api/v1` endpoints with OpenAPI docs at `/docs`
-- **Ensemble model** — XGBoost + LightGBM + RandomForest with confidence scoring
-- **Feature engineering** — 13 features derived from 6 raw inputs, including cyclical time encoding
-- **Drift monitoring** — Kolmogorov–Smirnov test comparing live predictions to a reference window
-- **Rate limiting** — sliding-window rate limiter with `X-RateLimit-*` response headers
-- **Structured logging** — all scripts use `logging` instead of `print()` for consistent log levels
-- **Type annotations** — full return-type annotations on all async endpoints and middleware
-- **Version endpoint** — `GET /api/v1/version` returns build metadata and environment info
-- **In-memory caches** — TTL-based caches with hit/miss counters and eviction tracking
-- **Circuit breaker** — configurable failure threshold and recovery timeout
-- **Experiment tracking** — A/B test assignment with deterministic hashing and weighted variants
-- **Feature store** — versioned feature sets with publish/get/delete lifecycle management
-- **Shadow mode** — run a shadow function alongside primary to compare outputs without risk
-- **Cost estimation** — compute resource cost breakdown for CPU, memory, and GPU workloads
-- **Utility library** — 100+ helpers across math, stats, string, time, geo, collection, and validation modules
-- **Health checks** — composable `HealthRegistry` with `run_check` for ad-hoc probes and liveness endpoints
-- **Event bus** — synchronous pub/sub with wildcard subscriptions, `once` handlers, and clean teardown
-- **Compression** — gzip/zlib compress/decompress with base64 encode/decode utilities
-- **Emissions factors** — per-region CO₂ intensity lookups with intensity labels and tonne conversions
-
----
-
-## Setup
-
-### Local
-
-```bash
-git clone https://github.com/atharvadevne123/Logistics-Flow
-cd Logistics-Flow
-
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-
-cp .env.example .env
-
-uvicorn app.main:app --reload
+```
+reflective-lantern/
+├── .claude/settings.json     ← CCR tool permissions
+├── prompts/system_prompt.md  ← cached agent instructions (3000+ tokens)
+├── history/                  ← per-repo JSON run logs
+└── README.md
 ```
 
-The API is then available at `http://localhost:8000`, with interactive
-OpenAPI docs at `http://localhost:8000/docs`.
+## Tech Stack
 
-On first start the service trains a model on synthetic data and writes
-`model.joblib`, `feature_pipeline.joblib`, and `metrics.json`.
+- **Scheduler**: Claude Code Cloud Routine (cron `0 14 * * 1-5` = 9 AM CDT)
+- **AI**: Claude Sonnet 4.6 with prompt caching (~80% token reduction)
+- **Repo ops**: GitHub CLI (`gh`) + git
+- **Notifications**: Gmail MCP
 
-### Docker
+## Token Efficiency
 
-```bash
-docker compose up --build
-```
+The `prompts/system_prompt.md` file exceeds Sonnet 4.6's 2048-token cache threshold,
+so it is cached on first use and subsequent runs hit the cache at ~10% of the original
+input cost. Combined with one-repo-per-day rotation, estimated cost is $0.15–0.25/run.
 
-This starts the API on port 8000 alongside a PostgreSQL 15 instance, with the
-model baked into the image at build time.
+## History
 
----
-
-## API Reference
-
-All endpoints are versioned under `/api/v1`.
-
-### `POST /api/v1/predict`
-
-Predict delivery time for a single shipment.
-
-**Request**
+The `history/` directory contains JSON logs of every run per repo, used to avoid
+repeating improvements across runs. Example entry:
 
 ```json
-{
-  "carrier": "DHL",
-  "distance_km": 42.5,
-  "weight_kg": 3.2,
-  "route_type": "urban",
-  "hour_of_day": 14,
-  "day_of_week": 2
-}
+[
+  {
+    "date": "2026-04-21",
+    "improvements": ["added pytest suite", "fixed hardcoded API key"],
+    "tests_passed": true,
+    "commits": 3,
+    "notes": ""
+  }
+]
 ```
-
-| Field | Type | Constraint |
-|---|---|---|
-| `carrier` | string | one of `DHL`, `FedEx`, `UPS`, `USPS`, `Amazon` |
-| `distance_km` | float | `0 < x <= 5000` |
-| `weight_kg` | float | `0 < x <= 100` |
-| `route_type` | string | one of `urban`, `suburban`, `rural`, `highway` |
-| `hour_of_day` | int | `0–23` |
-| `day_of_week` | int | `0` (Mon) – `6` (Sun) |
-
-**Response**
-
-```json
-{
-  "predicted_minutes": 87.34,
-  "predicted_hours": 1.456,
-  "confidence": 0.9127,
-  "model_version": "1.0.0",
-  "request_id": "a3f9c1e2"
-}
-```
-
-Invalid carriers, route types, or out-of-range numerics return `422`.
-
-### `POST /api/v1/predict/batch`
-
-Scores between 1 and 100 shipments in a single request:
-
-```json
-{ "shipments": [ { "carrier": "DHL", "distance_km": 42.5, "weight_kg": 3.2,
-                   "route_type": "urban", "hour_of_day": 14, "day_of_week": 2 } ] }
-```
-
-Responds with `{ "predictions": [...], "count": n }`. One invalid member
-rejects the whole batch with `422`.
-
-### `GET /api/v1/health`
-
-Liveness probe. Returns `healthy` when the model is loaded, `degraded` otherwise.
-
-### `GET /api/v1/metrics`
-
-Returns the most recent 5-fold cross-validation metrics: `rmse_mean`,
-`r2_mean`, `n_features`, `n_samples`, `model_version`.
-
-### `GET /api/v1/drift`
-
-Runs a KS test comparing the last 100 predictions against the reference
-window for `distance_km`, `weight_kg`, and `predicted_minutes`. Drift is
-flagged when `p < 0.05`.
-
-Every response carries `X-Request-ID` and `X-Response-Time-Ms` headers.
-
-### `GET /api/v1/version`
-
-Returns build metadata and runtime environment information.
-
-**Response**
-
-```json
-{
-  "version": "1.0.0",
-  "build_date": "2026-10-01",
-  "python_version": "3.11.0",
-  "environment": "production",
-  "service": "reflective-lantern"
-}
-```
-
----
-
-## Architecture
-
-```
-Client → FastAPI → Pydantic validation → Feature pipeline
-                                              ↓
-                        Ensemble (XGBoost + LightGBM + RandomForest)
-                                              ↓
-                        SQLAlchemy persistence → KS drift monitor
-                                              ↓
-                              Airflow weekly retrain DAG
-```
-
-### Feature engineering
-
-Thirteen features are derived from six raw inputs:
-
-- **Cyclical time** — `hour_sin`, `hour_cos`, `dow_sin`, `dow_cos` so that
-  hour 23 sits adjacent to hour 0 rather than 23 units away
-- **Flags** — `is_weekend`, `is_peak` (07–09 and 16–19)
-- **Route** — `distance_bucket` (local/regional/long-haul/extreme),
-  `weight_per_km`, `carrier_risk`, `route_code`
-- **Encoding** — `carrier_enc` via label encoding
-
-### Model
-
-A `VotingRegressor` over XGBoost (200 trees, depth 5), LightGBM (200 trees),
-and RandomForest (150 trees, depth 8), wrapped in a `StandardScaler` pipeline.
-Confidence is derived from the standard deviation across sub-estimator
-predictions — tight agreement yields high confidence.
-
-### Monitoring
-
-Every prediction is written to the `predictions` table. A rolling 500-sample
-reference buffer feeds the KS test; detected drift is recorded in `drift_logs`
-and surfaced through `/api/v1/drift`.
-
----
-
-## Testing
-
-The test suite currently contains **92 test modules** with **6 000+ individual
-test cases** covering API contracts, feature-pipeline invariants, model
-training, drift detection, and all utility modules.
-
-### Run all tests
-
-```bash
-pytest tests/ -v
-```
-
-### Run with coverage
-
-```bash
-pytest tests/ --cov=app --cov-report=term-missing
-```
-
-### Run a single module
-
-```bash
-pytest tests/test_webhook_handler.py -v
-```
-
-The suite covers API contracts (including all carriers and route types via
-parametrization), feature-pipeline invariants, model training and CV metrics,
-drift detection under known distribution shifts, and edge cases for all
-utility modules added in the 2026-10 improvement run.
-
-## Development
-
-```bash
-make install    # install dependencies
-make test       # run pytest
-make lint       # ruff check
-make format     # ruff format
-make typecheck  # mypy static analysis
-make coverage   # pytest with HTML coverage report
-make run        # start dev server
-make migrate    # run alembic migrations
-make seed       # seed database with synthetic data
-make validate   # validate history JSON files
-```
-
-## Configuration
-
-All settings are loaded from environment variables. Copy `.env.example` to `.env` and
-update the values before running locally:
-
-```bash
-cp .env.example .env
-```
-
-Key variables:
-
-| Variable | Default | Description |
-|---|---|---|
-| `DATABASE_URL` | `sqlite:///./logistics_flow.db` | DB connection string |
-| `MODEL_PATH` | `model.joblib` | Trained model artifact path |
-| `LOG_LEVEL` | `INFO` | Logging verbosity |
-| `DRIFT_KS_THRESHOLD` | `0.05` | KS-test p-value threshold for drift alerts |
-| `REFERENCE_BUFFER_SIZE` | `500` | Rolling window size for drift reference |
-| `RATE_LIMIT_REQUESTS` | `100` | Max requests per window |
-| `SECRET_KEY` | — | Change before any deployment |
-
-## Utility Modules
-
-The service ships several reusable utility modules under `app/`:
-
-| Module | Purpose |
-|---|---|
-| `date_utils` | UTC helpers, business-day arithmetic, `end_of_month`, `elapsed_seconds` |
-| `geo_utils` | Haversine distance, bounding-box, k-nearest, `haversine_distance` tuple API |
-| `carbon` | Grid CO₂ intensity lookup, kWh → kg CO₂e conversion |
-| `battery` | BESS peak-shaving simulation and sizing |
-| `investment` | Property cap-rate, IRR, DCF, and break-even analysis |
-| `grid_stability` | Power factor, voltage unbalance, THD, and grid metrics |
-| `emissions_factor` | Regional CO₂ intensity, emissions comparison, annual budget check |
-| `peak_demand` | Peak load analysis, demand charges, and demand response savings |
-| `interval_aggregator` | HH/15-min interval aggregation, resampling, and outlier detection |
-| `tariff_engine` | Time-of-use tariff classification, bill simulation, peak-shifting savings |
-| `flexibility_score` | Load variability, response readiness, and overall flexibility assessment |
-| `energy_label` | EU/UK building EPC classification (A+++–G) and efficiency comparison |
-| `hvac_estimator` | Heating/cooling degree days, HDD/CDD-based energy estimation |
-| `meter_validation` | Smart meter reading validation: negatives, bounds, gaps |
-| `baseline_calculator` | IPMVP/ASHRAE regression baselines, energy savings, normalised savings |
-| `thermal_comfort` | ISO 7730 PMV/PPD Fanger model, comfort category, sensation label |
-| `occupancy_model` | Hourly occupancy scheduling, setpoint adjustment, occupied-hours count |
-| `smart_meter_api` | Half-hourly reading parsing, daily aggregation, gap filling |
-| `roi_calculator` | Simple payback, NPV, lifetime savings, ROI, investment analysis |
-| `water_heating` | DHW energy calculations, boiler vs heat pump comparison |
-| `lighting_efficiency` | Luminous efficacy, lux calculation, upgrade savings, lighting audit |
-| `ev_charging` | EV charging energy, duration, session simulation, smart scheduling |
-| `energy_poverty` | UK 10% rule, after-fuel-costs income, vulnerability score, interventions |
-| `solar_pv` | PV array power, annual yield, capacity factor, system analysis |
-| `battery_storage` | BESS charge/discharge, peak shaving threshold, dispatch simulation |
-| `wind_power` | Wind power density, turbine output, Betz limit, annual yield |
-| `carbon_budget` | GHG scope 1/2/3 tracking, reduction targets, linear pathway |
-| `heat_pump` | Carnot COP, realistic COP, electricity-for-heat, SCOP calculation |
-| `insulation_calculator` | U-value/R-value, heat loss, composite wall, upgrade analysis |
-| `demand_forecaster` | Naive, moving average, exponential smoothing, linear trend forecasting |
-| `power_quality` | RMS, THD, crest factor, K-factor, EN 50160 compliance |
-| `energy_audit` | ASHRAE Level I/II audit, EUI, end-use breakdown, opportunity ranking |
-| `microGrid_controller` | Microgrid self-consumption dispatch, self-sufficiency/consumption ratios |
-| `voltage_drop` | Cable resistance, single/three-phase voltage drop, IEC 60364 compliance |
-| `fuel_cell` | Nernst voltage, overpotentials, cell/stack voltage, H₂ consumption, degradation |
-| `tidal_power` | Tidal stream power, barrage energy, energy density, annual output, resource score |
-| `geothermal` | Reservoir temperature, heat flow, Carnot efficiency, LCOE, brine enthalpy |
-| `peak_shaving` | Battery peak-shaving controller, optimal threshold, revenue, cycles per year |
-| `cogeneration` | CHP electrical/thermal efficiency, CO₂ savings, heat-to-power ratio, PES |
-| `energy_storage_degradation` | Rainflow cycle depth, calendar degradation, SoH, energy throughput, EOL cycles |
-| `renewable_curtailment` | Curtailment rate, revenue lost, carbon abatement lost, forecast accuracy |
-| `distributed_energy` | DER portfolio, dispatch order, capacity factor, net metering, availability |
-| `energy_intensity` | EUI calculation, weather normalisation, sector benchmarking, carbon from EUI |
-| `grid_balancing` | Frequency deviation, droop response, RoCoF, inertia, frequency nadir |
-
-## License
-
-MIT
-
-## Utility Modules
-
-The `app/` package includes a collection of standalone utility helpers used across the service:
-
-| Module | Key helpers |
-|---|---|
-| `demand_response` | `peak_curtailment_hour` |
-| `energy_benchmark` | `below_median_cohort` |
-| `shadow_mode` | `ShadowRunner.match_rate` |
-| `token_bucket` | `PerKeyTokenBucket.is_full` |
-| `webhook_handler` | `WebhookHandler.has_handler` |
-| `task_queue` | `TaskQueue.is_empty`, `TaskQueue.priority_range` |
-| `energy_export` | `records_kwh_average` |
-| `weather_normalization` | `degree_day_ratio` |
-| `power_quality` | `load_unbalance_factor` |
-| `notifications` | `alerts_by_source` |
-| `geo_utils` | `midpoint`, `bearing`, `within_radius`, `k_nearest` |
-| `stats_utils` | `sign_changes` |
-| `time_series` | `cumulative_sum` |
-| `date_utils` | `start_of_day` |
-| `load_profile` | `peak_hour_index` |
-| `tariff` | `cost_per_hour_average` |
-| `solar` | `panel_efficiency_ratio` |
-| `investment` | `is_profitable` |
-| `carbon` | `co2_intensity_label` |
-
-All helpers are covered by parametrized `pytest` tests in `tests/`.

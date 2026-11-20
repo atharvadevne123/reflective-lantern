@@ -1,0 +1,25 @@
+[
+  {
+    "date": "2026-04-23",
+    "mode": "improvement",
+    "improvements": [
+      "Fixed: POST /api/patients missing auth \u2014 added bearer token requirement",
+      "Fixed: PUT /api/inventory/{id}/adjust missing auth \u2014 added bearer token requirement",
+      "Fixed: Replaced plain SHA-256 password hashing with PBKDF2-HMAC-SHA256 (260k iterations, random salt per user)",
+      "Fixed: Replaced deprecated @app.on_event('startup') with lifespan context manager",
+      "Fixed: Replaced deprecated declarative_base() with DeclarativeBase subclass (SQLAlchemy 2.0)",
+      "Fixed: Inventory ID collision risk \u2014 replaced count-based ID with uuid hex",
+      "Improvement: Added Optional type hints to PatientUpdate and InventoryUpdate Pydantic models",
+      "Improvement: Added skip/limit pagination to GET /api/patients and GET /api/inventory",
+      "Improvement: SQL-level risk_score filtering in search_patients (was Python-level)",
+      "Improvement: Added structured logging throughout the application",
+      "Improvement: Created tests/conftest.py and tests/test_main.py (20 tests, all passing)",
+      "Improvement: Added .github/workflows/ci.yml (ruff lint + pytest on every push/PR)",
+      "Improvement: Added SECRET_KEY and DATABASE_URL to .env.example",
+      "Improvement: Updated README with CI badge, Testing section, and corrected auth table"
+    ],
+    "tests_passed": true,
+    "commits": 1,
+    "run_verified": "20/20 pytest tests passed (0.85s)"
+  }
+]

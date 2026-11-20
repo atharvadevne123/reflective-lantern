@@ -31,29 +31,6 @@
     "tests_passed": true,
     "commits": 3,
     "run_verified": "27/27 tests passed",
-    "email_status": "failed_smtp"
-  },
-  {
-    "date": "2026-07-10",
-    "mode": "improvement",
-    "repo": "Gmail-job-Automation",
-    "improvements": [
-      "docs: Google-style docstrings + module docstrings across auth.py, gmail_labeler.py, label_interviews.py, delete_job_emails.py",
-      "feat: --dry-run flag for label_interviews.py (parity with gmail_labeler.py); --yes flag for delete_job_emails.py; --log-level flag on all three scripts",
-      "feat: scripts/run_all.py - run all three labelers with a single authentication",
-      "feat: utils.py with format_count()/plural_s(), wired into all script summaries",
-      "fix: ruff B023 loop-variable capture in batch callbacks (all three scripts); unused imports in run_all.py/test_run_all.py",
-      "refactor: type annotations tightened (list[str], dict[str, list[str]], typing.Final on constants); __all__ exports",
-      "test: suite grown 27 -> 128 tests (parametrized retry codes, pagination, dry-run parity, main() flows, query-list integrity)",
-      "ci: split workflow into lint/test(3.9,3.11,3.12)/type-check jobs with coverage artifact; pinned actions to @v4/@v5",
-      "chore: pre-commit config, .editorconfig, .gitattributes, PR/issue templates, CONTRIBUTING.md, CHANGELOG.md, CODE_OF_CONDUCT.md",
-      "build: requirements-dev.txt split; Makefile help/format/ci/type-check/cover/count targets; [tool.mypy] in pyproject",
-      "merge: integrated upstream count_emails.py, is_authenticated(), extra utils helpers, dependabot bumps (128 tests green, 89.7% coverage)"
-    ],
-    "tests_passed": true,
-    "tests_before": 27,
-    "tests_after": 128,
-    "coverage": "89.72%",
-    "commits": 60
+    "email_status": "failed_2525:OSError"
   }
 ]
