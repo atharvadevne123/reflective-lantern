@@ -205,3 +205,45 @@ def should_retrain(db: Session, min_new_samples: int = 1000) -> bool:
     """
     count = db.query(Prediction).count()
     return count >= min_new_samples
+
+
+def get_prediction_percentiles(
+    db: Session,
+    feature: str = "viral_probability",
+    percentiles: list[float] | None = None,
+) -> dict[str, float]:
+    """Compute distribution percentiles for a numeric feature column.
+
+    Args:
+        db: Active SQLAlchemy session.
+        feature: Column name on the Prediction model to summarise.
+        percentiles: Percentile points as fractions in [0, 1].  Defaults to
+            [0.25, 0.50, 0.75, 0.90, 0.99].
+
+    Returns:
+        Dict mapping "p{int(p*100)}" to the percentile value, or empty dict
+        if there are no predictions or the feature is unknown.
+    """
+    import numpy as np
+
+    if percentiles is None:
+        percentiles = [0.25, 0.50, 0.75, 0.90, 0.99]
+
+    if not hasattr(Prediction, feature):
+        logger.warning("get_prediction_percentiles: unknown feature %r", feature)
+        return {}
+
+    col = getattr(Prediction, feature)
+    rows = db.query(col).all()
+    if not rows:
+        return {}
+
+    values = np.array([r[0] for r in rows if r[0] is not None], dtype=float)
+    if values.size == 0:
+        return {}
+
+    result: dict[str, float] = {}
+    for p in percentiles:
+        key = f"p{int(round(p * 100))}"
+        result[key] = round(float(np.percentile(values, p * 100)), 4)
+    return result
