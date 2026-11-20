@@ -49,6 +49,18 @@ def get_logger(name: str) -> logging.Logger:
     return logging.getLogger(name)
 
 
+def is_valid_level(level: str) -> bool:
+    """Return True if *level* is a recognised Python logging level name.
+
+    Args:
+        level: Case-insensitive level string to validate.
+
+    Returns:
+        True for DEBUG, INFO, WARNING, ERROR, CRITICAL; False otherwise.
+    """
+    return level.upper() in {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"}
+
+
 def log_dict(logger: logging.Logger, level: int, msg: str, data: dict[str, Any]) -> None:
     """Log a message with a structured dict payload.
 
