@@ -101,6 +101,40 @@ def test_search_k_values(k: int) -> None:
     assert len(results) <= k
 
 
+class TestPostIndexBulkAdd:
+    def test_adds_all_vectors(self) -> None:
+        idx = PostIndex(dim=DIM)
+        vecs = [_random_vec() for _ in range(5)]
+        added = idx.bulk_add(vecs)
+        assert added == 5
+        assert idx.size == 5
+
+    def test_returns_count(self) -> None:
+        idx = PostIndex(dim=DIM)
+        vecs = [_random_vec() for _ in range(3)]
+        result = idx.bulk_add(vecs)
+        assert result == 3
+
+    def test_empty_list(self) -> None:
+        idx = PostIndex(dim=DIM)
+        result = idx.bulk_add([])
+        assert result == 0
+        assert idx.size == 0
+
+    def test_metadatas_stored(self) -> None:
+        idx = PostIndex(dim=DIM)
+        vecs = [_random_vec(), _random_vec()]
+        metas = [{"id": "a"}, {"id": "b"}]
+        idx.bulk_add(vecs, metadatas=metas)
+        assert idx.size == 2
+
+    def test_wrong_dim_raises(self) -> None:
+        idx = PostIndex(dim=DIM)
+        bad_vec = np.zeros(DIM + 1, dtype=np.float32)
+        with pytest.raises(ValueError):
+            idx.bulk_add([bad_vec])
+
+
 class TestPostIndexClear:
     def test_clear_empties_index(self) -> None:
         idx = PostIndex(dim=DIM)
