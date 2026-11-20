@@ -19,6 +19,7 @@ from app.features import (
     follower_bucket,
     has_url,
     hashtag_diversity_score,
+    sentiment_score,
 )
 
 
@@ -209,6 +210,45 @@ class TestBuildFeaturePipeline:
 )
 def test_count_hashtags_parametrized(text: str, expected_min: int) -> None:
     assert count_hashtags(text) >= expected_min
+
+
+class TestSentimentScore:
+    def test_neutral_text_returns_zero(self) -> None:
+        assert sentiment_score("some plain text") == 0.0
+
+    def test_positive_text_returns_positive(self) -> None:
+        assert sentiment_score("this is great and amazing") > 0.0
+
+    def test_negative_text_returns_negative(self) -> None:
+        assert sentiment_score("this is terrible and awful") < 0.0
+
+    def test_result_in_minus_one_to_one(self) -> None:
+        score = sentiment_score("love hate amazing bad best worst")
+        assert -1.0 <= score <= 1.0
+
+    def test_empty_string_returns_zero(self) -> None:
+        assert sentiment_score("") == 0.0
+
+    def test_mixed_sentiment(self) -> None:
+        score = sentiment_score("love hate")
+        assert score == 0.0  # equal pos and neg
+
+    @pytest.mark.parametrize(
+        "text,expected_sign",
+        [
+            ("great awesome amazing best", 1),
+            ("terrible awful hate worst", -1),
+            ("hello world today", 0),
+        ],
+    )
+    def test_sentiment_direction(self, text: str, expected_sign: int) -> None:
+        score = sentiment_score(text)
+        if expected_sign > 0:
+            assert score > 0
+        elif expected_sign < 0:
+            assert score < 0
+        else:
+            assert score == 0.0
 
 
 class TestHashtagDiversityScore:
