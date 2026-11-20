@@ -7,7 +7,7 @@ import uuid
 import pytest
 from sqlalchemy.orm import Session
 
-from app.database import DriftRecord, Prediction, TrainingRun
+from app.database import DriftRecord, Prediction, TrainingRun, table_names
 
 
 class TestPredictionModel:
@@ -164,3 +164,22 @@ def test_prediction_viral_probability_values(db_session: Session, viral_prob: fl
     db_session.commit()
     db_session.refresh(pred)
     assert abs(pred.viral_probability - viral_prob) < 1e-6
+
+
+class TestTableNames:
+    def test_returns_list(self) -> None:
+        result = table_names()
+        assert isinstance(result, list)
+
+    def test_contains_predictions(self) -> None:
+        assert "predictions" in table_names()
+
+    def test_contains_drift_records(self) -> None:
+        assert "drift_records" in table_names()
+
+    def test_contains_training_runs(self) -> None:
+        assert "training_runs" in table_names()
+
+    def test_sorted_alphabetically(self) -> None:
+        names = table_names()
+        assert names == sorted(names)
