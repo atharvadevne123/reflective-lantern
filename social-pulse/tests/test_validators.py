@@ -6,10 +6,12 @@ import pytest
 
 from app.validators import (
     check_repetitive_content,
+    estimate_reading_time_seconds,
     sanitise_text,
     validate_hashtag_consistency,
     validate_mention_consistency,
     validate_sample,
+    validate_url,
 )
 
 
@@ -118,3 +120,47 @@ class TestValidateSample:
 )
 def test_hashtag_count_parametrized(text: str, expected: int) -> None:
     assert validate_hashtag_consistency(text, 0) == expected
+
+
+class TestValidateUrl:
+    def test_detects_https_url(self) -> None:
+        assert validate_url("check this out https://example.com/page") is True
+
+    def test_detects_http_url(self) -> None:
+        assert validate_url("visit http://news.example.org") is True
+
+    def test_no_url_returns_false(self) -> None:
+        assert validate_url("just plain text #nourls") is False
+
+    def test_empty_string_returns_false(self) -> None:
+        assert validate_url("") is False
+
+    @pytest.mark.parametrize(
+        "text,expected",
+        [
+            ("https://t.co/abc", True),
+            ("no link here", False),
+            ("ftp://example.com", False),
+        ],
+    )
+    def test_parametrized(self, text: str, expected: bool) -> None:
+        assert validate_url(text) is expected
+
+
+class TestEstimateReadingTime:
+    def test_minimum_one_second(self) -> None:
+        assert estimate_reading_time_seconds("hi") >= 1.0
+
+    def test_longer_text_takes_more_time(self) -> None:
+        short = estimate_reading_time_seconds("hello world")
+        long_text = " ".join(["word"] * 500)
+        long = estimate_reading_time_seconds(long_text)
+        assert long > short
+
+    def test_returns_float(self) -> None:
+        assert isinstance(estimate_reading_time_seconds("test text"), float)
+
+    def test_custom_wpm(self) -> None:
+        text = " ".join(["word"] * 238)
+        result = estimate_reading_time_seconds(text, wpm=238)
+        assert result == pytest.approx(60.0, abs=1.0)
