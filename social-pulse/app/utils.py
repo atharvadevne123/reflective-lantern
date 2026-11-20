@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import logging
 import re
 import time
 import uuid
 from functools import lru_cache
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -133,3 +135,33 @@ def batch_normalise(texts: list[str]) -> list[str]:
         New list of normalised strings in the same order.
     """
     return [normalise_text(t) for t in texts]
+
+
+def sanitize_text(text: str, max_length: int = 2000) -> str:
+    """Remove leading/trailing whitespace and enforce a maximum length.
+
+    Args:
+        text: Input text.
+        max_length: Maximum character count after stripping.
+
+    Returns:
+        Stripped and optionally truncated text.
+    """
+    stripped = text.strip()
+    return stripped[:max_length]
+
+
+def safe_json_dumps(data: Any, default: str = "{}") -> str:
+    """Serialise *data* to a JSON string, returning *default* on failure.
+
+    Args:
+        data: Python object to serialise.
+        default: Fallback string if serialisation fails.
+
+    Returns:
+        JSON string, or *default* if an error occurs.
+    """
+    try:
+        return json.dumps(data)
+    except (TypeError, ValueError):
+        return default
