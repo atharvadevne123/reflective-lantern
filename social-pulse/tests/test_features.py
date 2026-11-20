@@ -212,6 +212,36 @@ def test_count_hashtags_parametrized(text: str, expected_min: int) -> None:
     assert count_hashtags(text) >= expected_min
 
 
+@pytest.mark.parametrize(
+    "followers,expected_bucket",
+    [
+        (0, 0),
+        (50, 0),
+        (100, 1),
+        (5000, 2),
+        (50000, 3),
+        (500000, 4),
+        (5000000, 5),
+        (50000000, 6),
+    ],
+)
+def test_follower_bucket_parametrized(followers: int, expected_bucket: int) -> None:
+    assert follower_bucket(followers) == expected_bucket
+
+
+@pytest.mark.parametrize(
+    "text,expected",
+    [
+        ("HELLO", 1.0),
+        ("hello", 0.0),
+        ("", 0.0),
+    ],
+)
+def test_capitalisation_ratio_parametrized(text: str, expected: float) -> None:
+    import math
+    assert math.isclose(capitalisation_ratio(text), expected)
+
+
 class TestSentimentScore:
     def test_neutral_text_returns_zero(self) -> None:
         assert sentiment_score("some plain text") == 0.0
