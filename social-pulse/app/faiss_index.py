@@ -126,6 +126,14 @@ class PostIndex:
         logger.info("Index loaded from %s (%d vectors)", path, len(inst._vectors))
         return inst
 
+    def clear(self) -> None:
+        """Remove all vectors and metadata from the index."""
+        self._vectors = []
+        self._metadata = []
+        if _HAS_FAISS and self._index is not None:
+            self._index = faiss.IndexFlatL2(self.dim)
+        logger.info("Index cleared")
+
     @property
     def size(self) -> int:
         """Number of vectors currently in the index."""
