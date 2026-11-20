@@ -106,3 +106,33 @@ class TestCacheStats:
         first = client.post("/api/v1/similar", json=payload).json()
         second = client.post("/api/v1/similar", json=payload).json()
         assert first["similar_items"] == second["similar_items"]
+
+    @pytest.mark.parametrize("endpoint", ["/api/v1/cache/stats", "/api/v1/health"])
+    def test_get_endpoints_return_200(self, client, endpoint: str) -> None:
+        resp = client.get(endpoint)
+        assert resp.status_code == 200
+
+    def test_cache_stats_entries_is_non_negative(self, client) -> None:
+        data = client.get("/api/v1/cache/stats").json()
+        for _cache_name, stats in data.items():
+            if isinstance(stats, dict) and "entries" in stats:
+                assert stats["entries"] >= 0
+
+
+class TestBatchPredictExtended:
+    def test_batch_all_valid_no_warnings(self, client, intent_payload) -> None:
+        payload = {"items": [intent_payload]}
+        r = client.post("/api/v1/predict/batch", json=payload)
+        assert r.status_code == 200
+
+    def test_batch_result_count_matches_input(self, client, intent_payload) -> None:
+        payload = {"items": [intent_payload, intent_payload, intent_payload]}
+        r = client.post("/api/v1/predict/batch", json=payload)
+        data = r.json()
+        assert len(data["predictions"]) == 3
+
+    def test_batch_scores_in_valid_range(self, client, intent_payload) -> None:
+        payload = {"items": [intent_payload, intent_payload]}
+        r = client.post("/api/v1/predict/batch", json=payload)
+        for pred in r.json()["predictions"]:
+            assert 0.0 <= pred["purchase_probability"] <= 1.0

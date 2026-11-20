@@ -24,14 +24,14 @@ ROLLING_FEATURES = ["rolling_src_mean", "rolling_src_std"]
 
 
 @pytest.fixture(scope="module")
-def fitted_engineer():
+def fitted_engineer() -> None:
     X, _ = generate_synthetic_data(500)
     eng = NetworkFeatureEngineer()
     eng.fit(X)
     return eng, X
 
 
-def test_rolling_std_is_never_degenerate_on_single_row(fitted_engineer):
+def test_rolling_std_is_never_degenerate_on_single_row(fitted_engineer) -> None:
     """A one-row frame must not emit rolling_src_std == 0.
 
     Zero is the value the naive ``.fillna(0)`` produced for *every* served
@@ -45,7 +45,7 @@ def test_rolling_std_is_never_degenerate_on_single_row(fitted_engineer):
     assert single[0, idx] == pytest.approx(eng.rolling_std_fallback_)
 
 
-def test_single_row_rolling_features_match_training_scale(fitted_engineer):
+def test_single_row_rolling_features_match_training_scale(fitted_engineer) -> None:
     """Serve-time rolling values must sit within the training distribution."""
     eng, X = fitted_engineer
     batch = eng.transform(X)
@@ -59,7 +59,7 @@ def test_single_row_rolling_features_match_training_scale(fitted_engineer):
         assert z < 3.0, f"{name} is {z:.1f} sigma from the training mean at serve time"
 
 
-def test_non_rolling_features_are_row_independent(fitted_engineer):
+def test_non_rolling_features_are_row_independent(fitted_engineer) -> None:
     """Every non-rolling feature must be identical alone and inside a batch."""
     eng, X = fitted_engineer
     batch = eng.transform(X)
@@ -73,7 +73,7 @@ def test_non_rolling_features_are_row_independent(fitted_engineer):
         )
 
 
-def test_single_row_and_batch_anomaly_rates_agree(tmp_path):
+def test_single_row_and_batch_anomaly_rates_agree(tmp_path) -> None:
     """Scoring rows one at a time must flag at the same rate as a batch.
 
     Under the skew bug the single-row rate went to ~100% while the batch rate
@@ -91,7 +91,7 @@ def test_single_row_and_batch_anomaly_rates_agree(tmp_path):
     )
 
 
-def test_in_distribution_traffic_is_mostly_not_flagged(tmp_path):
+def test_in_distribution_traffic_is_mostly_not_flagged(tmp_path) -> None:
     """Contamination is 0.05, so in-distribution traffic must stay mostly clean."""
     X, _ = generate_synthetic_data(300)
     pipe = train_anomaly_detector(X, model_path=str(tmp_path / "anom2.joblib"))

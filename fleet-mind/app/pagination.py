@@ -31,7 +31,7 @@ class Page(BaseModel, Generic[T]):
     total_pages: int
 
     @classmethod
-    def from_items(cls, items: list[T], total: int, params: PaginationParams) -> Page[T]:
+    def from_items(cls, items: list[T], total: int, params: PaginationParams) -> "Page[T]":
         """Construct a Page from a slice of items and pagination params.
 
         Args:
@@ -50,39 +50,3 @@ class Page(BaseModel, Generic[T]):
             page_size=params.page_size,
             total_pages=total_pages,
         )
-
-    @property
-    def has_next(self) -> bool:
-        """True when there is at least one more page after this one."""
-        return self.page < self.total_pages
-
-    @property
-    def has_prev(self) -> bool:
-        """True when this is not the first page."""
-        return self.page > 1
-
-    @property
-    def next_page(self) -> int | None:
-        """Return next page number or None if this is the last page."""
-        return self.page + 1 if self.has_next else None
-
-    @property
-    def prev_page(self) -> int | None:
-        """Return previous page number or None if this is the first page."""
-        return self.page - 1 if self.has_prev else None
-
-
-def paginate(items: list[T], params: PaginationParams) -> Page[T]:
-    """Slice a full list and wrap it in a Page.
-
-    Args:
-        items: Complete list of items to paginate.
-        params: Pagination parameters controlling the slice.
-
-    Returns:
-        A Page containing the requested slice.
-    """
-    total = len(items)
-    start = params.offset
-    end = start + params.page_size
-    return Page.from_items(items[start:end], total, params)

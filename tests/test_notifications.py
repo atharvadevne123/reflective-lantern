@@ -520,3 +520,96 @@ class TestAlertsContainSeverity:
 
         alerts = [Alert(severity="WARNING", message="m")]
         assert alerts_contain_severity(alerts, "warning") is True
+
+
+class TestAlertsWithinWindowExtended:
+    def test_all_within_window(self) -> None:
+        from app.notifications import Alert, alerts_within_window
+
+        now = 1000.0
+        alerts = [Alert(severity="info", message="m", created_at=999.0)]
+        result = alerts_within_window(alerts, window_seconds=60.0, now=now)
+        assert len(result) == 1
+
+    def test_old_alert_excluded(self) -> None:
+        from app.notifications import Alert, alerts_within_window
+
+        now = 1000.0
+        alerts = [Alert(severity="info", message="m", created_at=100.0)]
+        result = alerts_within_window(alerts, window_seconds=60.0, now=now)
+        assert len(result) == 0
+
+    def test_negative_window_raises(self) -> None:
+        from app.notifications import alerts_within_window
+
+        with pytest.raises(ValueError):
+            alerts_within_window([], window_seconds=-1.0)
+
+
+class TestCountAlertsBySourceExtended:
+    def test_empty_returns_empty_dict(self) -> None:
+        from app.notifications import count_alerts_by_source
+
+        assert count_alerts_by_source([]) == {}
+
+    def test_single_source_counted(self) -> None:
+        from app.notifications import Alert, count_alerts_by_source
+
+        alerts = [Alert(severity="info", message="m", source="svc")]
+        result = count_alerts_by_source(alerts)
+        assert result["svc"] == 1
+
+    def test_multiple_sources(self) -> None:
+        from app.notifications import Alert, count_alerts_by_source
+
+        alerts = [
+            Alert(severity="info", message="m", source="a"),
+            Alert(severity="info", message="m", source="b"),
+            Alert(severity="info", message="m", source="a"),
+        ]
+        result = count_alerts_by_source(alerts)
+        assert result["a"] == 2
+        assert result["b"] == 1
+
+    @pytest.mark.parametrize("n", [1, 3, 5])
+    def test_count_matches_input(self, n: int) -> None:
+        from app.notifications import Alert, count_alerts_by_source
+
+        alerts = [Alert(severity="info", message="m", source="src") for _ in range(n)]
+        result = count_alerts_by_source(alerts)
+        assert result["src"] == n
+
+
+class TestAlertsBySource:
+    def test_empty_list_returns_empty_dict(self) -> None:
+        from app.notifications import alerts_by_source
+
+        assert alerts_by_source([]) == {}
+
+    def test_single_source_grouped_correctly(self) -> None:
+        from app.notifications import Alert, alerts_by_source
+
+        alerts = [Alert(severity="info", message="m", source="svc-a") for _ in range(3)]
+        result = alerts_by_source(alerts)
+        assert "svc-a" in result
+        assert len(result["svc-a"]) == 3
+
+    def test_multiple_sources_separated(self) -> None:
+        from app.notifications import Alert, alerts_by_source
+
+        alerts = [
+            Alert(severity="warning", message="a", source="svc-a"),
+            Alert(severity="critical", message="b", source="svc-b"),
+            Alert(severity="info", message="c", source="svc-a"),
+        ]
+        result = alerts_by_source(alerts)
+        assert len(result["svc-a"]) == 2
+        assert len(result["svc-b"]) == 1
+
+    @pytest.mark.parametrize("n_sources", [1, 2, 3])
+    def test_key_count_matches_unique_sources(self, n_sources: int) -> None:
+        from app.notifications import Alert, alerts_by_source
+
+        alerts = [Alert(severity="info", message="m", source=f"svc-{i}") for i in range(n_sources)]
+        result = alerts_by_source(alerts)
+        assert len(result) == n_sources

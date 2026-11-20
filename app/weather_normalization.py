@@ -167,11 +167,39 @@ def compare_periods(
     )
 
 
+def degree_day_ratio(
+    current_degree_days: float,
+    baseline_degree_days: float,
+) -> float:
+    """Return the ratio of current to baseline degree days.
+
+    Useful for quick comparison of weather severity between two periods.
+
+    Args:
+        current_degree_days: Degree days in the measurement period.
+        baseline_degree_days: Degree days in the reference period.
+
+    Returns:
+        Ratio rounded to 4 decimal places; 0.0 when *baseline_degree_days* is zero.
+
+    Raises:
+        ValueError: If either argument is negative.
+    """
+    if current_degree_days < 0:
+        raise ValueError(f"current_degree_days must be non-negative, got {current_degree_days}")
+    if baseline_degree_days < 0:
+        raise ValueError(f"baseline_degree_days must be non-negative, got {baseline_degree_days}")
+    if baseline_degree_days == 0:
+        return 0.0
+    return round(current_degree_days / baseline_degree_days, 4)
+
+
 __all__ = [
     "DEFAULT_BASE_TEMPERATURE_C",
     "NormalizedComparison",
     "compare_periods",
     "cooling_degree_days",
+    "degree_day_ratio",
     "heating_degree_days",
     "normalization_factor",
     "normalize_consumption",

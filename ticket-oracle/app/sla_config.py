@@ -79,8 +79,7 @@ def sla_summary(
     return {
         "priority": priority,
         "customer_tier": customer_tier,
-        "sla_window_hours": SLA_HOURS.get(priority, 24.0)
-        * TIER_MULTIPLIERS.get(customer_tier, 1.0),
+        "sla_window_hours": SLA_HOURS.get(priority, 24.0) * TIER_MULTIPLIERS.get(customer_tier, 1.0),
         "minutes_remaining": remaining,
         "breached": remaining < 0,
     }

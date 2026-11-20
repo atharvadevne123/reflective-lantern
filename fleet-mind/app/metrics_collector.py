@@ -14,7 +14,6 @@ logger = logging.getLogger(__name__)
 
 try:
     from prometheus_client import Counter, Histogram  # type: ignore[import]
-
     _HAS_PROMETHEUS = True
 
     PREDICTIONS_TOTAL = Counter(
@@ -83,33 +82,3 @@ def get_in_memory_metrics() -> dict[str, Any]:
         "avg_latency_ms": round(avg_latency * 1000, 2),
         "drift_counts": {k[6:]: v for k, v in _counters.items() if k.startswith("drift_")},
     }
-
-
-def reset_in_memory_metrics() -> None:
-    """Reset all in-memory counters and latency history."""
-    _counters.clear()
-    _latencies.clear()
-    logger.info("In-memory metrics reset")
-
-
-def p99_latency_ms() -> float | None:
-    """Return the 99th-percentile latency in milliseconds, or None if no data.
-
-    Returns:
-        P99 latency rounded to 2 decimal places, or None when empty.
-    """
-    if not _latencies:
-        return None
-    sorted_lats = sorted(_latencies)
-    idx = max(0, int(len(sorted_lats) * 0.99) - 1)
-    return round(sorted_lats[idx] * 1000, 2)
-
-
-def record_cache_hit(hit: bool) -> None:
-    """Increment the cache hit or miss counter.
-
-    Args:
-        hit: True for a cache hit, False for a cache miss.
-    """
-    key = "cache_hits" if hit else "cache_misses"
-    _counters[key] += 1

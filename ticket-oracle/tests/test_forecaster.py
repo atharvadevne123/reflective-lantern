@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import pytest
-
 from app.forecaster import (
     compute_sma,
     detect_volume_spike,

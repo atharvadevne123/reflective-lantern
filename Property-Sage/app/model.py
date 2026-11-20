@@ -260,18 +260,16 @@ def batch_predict(
     prices = price_model.predict(X).tolist()
     yields = np.clip(rental_model.predict(X), 0.01, 0.20).tolist()
     results = []
-    for price, rental_yield in zip(prices, yields, strict=False):
+    for price, rental_yield in zip(prices, yields):
         price = float(price)
         rental_yield = float(rental_yield)
         annual_rental = price * rental_yield
-        results.append(
-            {
-                "predicted_price": round(price, 2),
-                "predicted_rental_yield": round(rental_yield, 4),
-                "estimated_annual_rental": round(annual_rental, 2),
-                "estimated_monthly_rental": round(annual_rental / 12, 2),
-            }
-        )
+        results.append({
+            "predicted_price": round(price, 2),
+            "predicted_rental_yield": round(rental_yield, 4),
+            "estimated_annual_rental": round(annual_rental, 2),
+            "estimated_monthly_rental": round(annual_rental / 12, 2),
+        })
     return results
 
 
@@ -282,7 +280,6 @@ def get_model_version() -> str:
         ISO-format date of the most recent training run, or 'unknown'.
     """
     import datetime
-
     if METRICS_PATH.exists():
         try:
             mtime = METRICS_PATH.stat().st_mtime

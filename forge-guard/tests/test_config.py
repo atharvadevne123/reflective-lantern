@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 
-def test_get_settings_returns_singleton():
+def test_get_settings_returns_singleton() -> None:
     from app.config import get_settings
 
     s1 = get_settings()
@@ -11,7 +11,7 @@ def test_get_settings_returns_singleton():
     assert s1 is s2
 
 
-def test_settings_defaults():
+def test_settings_defaults() -> None:
     from app.config import get_settings
 
     s = get_settings()
@@ -21,14 +21,14 @@ def test_settings_defaults():
     assert s.drift_p_threshold == 0.05
 
 
-def test_settings_model_version_default():
+def test_settings_model_version_default() -> None:
     from app.config import get_settings
 
     s = get_settings()
     assert s.model_version == "1.0.0"
 
 
-def test_settings_cors_origins_is_list():
+def test_settings_cors_origins_is_list() -> None:
     from app.config import get_settings
 
     s = get_settings()
@@ -36,7 +36,7 @@ def test_settings_cors_origins_is_list():
     assert len(s.cors_origins) >= 1
 
 
-def test_settings_faiss_defaults():
+def test_settings_faiss_defaults() -> None:
     from app.config import get_settings
 
     s = get_settings()
@@ -44,7 +44,7 @@ def test_settings_faiss_defaults():
     assert s.faiss_k_neighbours >= 1
 
 
-def test_settings_lag_and_rolling_defaults():
+def test_settings_lag_and_rolling_defaults() -> None:
     from app.config import get_settings
 
     s = get_settings()
@@ -52,35 +52,35 @@ def test_settings_lag_and_rolling_defaults():
     assert s.rolling_window == 5
 
 
-def test_settings_database_url_default():
+def test_settings_database_url_default() -> None:
     from app.config import get_settings
 
     s = get_settings()
     assert "forge_guard" in s.database_url
 
 
-def test_settings_s3_bucket_default_empty():
+def test_settings_s3_bucket_default_empty() -> None:
     from app.config import get_settings
 
     s = get_settings()
     assert s.s3_bucket == "" or isinstance(s.s3_bucket, str)
 
 
-def test_settings_drift_window_size_positive():
+def test_settings_drift_window_size_positive() -> None:
     from app.config import get_settings
 
     s = get_settings()
     assert s.drift_window_size > 0
 
 
-def test_settings_log_json_default_false():
+def test_settings_log_json_default_false() -> None:
     from app.config import get_settings
 
     s = get_settings()
     assert s.log_json is False
 
 
-def test_settings_rate_limit_positive():
+def test_settings_rate_limit_positive() -> None:
     from app.config import get_settings
 
     s = get_settings()
@@ -122,3 +122,39 @@ class TestNewForgeGuardSettings:
         get_settings.cache_clear()
         s = get_settings()
         assert s.db_pool_size == 5
+
+
+class TestConfigEdgeCases:
+    """Edge-case tests for forge-guard settings validation."""
+
+    def test_singleton_survives_repeated_calls(self) -> None:
+        from app.config import get_settings
+
+        get_settings.cache_clear()
+        instances = [get_settings() for _ in range(5)]
+        assert all(i is instances[0] for i in instances[1:])
+
+    def test_drift_p_threshold_less_than_one(self) -> None:
+        from app.config import get_settings
+
+        s = get_settings()
+        assert s.drift_p_threshold < 1.0
+
+    def test_faiss_k_neighbours_at_least_one(self) -> None:
+        from app.config import get_settings
+
+        s = get_settings()
+        assert s.faiss_k_neighbours >= 1
+
+    def test_drift_window_hours_positive(self) -> None:
+        from app.config import get_settings
+
+        s = get_settings()
+        assert s.drift_window_hours > 0
+
+    def test_rate_limit_rpm_positive_integer(self) -> None:
+        from app.config import get_settings
+
+        s = get_settings()
+        assert isinstance(s.rate_limit_rpm, int)
+        assert s.rate_limit_rpm > 0

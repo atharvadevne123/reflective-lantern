@@ -34,12 +34,7 @@ def compute_ks_drift(reference: list[float], current: list[float]) -> dict[str, 
         Dictionary with ks_statistic, p_value, and drift_detected flag.
     """
     if len(reference) < 5 or len(current) < 5:
-        return {
-            "ks_statistic": 0.0,
-            "p_value": 1.0,
-            "drift_detected": False,
-            "sample_size": len(current),
-        }
+        return {"ks_statistic": 0.0, "p_value": 1.0, "drift_detected": False, "sample_size": len(current)}
     stat, p = ks_2samp(reference, current)
     result = {
         "ks_statistic": round(float(stat), 4),
@@ -154,9 +149,7 @@ def log_prediction(
     db.add(row)
     db.commit()
     db.refresh(row)
-    logger.info(
-        "prediction_logged", extra={"ticket_id": ticket_id, "priority": prediction["priority"]}
-    )
+    logger.info("prediction_logged", extra={"ticket_id": ticket_id, "priority": prediction["priority"]})
     return row
 
 

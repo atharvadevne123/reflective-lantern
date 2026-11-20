@@ -60,22 +60,47 @@ class BatchProcessor(Generic[T, R]):
 
     def __init__(
         self,
-        processor: Callable[[list[T]], list[R]],
+        processor: Callable[[list[T]], list[R]] | None = None,
         batch_size: int = 100,
         error_handling: str = "raise",
         on_batch_done: Callable[[BatchResult[R]], None] | None = None,
+        *,
+        fn: Callable | None = None,
     ) -> None:
+        """Configure the batch processor with size, error-handling, and callback.
+
+        Args:
+            processor: Callable that transforms a list of input items into results.
+            batch_size: Maximum items per batch (must be >= 1).
+            error_handling: ``'raise'`` re-raises on first error; ``'collect'`` captures.
+            on_batch_done: Optional callback invoked with each completed BatchResult.
+            fn: Alias for processor; applies function to each item individually.
+        """
         if batch_size < 1:
             raise ValueError("batch_size must be >= 1")
         if error_handling not in ("raise", "collect"):
             raise ValueError("error_handling must be 'raise' or 'collect'")
-        self.processor = processor
+        if fn is not None:
+            self._item_fn = fn
+            self.processor = lambda items: [fn(x) for x in items]
+        else:
+            self._item_fn = None
+            self.processor = processor  # type: ignore[assignment]
         self.batch_size = batch_size
         self.error_handling = error_handling
         self.on_batch_done = on_batch_done
 
     @staticmethod
     def _chunk(items: list[T], size: int) -> Iterator[list[T]]:
+        """Yield successive fixed-size slices of *items*.
+
+        Args:
+            items: Sequence to split.
+            size: Maximum elements per yielded chunk.
+
+        Yields:
+            Consecutive sublists of *items* each containing at most *size* elements.
+        """
         for i in range(0, len(items), size):
             yield items[i : i + size]
 
@@ -132,5 +157,57 @@ class BatchProcessor(Generic[T, R]):
             total_errors=total_errors,
         )
 
+    def run_stream(self, items: list[T]) -> Iterator[BatchResult[R]]:
+        """Yield a :class:`BatchResult` for each batch as it completes.
 
-__all__ = ["BatchProcessor", "BatchResult", "RunSummary"]
+        Unlike :meth:`run`, this yields results incrementally so callers
+        can process or stream output before all batches finish.
+        """
+        for batch_index, batch in enumerate(self._chunk(items, self.batch_size)):
+            errors: list[Exception] = []
+            results: list[R] = []
+            try:
+                results = self.processor(batch)
+            except Exception as exc:
+                if self.error_handling == "raise":
+                    raise
+                errors.append(exc)
+                logger.error("Batch %d failed: %s", batch_index, exc)
+
+            br = BatchResult(
+                batch_index=batch_index,
+                items_processed=len(batch),
+                results=results,
+                errors=errors,
+            )
+            if self.on_batch_done:
+                try:
+                    self.on_batch_done(br)
+                except Exception as cb_exc:
+                    logger.warning("on_batch_done callback failed: %s", cb_exc)
+            yield br
+
+    def batch_count(self, total_items: int) -> int:
+        """Return the number of batches needed for *total_items*."""
+        if total_items <= 0:
+            return 0
+        return (total_items + self.batch_size - 1) // self.batch_size
+
+
+def success_rate(summary: RunSummary) -> float:
+    """Return the fraction of items that produced a result (not an error).
+
+    Args:
+        summary: RunSummary from a completed batch run.
+
+    Returns:
+        Success rate in [0.0, 1.0] rounded to 4 decimal places.
+        Returns 0.0 when *total_items* is zero.
+    """
+    if summary.total_items <= 0:
+        return 0.0
+    ok = summary.total_items - summary.total_errors
+    return round(max(0.0, ok) / summary.total_items, 4)
+
+
+__all__ = ["BatchProcessor", "BatchResult", "RunSummary", "success_rate"]

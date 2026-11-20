@@ -32,7 +32,9 @@ def configure_logging(level: str = "INFO", json_output: bool = False) -> None:
     if json_output:
         handler.setFormatter(_JsonFormatter())
     else:
-        handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)-8s %(name)s: %(message)s"))
+        handler.setFormatter(
+            logging.Formatter("%(asctime)s %(levelname)-8s %(name)s: %(message)s")
+        )
 
     root = logging.getLogger()
     root.setLevel(getattr(logging, level.upper(), logging.INFO))

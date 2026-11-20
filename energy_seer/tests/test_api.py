@@ -6,31 +6,31 @@ import pytest
 
 
 class TestHealthEndpoint:
-    def test_health_returns_ok(self, client):
+    def test_health_returns_ok(self, client) -> None:
         resp = client.get("/api/v1/health")
         assert resp.status_code == 200
         data = resp.json()
         assert data["status"] == "ok"
         assert "version" in data
 
-    def test_health_has_model_loaded_flag(self, client):
+    def test_health_has_model_loaded_flag(self, client) -> None:
         resp = client.get("/api/v1/health")
         assert "model_loaded" in resp.json()
 
 
 class TestMetricsEndpoint:
-    def test_metrics_returns_200(self, client):
+    def test_metrics_returns_200(self, client) -> None:
         resp = client.get("/api/v1/metrics")
         assert resp.status_code == 200
 
-    def test_metrics_has_expected_keys(self, client):
+    def test_metrics_has_expected_keys(self, client) -> None:
         data = client.get("/api/v1/metrics").json()
         assert "model_metrics" in data
         assert "prediction_stats" in data
 
 
 class TestPredictEndpoint:
-    def test_predict_single_reading(self, client, sample_reading):
+    def test_predict_single_reading(self, client, sample_reading) -> None:
         payload = {"readings": [sample_reading], "horizon_h": 1}
         resp = client.post("/api/v1/predict", json=payload)
         assert resp.status_code == 200
@@ -40,13 +40,13 @@ class TestPredictEndpoint:
         assert data["horizon_h"] == 1
         assert data["meter_ids"] == ["meter_001"]
 
-    def test_predict_multiple_readings(self, client, sample_readings):
+    def test_predict_multiple_readings(self, client, sample_readings) -> None:
         payload = {"readings": sample_readings, "horizon_h": 1}
         resp = client.post("/api/v1/predict", json=payload)
         assert resp.status_code == 200
         assert len(resp.json()["predictions_kwh"]) == 3
 
-    def test_predict_horizon_multiplies_output(self, client, sample_reading):
+    def test_predict_horizon_multiplies_output(self, client, sample_reading) -> None:
         r1 = client.post(
             "/api/v1/predict", json={"readings": [sample_reading], "horizon_h": 1}
         ).json()
@@ -55,36 +55,36 @@ class TestPredictEndpoint:
         ).json()
         assert r6["predictions_kwh"][0] > r1["predictions_kwh"][0]
 
-    def test_predict_invalid_building_type(self, client, sample_reading):
+    def test_predict_invalid_building_type(self, client, sample_reading) -> None:
         bad = {**sample_reading, "building_type": "spaceship"}
         resp = client.post("/api/v1/predict", json={"readings": [bad], "horizon_h": 1})
         assert resp.status_code == 422
 
-    def test_predict_negative_consumption_rejected(self, client, sample_reading):
+    def test_predict_negative_consumption_rejected(self, client, sample_reading) -> None:
         bad = {**sample_reading, "consumption_kwh": -5.0}
         resp = client.post("/api/v1/predict", json={"readings": [bad], "horizon_h": 1})
         assert resp.status_code == 422
 
-    def test_predict_empty_readings_rejected(self, client):
+    def test_predict_empty_readings_rejected(self, client) -> None:
         resp = client.post("/api/v1/predict", json={"readings": [], "horizon_h": 1})
         assert resp.status_code == 422
 
     @pytest.mark.parametrize("hour", [0, 6, 12, 18, 23])
-    def test_predict_various_hours(self, client, sample_reading, hour):
+    def test_predict_various_hours(self, client, sample_reading, hour) -> None:
         reading = {**sample_reading, "hour_of_day": hour}
         resp = client.post("/api/v1/predict", json={"readings": [reading], "horizon_h": 1})
         assert resp.status_code == 200
         assert resp.json()["predictions_kwh"][0] >= 0
 
     @pytest.mark.parametrize("building", ["residential", "commercial", "industrial", "office"])
-    def test_predict_building_types(self, client, sample_reading, building):
+    def test_predict_building_types(self, client, sample_reading, building) -> None:
         reading = {**sample_reading, "building_type": building}
         resp = client.post("/api/v1/predict", json={"readings": [reading], "horizon_h": 1})
         assert resp.status_code == 200
 
 
 class TestAnomalyEndpoint:
-    def test_anomaly_normal_consumption(self, client, sample_reading):
+    def test_anomaly_normal_consumption(self, client, sample_reading) -> None:
         payload = {"meter_id": "meter_001", "consumption_kwh": 4.5}
         resp = client.post("/api/v1/anomaly", json=payload)
         assert resp.status_code == 200
@@ -93,25 +93,25 @@ class TestAnomalyEndpoint:
         assert "anomaly_score" in data
         assert "severity" in data
 
-    def test_anomaly_high_consumption_flagged(self, client):
+    def test_anomaly_high_consumption_flagged(self, client) -> None:
         payload = {"meter_id": "meter_001", "consumption_kwh": 9999.0}
         resp = client.post("/api/v1/anomaly", json=payload)
         assert resp.status_code == 200
         data = resp.json()
         assert data["is_anomaly"] is True
 
-    def test_anomaly_returns_anomaly_type(self, client):
+    def test_anomaly_returns_anomaly_type(self, client) -> None:
         resp = client.post("/api/v1/anomaly", json={"meter_id": "m1", "consumption_kwh": 5.0})
         assert "anomaly_type" in resp.json()
 
     @pytest.mark.parametrize("kwh", [0.1, 2.0, 5.0, 10.0, 20.0])
-    def test_anomaly_various_consumption_levels(self, client, kwh):
+    def test_anomaly_various_consumption_levels(self, client, kwh) -> None:
         resp = client.post("/api/v1/anomaly", json={"meter_id": "m1", "consumption_kwh": kwh})
         assert resp.status_code == 200
 
 
 class TestDriftEndpoint:
-    def test_drift_no_drift(self, client):
+    def test_drift_no_drift(self, client) -> None:
         payload = {"feature_values": {"consumption_kwh": [3.0, 4.0, 3.5, 4.2, 3.8, 3.9, 4.1]}}
         resp = client.post("/api/v1/drift", json=payload)
         assert resp.status_code == 200
@@ -119,12 +119,12 @@ class TestDriftEndpoint:
         assert "feature_results" in data
         assert "drift_detected" in data
 
-    def test_drift_detects_shift(self, client):
+    def test_drift_detects_shift(self, client) -> None:
         payload = {"feature_values": {"consumption_kwh": [100.0] * 20}}
         resp = client.post("/api/v1/drift", json=payload)
         assert resp.status_code == 200
 
-    def test_drift_multiple_features(self, client):
+    def test_drift_multiple_features(self, client) -> None:
         payload = {
             "feature_values": {
                 "consumption_kwh": [3.0, 4.0, 3.5, 4.2, 3.8],
@@ -139,7 +139,7 @@ class TestDriftEndpoint:
 
 
 class TestForecastEndpoint:
-    def test_forecast_returns_steps(self, client, sample_reading):
+    def test_forecast_returns_steps(self, client, sample_reading) -> None:
         payload = {"readings": [sample_reading], "steps": 6}
         resp = client.post("/api/v1/forecast", json=payload)
         assert resp.status_code == 200
@@ -147,14 +147,14 @@ class TestForecastEndpoint:
         assert data["steps"] == 6
         assert len(data["forecast"]) == 6
 
-    def test_forecast_24h(self, client, sample_reading):
+    def test_forecast_24h(self, client, sample_reading) -> None:
         resp = client.post("/api/v1/forecast", json={"readings": [sample_reading], "steps": 24})
         assert resp.status_code == 200
         assert len(resp.json()["forecast"]) == 24
 
 
 class TestBatchPredictEndpoint:
-    def test_batch_predict(self, client, sample_readings):
+    def test_batch_predict(self, client, sample_readings) -> None:
         payload = {"readings": sample_readings, "horizon_h": 1}
         resp = client.post("/api/v1/batch-predict", json=payload)
         assert resp.status_code == 200
@@ -164,7 +164,7 @@ class TestBatchPredictEndpoint:
 
 
 class TestRetrain:
-    def test_retrain_returns_202(self, client):
+    def test_retrain_returns_202(self, client) -> None:
         resp = client.post("/api/v1/retrain")
         assert resp.status_code == 202
         data = resp.json()

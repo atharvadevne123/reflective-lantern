@@ -12,7 +12,6 @@ from app.similarity import build_index, is_index_built, search_similar
 def reset_index():
     """Reset similarity module state between tests."""
     import app.similarity as sim
-
     sim._index = None
     sim._metadata = []
     yield

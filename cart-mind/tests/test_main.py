@@ -56,11 +56,11 @@ class TestPredictEndpoint:
             "wishlist_flag": 0,
             "same_category_purchases": 3,
         }
-        resp = client.post("/api/v1/predict", json=payload)
+        resp = client.post("/api/v1/predict/intent", json=payload)
         assert resp.status_code in (200, 201, 400, 422, 500)
 
     def test_predict_empty_payload(self, client: TestClient) -> None:
-        resp = client.post("/api/v1/predict", json={})
+        resp = client.post("/api/v1/predict/intent", json={})
         assert resp.status_code in (400, 422, 500)
 
 

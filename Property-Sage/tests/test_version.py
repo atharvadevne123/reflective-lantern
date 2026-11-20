@@ -1,5 +1,4 @@
 """Tests for version module."""
-
 from app.version import VERSION, VERSION_INFO, get_version
 
 

@@ -974,7 +974,9 @@ class TestKurtosis:
         from app.stats_utils import kurtosis
 
         values = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0]
-        assert kurtosis(values, excess=False) == pytest.approx(kurtosis(values, excess=True) + 3.0, abs=1e-4)
+        assert kurtosis(values, excess=False) == pytest.approx(
+            kurtosis(values, excess=True) + 3.0, abs=1e-4
+        )
 
     def test_too_few_values_raises(self) -> None:
         from app.stats_utils import kurtosis
@@ -1461,3 +1463,375 @@ def test_rolling_rmse_output_length(window: int, input_len: int) -> None:
     predicted = [v + 0.1 for v in actual]
     result = rolling_rmse(actual, predicted, window)
     assert len(result) == input_len
+
+
+@pytest.mark.parametrize("values", [[1.0], [1.0, 2.0, 3.0], [2.0, 2.0, 2.0]])
+def test_geometric_mean_positive_for_positive_inputs(values) -> None:
+    """geometric_mean returns a positive value when all inputs are positive."""
+    assert geometric_mean(values) > 0.0
+
+
+@pytest.mark.parametrize(
+    "values,expected",
+    [
+        ([1.0], 1.0),
+        ([4.0, 1.0], 2.0),
+        ([8.0, 1.0, 1.0], 2.0),
+    ],
+)
+def test_geometric_mean_simple_cases(values, expected: float) -> None:
+    """geometric_mean returns the correct value for simple known inputs."""
+    assert geometric_mean(values) == pytest.approx(expected, rel=1e-6)
+
+
+@pytest.mark.parametrize("n", [5, 10, 20])
+def test_normalize_series_output_length_matches_input(n: int) -> None:
+    """normalize_series preserves the input length."""
+    from app.stats_utils import normalize_series
+
+    values = [float(i) for i in range(1, n + 1)]
+    result = normalize_series(values)
+    assert len(result) == n
+
+
+@pytest.mark.parametrize("n", [5, 10, 20])
+def test_exponential_moving_average_length_matches_input(n: int) -> None:
+    """exponential_moving_average returns a series of the same length."""
+    from app.stats_utils import exponential_moving_average
+
+    values = [float(i) for i in range(n)]
+    result = exponential_moving_average(values, alpha=0.3)
+    assert len(result) == n
+
+
+@pytest.mark.parametrize("window", [2, 3, 5])
+def test_rolling_std_length_matches_input(window: int) -> None:
+    """rolling_std returns a series whose length equals the input length."""
+    from app.stats_utils import rolling_std
+
+    values = [float(i) for i in range(20)]
+    result = rolling_std(values, window=window)
+    assert len(result) == len(values)
+
+
+class TestWinsorizeEdgeCases:
+    def test_constant_series_unchanged(self) -> None:
+        from app.stats_utils import winsorize
+
+        values = [5.0] * 20
+        result = winsorize(values)
+        assert result == pytest.approx(values)
+
+    @pytest.mark.parametrize("n", [10, 20, 50])
+    def test_output_length_matches_input(self, n: int) -> None:
+        from app.stats_utils import winsorize
+
+        values = [float(i) for i in range(n)]
+        result = winsorize(values)
+        assert len(result) == n
+
+    def test_no_values_exceed_upper_bound(self) -> None:
+        from app.stats_utils import winsorize
+
+        values = list(range(100))
+        result = winsorize([float(v) for v in values], lower_pct=5.0, upper_pct=95.0)
+        assert max(result) <= 95.0
+
+
+class TestComputeEntropyExtended:
+    def test_uniform_distribution_has_max_entropy(self) -> None:
+        from app.stats_utils import compute_entropy
+
+        equal = [1.0, 1.0, 1.0, 1.0]
+        skewed = [4.0, 0.1, 0.1, 0.1]
+        assert compute_entropy(equal) > compute_entropy(skewed)
+
+    def test_zero_values_are_ignored(self) -> None:
+        from app.stats_utils import compute_entropy
+
+        result = compute_entropy([1.0, 0.0, 1.0, 0.0])
+        assert result >= 0.0
+
+    @pytest.mark.parametrize("n", [2, 4, 8])
+    def test_entropy_non_negative(self, n: int) -> None:
+        from app.stats_utils import compute_entropy
+
+        values = [1.0] * n
+        assert compute_entropy(values) >= 0.0
+
+
+class TestComputeCorrelationExtended:
+    def test_perfect_positive_correlation(self) -> None:
+        from app.stats_utils import compute_correlation
+
+        x = [1.0, 2.0, 3.0, 4.0, 5.0]
+        assert compute_correlation(x, x) == pytest.approx(1.0)
+
+    def test_perfect_negative_correlation(self) -> None:
+        from app.stats_utils import compute_correlation
+
+        x = [1.0, 2.0, 3.0, 4.0, 5.0]
+        neg = [-v for v in x]
+        assert compute_correlation(x, neg) == pytest.approx(-1.0)
+
+    def test_correlation_in_minus_one_to_one(self) -> None:
+        from app.stats_utils import compute_correlation
+
+        x = [1.0, 3.0, 2.0, 5.0, 4.0]
+        y = [2.0, 1.0, 4.0, 3.0, 5.0]
+        r = compute_correlation(x, y)
+        assert -1.0 <= r <= 1.0
+
+
+class TestComputeSkewnessExtended:
+    def test_symmetric_data_near_zero(self) -> None:
+        from app.stats_utils import compute_skewness
+
+        symmetric = [1.0, 2.0, 3.0, 4.0, 5.0]
+        assert abs(compute_skewness(symmetric)) < 0.1
+
+    def test_right_skewed_positive(self) -> None:
+        from app.stats_utils import compute_skewness
+
+        right_skewed = [1.0, 1.0, 1.0, 1.0, 10.0]
+        assert compute_skewness(right_skewed) > 0.0
+
+    @pytest.mark.parametrize("n", [5, 10, 20])
+    def test_skewness_finite_for_valid_data(self, n: int) -> None:
+        import math
+
+        from app.stats_utils import compute_skewness
+
+        values = list(range(1, n + 1))
+        result = compute_skewness([float(v) for v in values])
+        assert math.isfinite(result)
+
+
+class TestGeometricMeanExtended:
+    def test_unit_values_give_one(self) -> None:
+        from app.stats_utils import geometric_mean
+
+        assert geometric_mean([1.0] * 5) == pytest.approx(1.0)
+
+    def test_single_value_returns_itself(self) -> None:
+        from app.stats_utils import geometric_mean
+
+        assert geometric_mean([4.0]) == pytest.approx(4.0)
+
+    @pytest.mark.parametrize("n", [2, 5, 10])
+    def test_positive_values_give_positive_mean(self, n: int) -> None:
+        from app.stats_utils import geometric_mean
+
+        values = [float(i + 1) for i in range(n)]
+        assert geometric_mean(values) > 0.0
+
+
+class TestWeightedAverage:
+    def test_equal_weights_matches_mean(self) -> None:
+        from app.stats_utils import weighted_average
+
+        values = [1.0, 2.0, 3.0, 4.0]
+        weights = [1.0] * 4
+        assert weighted_average(values, weights) == pytest.approx(2.5)
+
+    def test_zero_weight_item_excluded(self) -> None:
+        from app.stats_utils import weighted_average
+
+        values = [1.0, 10.0, 1.0]
+        weights = [1.0, 0.0, 1.0]
+        result = weighted_average(values, weights)
+        assert result == pytest.approx(1.0)
+
+    @pytest.mark.parametrize("n", [3, 5, 7])
+    def test_result_within_value_range(self, n: int) -> None:
+        from app.stats_utils import weighted_average
+
+        values = [float(i + 1) for i in range(n)]
+        weights = [1.0] * n
+        result = weighted_average(values, weights)
+        assert min(values) <= result <= max(values)
+
+
+class TestInterquartileRangeExtended:
+    def test_constant_series_gives_zero(self) -> None:
+        from app.stats_utils import interquartile_range
+
+        assert interquartile_range([5.0] * 10) == pytest.approx(0.0)
+
+    def test_non_negative_result(self) -> None:
+        from app.stats_utils import interquartile_range
+
+        values = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0]
+        assert interquartile_range(values) >= 0.0
+
+    @pytest.mark.parametrize("n", [8, 12, 20])
+    def test_iqr_less_than_range(self, n: int) -> None:
+        from app.stats_utils import interquartile_range
+
+        values = [float(i) for i in range(n)]
+        iqr = interquartile_range(values)
+        full_range = values[-1] - values[0]
+        assert iqr <= full_range
+
+
+class TestClampAndSafeDivide:
+    def test_clamp_within_range(self) -> None:
+        from app.stats_utils import clamp
+
+        assert clamp(5.0, 0.0, 10.0) == 5.0
+
+    def test_clamp_below_low(self) -> None:
+        from app.stats_utils import clamp
+
+        assert clamp(-1.0, 0.0, 10.0) == 0.0
+
+    def test_clamp_above_high(self) -> None:
+        from app.stats_utils import clamp
+
+        assert clamp(15.0, 0.0, 10.0) == 10.0
+
+    @pytest.mark.parametrize("v,lo,hi,expected", [(0.0, 0.0, 1.0, 0.0), (1.0, 0.0, 1.0, 1.0)])
+    def test_clamp_at_boundaries(self, v, lo, hi, expected) -> None:
+        from app.stats_utils import clamp
+
+        assert clamp(v, lo, hi) == expected
+
+    def test_safe_divide_normal(self) -> None:
+        from app.stats_utils import safe_divide
+
+        assert safe_divide(10.0, 2.0) == pytest.approx(5.0)
+
+    def test_safe_divide_by_zero_returns_default(self) -> None:
+        from app.stats_utils import safe_divide
+
+        assert safe_divide(10.0, 0.0) == 0.0
+
+    def test_safe_divide_custom_default(self) -> None:
+        from app.stats_utils import safe_divide
+
+        assert safe_divide(10.0, 0.0, default=-1.0) == -1.0
+
+
+class TestRunningMeanExtended:
+    def test_empty_returns_empty(self) -> None:
+        from app.stats_utils import running_mean
+
+        assert running_mean([]) == []
+
+    def test_single_value(self) -> None:
+        from app.stats_utils import running_mean
+
+        assert running_mean([5.0]) == pytest.approx([5.0])
+
+    def test_increasing_series(self) -> None:
+        from app.stats_utils import running_mean
+
+        result = running_mean([1.0, 2.0, 3.0])
+        assert result[0] == pytest.approx(1.0)
+        assert result[-1] == pytest.approx(2.0)
+
+    def test_same_length_as_input(self) -> None:
+        from app.stats_utils import running_mean
+
+        values = [1.0, 2.0, 3.0, 4.0]
+        assert len(running_mean(values)) == len(values)
+
+
+class TestTrimmedMeanExtended:
+    def test_empty_raises(self) -> None:
+        from app.stats_utils import trimmed_mean
+
+        with pytest.raises(ValueError):
+            trimmed_mean([])
+
+    def test_no_trim_equals_mean(self) -> None:
+        from app.stats_utils import trimmed_mean
+
+        values = [1.0, 2.0, 3.0, 4.0, 5.0]
+        result = trimmed_mean(values, trim_pct=0.0)
+        assert result == pytest.approx(3.0)
+
+    def test_trim_removes_extremes(self) -> None:
+        from app.stats_utils import trimmed_mean
+
+        values = [0.0, 1.0, 2.0, 3.0, 100.0]
+        trimmed = trimmed_mean(values, trim_pct=0.2)
+        assert trimmed < 100.0
+
+    @pytest.mark.parametrize("trim_pct", [0.0, 0.1, 0.2])
+    def test_valid_trim_pcts(self, trim_pct: float) -> None:
+        from app.stats_utils import trimmed_mean
+
+        result = trimmed_mean([1.0, 2.0, 3.0, 4.0, 5.0], trim_pct=trim_pct)
+        assert isinstance(result, float)
+
+
+@pytest.mark.parametrize(
+    "actual,predicted,expected_approx",
+    [
+        ([1.0, 2.0, 3.0], [1.0, 2.0, 3.0], 0.0),
+        ([0.0, 0.0, 0.0], [1.0, 1.0, 1.0], 1.0),
+        ([1.0, 3.0], [2.0, 4.0], 1.0),
+    ],
+)
+def test_mae_parametrized_new(actual: list, predicted: list, expected_approx: float) -> None:
+    from app.stats_utils import mean_absolute_error
+
+    result = mean_absolute_error(actual, predicted)
+    assert result == pytest.approx(expected_approx, abs=1e-4)
+
+
+@pytest.mark.parametrize(
+    "values,z_threshold,expected_fraction",
+    [
+        ([0.0] * 100, 3.0, 0.0),
+        (list(range(100)), 10.0, 0.0),
+    ],
+)
+def test_outlier_fraction_parametrized(
+    values: list, z_threshold: float, expected_fraction: float
+) -> None:
+    from app.stats_utils import outlier_fraction
+
+    result = outlier_fraction(values, z_threshold=z_threshold)
+    assert result == pytest.approx(expected_fraction, abs=0.05)
+
+
+class TestSignChanges:
+    def test_empty_list_returns_zero(self) -> None:
+        from app.stats_utils import sign_changes
+
+        assert sign_changes([]) == 0
+
+    def test_single_value_returns_zero(self) -> None:
+        from app.stats_utils import sign_changes
+
+        assert sign_changes([1.0]) == 0
+
+    def test_no_sign_changes(self) -> None:
+        from app.stats_utils import sign_changes
+
+        assert sign_changes([1.0, 2.0, 3.0]) == 0
+
+    def test_all_sign_changes(self) -> None:
+        from app.stats_utils import sign_changes
+
+        assert sign_changes([1.0, -1.0, 1.0, -1.0]) == 3
+
+    def test_alternating_returns_count(self) -> None:
+        from app.stats_utils import sign_changes
+
+        assert sign_changes([-1.0, 1.0]) == 1
+
+    @pytest.mark.parametrize(
+        "values,expected",
+        [
+            ([1.0, 2.0, 3.0], 0),
+            ([1.0, -1.0], 1),
+            ([1.0, -1.0, 1.0], 2),
+        ],
+    )
+    def test_parametrized_sign_changes(self, values: list, expected: int) -> None:
+        from app.stats_utils import sign_changes
+
+        assert sign_changes(values) == expected

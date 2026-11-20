@@ -88,7 +88,11 @@ class TestEfficiencyGradeThresholds:
         assert EFFICIENCY_GRADE_B_THRESHOLD > EFFICIENCY_GRADE_C_THRESHOLD
 
     def test_all_in_unit_interval(self) -> None:
-        for val in [EFFICIENCY_GRADE_A_THRESHOLD, EFFICIENCY_GRADE_B_THRESHOLD, EFFICIENCY_GRADE_C_THRESHOLD]:
+        for val in [
+            EFFICIENCY_GRADE_A_THRESHOLD,
+            EFFICIENCY_GRADE_B_THRESHOLD,
+            EFFICIENCY_GRADE_C_THRESHOLD,
+        ]:
             assert 0.0 < val < 1.0
 
 
@@ -129,3 +133,130 @@ def test_grid_intensity_has_expected_regions(region: str) -> None:
 )
 def test_range_constants_lo_less_than_hi(lo: float, hi: float) -> None:
     assert lo < hi
+
+
+def test_efficiency_grade_thresholds_decreasing() -> None:
+    assert (
+        EFFICIENCY_GRADE_A_THRESHOLD > EFFICIENCY_GRADE_B_THRESHOLD > EFFICIENCY_GRADE_C_THRESHOLD
+    )
+
+
+def test_grid_intensity_dict_is_nonempty() -> None:
+    assert len(GRID_INTENSITY_KG_PER_KWH) > 0
+
+
+@pytest.mark.parametrize(
+    "key,expected_type",
+    [
+        ("DEFAULT_CACHE_MAX_SIZE", int),
+        ("DEFAULT_CACHE_TTL_SECONDS", (int, float)),
+        ("DEFAULT_RATE_LIMIT_PER_MINUTE", int),
+        ("MAX_FORECAST_HORIZON", int),
+    ],
+)
+def test_config_constants_have_correct_types(key: str, expected_type) -> None:
+    import app.constants as c
+
+    assert isinstance(getattr(c, key), expected_type)
+
+
+@pytest.mark.parametrize(
+    "key",
+    [
+        "ZSCORE_THRESHOLD",
+        "IQR_MULTIPLIER",
+        "MIN_REFERENCE_SIZE",
+        "REFERENCE_WINDOW_SIZE",
+        "DRIFT_P_THRESHOLD",
+        "MAX_CONSUMPTION_KWH",
+        "MIN_CONSUMPTION_KWH",
+    ],
+)
+def test_statistical_constants_are_numeric(key: str) -> None:
+    """Statistical constants must be numeric (int or float)."""
+    import app.constants as c
+
+    assert isinstance(getattr(c, key), (int, float))
+
+
+@pytest.mark.parametrize(
+    "lower,upper",
+    [
+        ("MIN_CONSUMPTION_KWH", "MAX_CONSUMPTION_KWH"),
+        ("MIN_TEMPERATURE_C", "MAX_TEMPERATURE_C"),
+        ("MIN_HUMIDITY_PCT", "MAX_HUMIDITY_PCT"),
+    ],
+)
+def test_min_is_less_than_max(lower: str, upper: str) -> None:
+    """Every MIN_* constant is strictly less than its corresponding MAX_*."""
+    import app.constants as c
+
+    assert getattr(c, lower) < getattr(c, upper)
+
+
+class TestGradeThresholdOrdering:
+    def test_grade_thresholds_ordered(self) -> None:
+        import app.constants as c
+
+        assert (
+            c.EFFICIENCY_GRADE_C_THRESHOLD
+            < c.EFFICIENCY_GRADE_B_THRESHOLD
+            < c.EFFICIENCY_GRADE_A_THRESHOLD
+        )
+
+    @pytest.mark.parametrize(
+        "attr",
+        [
+            "EFFICIENCY_GRADE_A_THRESHOLD",
+            "EFFICIENCY_GRADE_B_THRESHOLD",
+            "EFFICIENCY_GRADE_C_THRESHOLD",
+        ],
+    )
+    def test_grade_thresholds_between_zero_and_one(self, attr: str) -> None:
+        import app.constants as c
+
+        value = getattr(c, attr)
+        assert 0.0 < value < 1.0
+
+
+def test_grid_intensity_default_region_present() -> None:
+    from app.constants import GRID_INTENSITY_KG_PER_KWH
+
+    assert "default" in GRID_INTENSITY_KG_PER_KWH
+    assert GRID_INTENSITY_KG_PER_KWH["default"] > 0
+
+
+def test_max_forecast_horizon_is_positive() -> None:
+    from app.constants import MAX_FORECAST_HORIZON
+
+    assert MAX_FORECAST_HORIZON > 0
+
+
+def test_cache_constants_types() -> None:
+    from app.constants import DEFAULT_CACHE_MAX_SIZE, DEFAULT_CACHE_TTL_SECONDS
+
+    assert isinstance(DEFAULT_CACHE_TTL_SECONDS, int)
+    assert isinstance(DEFAULT_CACHE_MAX_SIZE, int)
+    assert DEFAULT_CACHE_TTL_SECONDS > 0
+    assert DEFAULT_CACHE_MAX_SIZE > 0
+
+
+def test_page_size_constants_ordered() -> None:
+    from app.constants import DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE
+
+    assert DEFAULT_PAGE_SIZE <= MAX_PAGE_SIZE
+
+
+@pytest.mark.parametrize("region", ["northeast", "midwest", "south", "west"])
+def test_grid_intensity_known_regions_positive(region: str) -> None:
+    from app.constants import GRID_INTENSITY_KG_PER_KWH
+
+    assert GRID_INTENSITY_KG_PER_KWH[region] > 0
+
+
+def test_all_exports_are_importable() -> None:
+
+    import app.constants as c
+
+    for name in c.__all__:
+        assert hasattr(c, name), f"{name} in __all__ but not in module"

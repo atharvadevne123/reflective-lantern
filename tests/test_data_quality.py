@@ -70,7 +70,13 @@ def test_invalid_humidity_deducts_points() -> None:
 
 
 def test_score_never_negative() -> None:
-    rec = {"hour": 99, "month": 99, "day_of_week": 99, "consumption_kwh": -100.0, "humidity_pct": 200.0}
+    rec = {
+        "hour": 99,
+        "month": 99,
+        "day_of_week": 99,
+        "consumption_kwh": -100.0,
+        "humidity_pct": 200.0,
+    }
     result = score_record(rec)
     assert result["dq_score"] >= 0
 
@@ -347,7 +353,9 @@ class TestNormalizeRecord:
 
         assert normalize_record({}) == {}
 
-    @pytest.mark.parametrize("input_val,expected", [("Hello", "hello"), ("  Test  ", "test"), ("ok", "ok")])
+    @pytest.mark.parametrize(
+        "input_val,expected", [("Hello", "hello"), ("  Test  ", "test"), ("ok", "ok")]
+    )
     def test_various_strings(self, input_val: str, expected: str) -> None:
         from app.data_quality import normalize_record
 
@@ -566,7 +574,12 @@ class TestDataFreshnessScore:
 
         records = [{"ts": time.time()}]
         result = data_freshness_score(records, "ts")
-        assert set(result.keys()) >= {"total_records", "fresh_count", "stale_count", "freshness_rate"}
+        assert set(result.keys()) >= {
+            "total_records",
+            "fresh_count",
+            "stale_count",
+            "freshness_rate",
+        }
 
 
 def test_field_type_consistency_all_match() -> None:
@@ -927,10 +940,7 @@ class TestFieldEntropy:
         assert result > 0.0
 
 
-import pytest as _pytest
-
-
-@_pytest.mark.parametrize(
+@pytest.mark.parametrize(
     "records,required,expected_score",
     [
         ([{"a": 1, "b": 2}], ["a", "b"], 1.0),
@@ -938,13 +948,15 @@ import pytest as _pytest
         ([], ["a"], 0.0),
     ],
 )
-def test_completeness_score_parametrized(records: list, required: list, expected_score: float) -> None:
+def test_completeness_score_parametrized(
+    records: list, required: list, expected_score: float
+) -> None:
     from app.data_quality import completeness_score
 
-    assert completeness_score(records, required) == _pytest.approx(expected_score, abs=0.001)
+    assert completeness_score(records, required) == pytest.approx(expected_score, abs=0.001)
 
 
-@_pytest.mark.parametrize(
+@pytest.mark.parametrize(
     "records,field,expected_null_rate",
     [
         ([{"v": 1}, {"v": 2}], "v", 0.0),
@@ -955,10 +967,10 @@ def test_completeness_score_parametrized(records: list, required: list, expected
 def test_null_rate_parametrized(records: list, field: str, expected_null_rate: float) -> None:
     from app.data_quality import null_rate
 
-    assert null_rate(records, field) == _pytest.approx(expected_null_rate, abs=0.001)
+    assert null_rate(records, field) == pytest.approx(expected_null_rate, abs=0.001)
 
 
-@_pytest.mark.parametrize("n", [0, 1, 5, 100])
+@pytest.mark.parametrize("n", [0, 1, 5, 100])
 def test_batch_score_length_matches_input(n: int) -> None:
     from app.data_quality import batch_score
 
@@ -967,17 +979,17 @@ def test_batch_score_length_matches_input(n: int) -> None:
     assert len(result) == n
 
 
-@_pytest.mark.parametrize("null_count,total", [(0, 10), (5, 10), (10, 10)])
+@pytest.mark.parametrize("null_count,total", [(0, 10), (5, 10), (10, 10)])
 def test_null_rate_with_mixed_records(null_count: int, total: int) -> None:
     from app.data_quality import null_rate
 
     field = "consumption_kwh"
     records = [{field: None}] * null_count + [{field: 10.0}] * (total - null_count)
     result = null_rate(records, field)
-    assert result == _pytest.approx(null_count / total if total > 0 else 0.0, abs=0.001)
+    assert result == pytest.approx(null_count / total if total > 0 else 0.0, abs=0.001)
 
 
-@_pytest.mark.parametrize(
+@pytest.mark.parametrize(
     "values,lo,hi,expected_violations",
     [
         ([1.0, 5.0, 10.0], 0.0, 15.0, 0),
@@ -985,7 +997,9 @@ def test_null_rate_with_mixed_records(null_count: int, total: int) -> None:
         ([-1.0, 5.0, 10.0], 0.0, 10.0, 1),
     ],
 )
-def test_range_violation_count_parametrized(values: list, lo: float, hi: float, expected_violations: int) -> None:
+def test_range_violation_count_parametrized(
+    values: list, lo: float, hi: float, expected_violations: int
+) -> None:
     from app.data_quality import range_violation_count
 
     field = "x"
@@ -994,7 +1008,7 @@ def test_range_violation_count_parametrized(values: list, lo: float, hi: float, 
     assert count == expected_violations
 
 
-@_pytest.mark.parametrize("n_unique", [1, 5, 10])
+@pytest.mark.parametrize("n_unique", [1, 5, 10])
 def test_unique_values_count(n_unique: int) -> None:
     from app.data_quality import unique_values
 
@@ -1134,3 +1148,171 @@ class TestCompletenessScore:
         from app.data_quality import completeness_score
 
         assert completeness_score([], ["a"]) == pytest.approx(0.0)
+
+
+@pytest.mark.parametrize("n_records", [1, 5, 10])
+def test_completeness_score_all_filled_is_one(n_records: int) -> None:
+    """completeness_score is 1.0 when all required fields are present."""
+    records = [{"x": 1, "y": 2}] * n_records
+    assert completeness_score(records, ["x", "y"]) == pytest.approx(1.0)
+
+
+@pytest.mark.parametrize("n", [0, 1, 5])
+def test_detect_duplicates_unique_values(n: int) -> None:
+    """detect_duplicates finds no duplicates when all records are unique."""
+    records = [{"id": i, "val": i} for i in range(n)]
+    dups = detect_duplicates(records, key_fields=["id"])
+    assert len(dups) == 0
+
+
+class TestBatchScoreEdgeCases:
+    def test_empty_batch_returns_empty(self) -> None:
+        result = batch_score([])
+        assert result == []
+
+    def test_all_valid_records_have_high_scores(self) -> None:
+        records = [{"a": 1, "b": 2, "c": 3}] * 5
+        scores = batch_score(records)
+        assert len(scores) == len(records)
+
+
+class TestNullRateExtended:
+    def test_no_nulls_gives_zero(self) -> None:
+        from app.data_quality import null_rate
+
+        records = [{"x": 1}, {"x": 2}, {"x": 3}]
+        assert null_rate(records, "x") == pytest.approx(0.0)
+
+    def test_all_nulls_gives_one(self) -> None:
+        from app.data_quality import null_rate
+
+        records = [{"x": None}, {"x": None}]
+        assert null_rate(records, "x") == pytest.approx(1.0)
+
+    def test_missing_field_counted_as_null(self) -> None:
+        from app.data_quality import null_rate
+
+        records = [{"x": 1}, {"y": 2}]
+        rate = null_rate(records, "x")
+        assert rate == pytest.approx(0.5)
+
+    @pytest.mark.parametrize("n_null,n_total", [(0, 5), (3, 5), (5, 5)])
+    def test_partial_null_rates(self, n_null: int, n_total: int) -> None:
+        from app.data_quality import null_rate
+
+        records = [{"val": None}] * n_null + [{"val": 1}] * (n_total - n_null)
+        assert null_rate(records, "val") == pytest.approx(n_null / n_total)
+
+
+class TestDuplicateRateExtended:
+    def test_no_duplicates_gives_zero(self) -> None:
+        from app.data_quality import duplicate_rate
+
+        records = [{"id": 1}, {"id": 2}, {"id": 3}]
+        assert duplicate_rate(records, ["id"]) == pytest.approx(0.0)
+
+    def test_all_duplicates_gives_high_rate(self) -> None:
+        from app.data_quality import duplicate_rate
+
+        records = [{"id": 1}] * 5
+        rate = duplicate_rate(records, ["id"])
+        assert rate > 0.0
+
+    def test_empty_records_gives_zero(self) -> None:
+        from app.data_quality import duplicate_rate
+
+        assert duplicate_rate([], ["id"]) == pytest.approx(0.0)
+
+
+class TestUniqueValues:
+    def test_empty_records_returns_empty(self) -> None:
+        from app.data_quality import unique_values
+
+        assert unique_values([], "field") == []
+
+    def test_returns_unique_sorted(self) -> None:
+        from app.data_quality import unique_values
+
+        records = [{"x": 3}, {"x": 1}, {"x": 2}, {"x": 1}]
+        assert unique_values(records, "x") == [1, 2, 3]
+
+    def test_excludes_none_values(self) -> None:
+        from app.data_quality import unique_values
+
+        records = [{"x": 1}, {"x": None}, {"x": 2}]
+        result = unique_values(records, "x")
+        assert None not in result
+
+    @pytest.mark.parametrize("n", [1, 3, 5])
+    def test_n_distinct_values(self, n: int) -> None:
+        from app.data_quality import unique_values
+
+        records = [{"v": i} for i in range(n)]
+        assert len(unique_values(records, "v")) == n
+
+
+class TestRecordsMissingField:
+    def test_empty_records_returns_empty(self) -> None:
+        from app.data_quality import records_missing_field
+
+        assert records_missing_field([], "field") == []
+
+    def test_all_present_returns_empty(self) -> None:
+        from app.data_quality import records_missing_field
+
+        records = [{"f": 1}, {"f": 2}]
+        assert records_missing_field(records, "f") == []
+
+    def test_missing_field_index_returned(self) -> None:
+        from app.data_quality import records_missing_field
+
+        records = [{"f": 1}, {"g": 2}, {"f": 3}]
+        result = records_missing_field(records, "f")
+        assert 1 in result
+
+    def test_none_value_treated_as_missing(self) -> None:
+        from app.data_quality import records_missing_field
+
+        records = [{"f": None}]
+        assert records_missing_field(records, "f") == [0]
+
+
+class TestHasDuplicates:
+    def test_empty_list_no_duplicates(self) -> None:
+        from app.data_quality import has_duplicates
+
+        assert has_duplicates([]) is False
+
+    def test_all_unique_returns_false(self) -> None:
+        from app.data_quality import has_duplicates
+
+        assert has_duplicates([1, 2, 3]) is False
+
+    def test_duplicate_detected(self) -> None:
+        from app.data_quality import has_duplicates
+
+        assert has_duplicates([1, 2, 1]) is True
+
+    def test_none_values_ignored(self) -> None:
+        from app.data_quality import has_duplicates
+
+        assert has_duplicates([None, None, 1]) is False
+
+    def test_strings_checked(self) -> None:
+        from app.data_quality import has_duplicates
+
+        assert has_duplicates(["a", "b", "a"]) is True
+
+    @pytest.mark.parametrize(
+        "values,expected",
+        [
+            ([1, 2, 3], False),
+            ([1, 1, 2], True),
+            ([None, None], False),
+            (["x", "y", "x"], True),
+        ],
+    )
+    def test_parametrized_duplicates(self, values: list, expected: bool) -> None:
+        from app.data_quality import has_duplicates
+
+        assert has_duplicates(values) is expected

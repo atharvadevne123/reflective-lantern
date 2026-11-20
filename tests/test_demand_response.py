@@ -6,8 +6,10 @@ import pytest
 
 from app.demand_response import (
     curtailment,
+    curtailment_rate,
     customer_baseline_load,
     evaluate_event,
+    event_roi,
     performance_score,
 )
 
@@ -139,4 +141,233 @@ class TestEvaluateEvent:
     )
     def test_negative_rates_rejected(self, incentive: float, penalty: float) -> None:
         with pytest.raises(ValueError, match="rates must be non-negative"):
-            evaluate_event(BASELINE, CURTAILED, 16.0, incentive_per_kwh=incentive, penalty_per_kwh=penalty)
+            evaluate_event(
+                BASELINE, CURTAILED, 16.0, incentive_per_kwh=incentive, penalty_per_kwh=penalty
+            )
+
+
+class TestCurtailmentEdgeCases:
+    @pytest.mark.parametrize(
+        "baseline,actual,expected",
+        [
+            ([10.0, 10.0], [5.0, 5.0], 10.0),
+            ([0.0, 0.0], [0.0, 0.0], 0.0),
+            ([5.0], [5.0], 0.0),
+        ],
+    )
+    def test_various_curtailment_values(
+        self, baseline: list, actual: list, expected: float
+    ) -> None:
+        assert curtailment(baseline, actual) == pytest.approx(expected)
+
+    def test_single_hour_curtailment(self) -> None:
+        assert curtailment([10.0], [3.0]) == pytest.approx(7.0)
+
+
+class TestPerformanceScoreParametrize:
+    @pytest.mark.parametrize(
+        "curtailed,committed,expected",
+        [
+            (10.0, 10.0, 1.0),
+            (5.0, 10.0, 0.5),
+            (15.0, 10.0, 1.0),
+            (0.0, 10.0, 0.0),
+        ],
+    )
+    def test_score_values(self, curtailed: float, committed: float, expected: float) -> None:
+        assert performance_score(curtailed, committed) == pytest.approx(expected)
+
+    def test_score_is_bounded(self) -> None:
+        for curtailed, committed in [(0.0, 5.0), (5.0, 5.0), (100.0, 5.0)]:
+            score = performance_score(curtailed, committed)
+            assert 0.0 <= score <= 1.0
+
+
+class TestEvaluateEventFields:
+    def test_result_has_all_required_fields(self) -> None:
+        result = evaluate_event(BASELINE, CURTAILED, committed_kwh=10.0)
+        for field in (
+            "baseline_kwh",
+            "actual_kwh",
+            "curtailed_kwh",
+            "curtailment_pct",
+            "committed_kwh",
+            "shortfall_kwh",
+            "incentive",
+            "penalty",
+            "net_payment",
+            "performance_score",
+        ):
+            assert hasattr(result, field)
+
+    def test_performance_score_bounded(self) -> None:
+        result = evaluate_event(BASELINE, CURTAILED, committed_kwh=16.0)
+        assert 0.0 <= result.performance_score <= 1.0
+
+
+@pytest.mark.parametrize("n_hours", [1, 4, 8, 24])
+def test_curtailment_total_scales_with_hours(n_hours: int) -> None:
+    """curtailment total equals per-hour saving * n_hours."""
+    baseline = [5.0] * n_hours
+    actual = [3.0] * n_hours
+    result = curtailment(baseline, actual)
+    assert result == pytest.approx(2.0 * n_hours)
+
+
+@pytest.mark.parametrize("reduction", [0.0, 0.25, 0.5, 1.0])
+def test_performance_score_for_known_fractions(reduction: float) -> None:
+    """performance_score returns reduction fraction when committed > 0."""
+    score = performance_score(curtailed_kwh=reduction * 10.0, committed_kwh=10.0)
+    assert score == pytest.approx(min(1.0, reduction))
+
+
+class TestCustomerBaselineLoadEdgeCases:
+    def test_two_days_average(self) -> None:
+        result = customer_baseline_load([[4.0, 8.0], [8.0, 4.0]])
+        assert result == pytest.approx([6.0, 6.0])
+
+    @pytest.mark.parametrize("n_days", [1, 3, 7])
+    def test_baseline_length_equals_day_length(self, n_days: int) -> None:
+        history = [[1.0] * 4] * n_days
+        result = customer_baseline_load(history)
+        assert len(result) == 4
+
+
+
+
+class TestCurtailmentRate:
+    def test_positive_result_for_valid_inputs(self) -> None:
+        rate = curtailment_rate(curtailed_kwh=20.0, event_hours=4)
+        assert rate == pytest.approx(5.0)
+
+    def test_zero_event_hours_raises(self) -> None:
+        with pytest.raises((ValueError, ZeroDivisionError)):
+            curtailment_rate(curtailed_kwh=20.0, event_hours=0)
+
+    @pytest.mark.parametrize("hours", [1, 2, 4, 8])
+    def test_rate_scales_inversely_with_hours(self, hours: int) -> None:
+        rate = curtailment_rate(curtailed_kwh=40.0, event_hours=hours)
+        assert rate == pytest.approx(40.0 / hours)
+
+
+class TestEventRoi:
+    def test_positive_roi_for_profitable_event(self) -> None:
+        roi = event_roi(net_payment=100.0, baseline_cost_per_kwh=0.10, baseline_kwh=500.0)
+        assert isinstance(roi, float)
+
+    def test_zero_payment_gives_low_roi(self) -> None:
+        roi_zero = event_roi(net_payment=0.0, baseline_cost_per_kwh=0.10, baseline_kwh=100.0)
+        roi_pos = event_roi(net_payment=50.0, baseline_cost_per_kwh=0.10, baseline_kwh=100.0)
+        assert roi_pos > roi_zero
+
+    @pytest.mark.parametrize("payment", [0.0, 50.0, 200.0])
+    def test_roi_is_finite_for_valid_inputs(self, payment: float) -> None:
+        import math
+
+        roi = event_roi(net_payment=payment, baseline_cost_per_kwh=0.10, baseline_kwh=100.0)
+        assert math.isfinite(roi)
+
+
+class TestCustomerBaselineLoadExt:
+    def test_returns_positive_float(self) -> None:
+        from app.demand_response import customer_baseline_load
+
+        result = customer_baseline_load(daily_usage_kwh=30.0, days=10)
+        assert result > 0.0
+
+    def test_scales_with_usage(self) -> None:
+        from app.demand_response import customer_baseline_load
+
+        low = customer_baseline_load(daily_usage_kwh=10.0, days=10)
+        high = customer_baseline_load(daily_usage_kwh=50.0, days=10)
+        assert high > low
+
+    @pytest.mark.parametrize("days", [1, 7, 30])
+    def test_various_day_windows(self, days: int) -> None:
+        from app.demand_response import customer_baseline_load
+
+        result = customer_baseline_load(daily_usage_kwh=20.0, days=days)
+        assert isinstance(result, float)
+
+
+class TestPerformanceScoreExt:
+    def test_full_curtailment_scores_high(self) -> None:
+        from app.demand_response import performance_score
+
+        score = performance_score(requested_kwh=100.0, delivered_kwh=100.0)
+        assert score >= 0.9
+
+    def test_no_curtailment_scores_zero(self) -> None:
+        from app.demand_response import performance_score
+
+        score = performance_score(requested_kwh=100.0, delivered_kwh=0.0)
+        assert score <= 0.1
+
+    @pytest.mark.parametrize("delivered", [0.0, 50.0, 100.0])
+    def test_score_between_zero_and_one(self, delivered: float) -> None:
+        from app.demand_response import performance_score
+
+        score = performance_score(requested_kwh=100.0, delivered_kwh=delivered)
+        assert 0.0 <= score <= 1.0
+
+
+@pytest.mark.parametrize(
+    "curtailed_kwh,event_hours,expected_min",
+    [
+        (10.0, 1, 10.0),
+        (60.0, 2, 30.0),
+        (0.0, 4, 0.0),
+    ],
+)
+def test_curtailment_rate_parametrized(
+    curtailed_kwh: float, event_hours: int, expected_min: float
+) -> None:
+    """curtailment_rate returns curtailed_kwh / event_hours for positive inputs."""
+    from app.demand_response import curtailment_rate
+
+    result = curtailment_rate(curtailed_kwh, event_hours)
+    assert result == pytest.approx(expected_min, rel=1e-4)
+
+
+@pytest.mark.parametrize("baseline,actual", [(100.0, 80.0), (50.0, 30.0), (200.0, 200.0)])
+def test_curtailment_non_negative(baseline: float, actual: float) -> None:
+    """curtailment always returns a non-negative value."""
+    from app.demand_response import curtailment
+
+    result = curtailment([baseline] * 24, [actual] * 24)
+    assert result >= 0.0
+
+
+class TestDemandResponseEdgeCases:
+    def test_curtailment_full_reduction(self) -> None:
+        curt = curtailment([10.0, 10.0, 10.0], [0.0, 0.0, 0.0])
+        assert curt == pytest.approx(30.0)
+
+    def test_curtailment_no_reduction_zero(self) -> None:
+        curt = curtailment([10.0, 10.0], [10.0, 10.0])
+        assert curt == pytest.approx(0.0)
+
+    def test_performance_score_perfect_delivery(self) -> None:
+        score = performance_score(curtailed_kwh=10.0, committed_kwh=10.0)
+        assert score == pytest.approx(1.0, rel=1e-2)
+
+    def test_performance_score_zero_curtailment_zero(self) -> None:
+        score = performance_score(curtailed_kwh=0.0, committed_kwh=10.0)
+        assert score == pytest.approx(0.0)
+
+    def test_evaluate_event_returns_result(self) -> None:
+        from app.demand_response import DemandResponseResult
+
+        result = evaluate_event(BASELINE, CURTAILED, committed_kwh=4.0)
+        assert isinstance(result, DemandResponseResult)
+
+    def test_evaluate_event_delivered_positive(self) -> None:
+        result = evaluate_event(BASELINE, CURTAILED, committed_kwh=4.0)
+        assert result.delivered_kwh >= 0.0
+
+    @pytest.mark.parametrize("pct", [0.25, 0.50, 0.75])
+    def test_curtailment_scales_with_reduction(self, pct: float) -> None:
+        baseline = [100.0] * 4
+        actual = [100.0 * (1 - pct)] * 4
+        curt = curtailment(baseline, actual)
+        assert curt == pytest.approx(100.0 * 4 * pct, rel=1e-4)

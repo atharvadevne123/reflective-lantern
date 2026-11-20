@@ -5,6 +5,7 @@ from __future__ import annotations
 import math
 import re
 from collections import Counter
+from functools import lru_cache
 
 _TOKEN = re.compile(r"[a-z0-9]+")
 
@@ -41,8 +42,13 @@ _STOPWORDS = frozenset(
 )
 
 
+@lru_cache(maxsize=4096)
 def tokenize(text: str) -> list[str]:
-    """Lowercase alphanumeric tokens with stopwords removed."""
+    """Lowercase alphanumeric tokens with stopwords removed.
+
+    Cached: query and chunk texts repeat heavily in BM25 scoring loops;
+    memoising tokenization removes the most expensive redundant work.
+    """
     return [t for t in _TOKEN.findall(text.lower()) if t not in _STOPWORDS]
 
 
@@ -63,7 +69,12 @@ class BM25Index:
         self._total_len = 0
 
     def add(self, chunk_id: str, text: str) -> None:
-        """Index a chunk."""
+        """Index a chunk.
+
+        Args:
+            chunk_id: Unique identifier for the chunk.
+            text: The chunk's text content to index.
+        """
         tokens = Counter(tokenize(text))
         self._doc_tokens[chunk_id] = tokens
         length = sum(tokens.values())
@@ -73,7 +84,11 @@ class BM25Index:
             self._df[term] += 1
 
     def remove(self, chunk_id: str) -> None:
-        """Drop a chunk from the index (used when versions supersede)."""
+        """Drop a chunk from the index (used when versions supersede).
+
+        Args:
+            chunk_id: Identifier of the chunk to remove; no-op if absent.
+        """
         tokens = self._doc_tokens.pop(chunk_id, None)
         if tokens is None:
             return
@@ -84,6 +99,7 @@ class BM25Index:
                 del self._df[term]
 
     def __len__(self) -> int:
+        """Return the number of indexed chunks."""
         return len(self._doc_tokens)
 
     def search(self, query: str, top_k: int = 50) -> list[tuple[str, float]]:

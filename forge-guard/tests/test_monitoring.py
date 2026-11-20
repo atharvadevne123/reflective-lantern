@@ -7,7 +7,7 @@ import pytest
 from app.monitoring import compute_drift, log_prediction
 
 
-def test_compute_drift_no_drift():
+def test_compute_drift_no_drift() -> None:
     import numpy as np
 
     rng = np.random.default_rng(0)
@@ -20,7 +20,7 @@ def test_compute_drift_no_drift():
     assert result["p_value"] > 0.0
 
 
-def test_compute_drift_detects_shift():
+def test_compute_drift_detects_shift() -> None:
     import numpy as np
 
     rng = np.random.default_rng(1)
@@ -31,13 +31,13 @@ def test_compute_drift_detects_shift():
     assert result["ks_statistic"] > 0.5
 
 
-def test_compute_drift_insufficient_data():
+def test_compute_drift_insufficient_data() -> None:
     result = compute_drift([1.0, 2.0], [3.0])
     assert result["drift_detected"] is False
     assert result["p_value"] == 1.0
 
 
-def test_log_prediction_persists_record(db_session):
+def test_log_prediction_persists_record(db_session) -> None:
     sensor = {
         "temperature": 78.0,
         "pressure": 50.0,
@@ -60,7 +60,7 @@ def test_log_prediction_persists_record(db_session):
     assert record.correlation_id == "test-cid-001"
 
 
-def test_log_prediction_defect_case(db_session):
+def test_log_prediction_defect_case(db_session) -> None:
     sensor = {
         "temperature": 92.0,
         "pressure": 62.0,
@@ -85,7 +85,7 @@ def test_log_prediction_defect_case(db_session):
         (50, 50, 5, False),  # identical distributions — no drift
     ],
 )
-def test_drift_parametrized(ref_mean, cur_mean, std, expect_drift):
+def test_drift_parametrized(ref_mean, cur_mean, std, expect_drift) -> None:
     import numpy as np
 
     rng = np.random.default_rng(42)
@@ -95,7 +95,7 @@ def test_drift_parametrized(ref_mean, cur_mean, std, expect_drift):
     assert result["drift_detected"] == expect_drift
 
 
-def test_defect_rate_empty_db(db_session):
+def test_defect_rate_empty_db(db_session) -> None:
     from app.monitoring import defect_rate
 
     result = defect_rate(db_session)
@@ -103,7 +103,7 @@ def test_defect_rate_empty_db(db_session):
     assert result["defect_rate"] == 0.0
 
 
-def test_defect_rate_with_mixed_predictions(db_session):
+def test_defect_rate_with_mixed_predictions(db_session) -> None:
     from app.monitoring import defect_rate
 
     sensor = {
@@ -126,14 +126,14 @@ def test_defect_rate_with_mixed_predictions(db_session):
     assert abs(result["defect_rate"] - 1 / 3) < 0.01
 
 
-def test_run_drift_check_empty_db_returns_empty(db_session):
+def test_run_drift_check_empty_db_returns_empty(db_session) -> None:
     from app.monitoring import run_drift_check
 
     result = run_drift_check(db_session)
     assert result == []
 
 
-def test_log_prediction_without_correlation_id(db_session):
+def test_log_prediction_without_correlation_id(db_session) -> None:
     sensor = {
         "temperature": 75.0,
         "pressure": 50.0,
@@ -149,7 +149,7 @@ def test_log_prediction_without_correlation_id(db_session):
 
 
 @pytest.mark.parametrize("prob", [0.0, 0.5, 1.0])
-def test_log_prediction_various_probabilities(db_session, prob):
+def test_log_prediction_various_probabilities(db_session, prob) -> None:
     sensor = {
         "temperature": 75.0,
         "pressure": 50.0,
@@ -165,7 +165,7 @@ def test_log_prediction_various_probabilities(db_session, prob):
     assert record.defect_probability == prob
 
 
-def test_compute_zscore_outliers_no_outliers():
+def test_compute_zscore_outliers_no_outliers() -> None:
     from app.monitoring import compute_zscore_outliers
 
     values = [10.0] * 20  # identical values — no outliers
@@ -173,7 +173,7 @@ def test_compute_zscore_outliers_no_outliers():
     assert result["outlier_count"] == 0
 
 
-def test_compute_zscore_outliers_detects_spike():
+def test_compute_zscore_outliers_detects_spike() -> None:
     from app.monitoring import compute_zscore_outliers
 
     values = [10.0] * 19 + [1000.0]  # one extreme outlier
@@ -182,7 +182,7 @@ def test_compute_zscore_outliers_detects_spike():
     assert 19 in result["outlier_indices"]
 
 
-def test_compute_zscore_outliers_insufficient_data():
+def test_compute_zscore_outliers_insufficient_data() -> None:
     from app.monitoring import compute_zscore_outliers
 
     result = compute_zscore_outliers([1.0, 2.0])
@@ -190,7 +190,7 @@ def test_compute_zscore_outliers_insufficient_data():
     assert result["mean"] is None
 
 
-def test_model_prediction_summary_empty(db_session):
+def test_model_prediction_summary_empty(db_session) -> None:
     from app.monitoring import model_prediction_summary
 
     result = model_prediction_summary(db_session, "99.0.0")
@@ -198,7 +198,7 @@ def test_model_prediction_summary_empty(db_session):
     assert result["model_version"] == "99.0.0"
 
 
-def test_model_prediction_summary_with_data(db_session):
+def test_model_prediction_summary_with_data(db_session) -> None:
     from app.monitoring import model_prediction_summary
 
     sensor = {
@@ -232,7 +232,7 @@ def test_model_prediction_summary_with_data(db_session):
     assert abs(result["defect_rate"] - 0.25) < 0.01
 
 
-def test_compute_drift_returns_rounded_values():
+def test_compute_drift_returns_rounded_values() -> None:
     import numpy as np
 
     rng = np.random.default_rng(10)
@@ -244,7 +244,7 @@ def test_compute_drift_returns_rounded_values():
     assert isinstance(result["drift_detected"], bool)
 
 
-def test_compute_zscore_outliers_custom_threshold():
+def test_compute_zscore_outliers_custom_threshold() -> None:
     from app.monitoring import compute_zscore_outliers
 
     values = [10.0] * 18 + [40.0, 50.0]
@@ -253,7 +253,7 @@ def test_compute_zscore_outliers_custom_threshold():
     assert result_tight["outlier_count"] >= result_loose["outlier_count"]
 
 
-def test_defect_rate_all_defects(db_session):
+def test_defect_rate_all_defects(db_session) -> None:
     from app.monitoring import defect_rate
 
     sensor = {

@@ -6,18 +6,18 @@ import pytest
 
 
 class _ConstantModel:
-    def predict(self, X):
+    def predict(self, X) -> None:
         return [100.0] * len(X)
 
 
 class _PriceAwareModel:
     """Returns demand that decreases linearly with price."""
 
-    def predict(self, X):
+    def predict(self, X) -> None:
         return [max(0.0, 200.0 - row[0]) for row in X]
 
 
-def test_optimizer_returns_float():
+def test_optimizer_returns_float() -> None:
     from app.pricing.optimizer import PriceOptimizer
 
     opt = PriceOptimizer(_ConstantModel(), min_multiplier=0.5, max_multiplier=2.0)
@@ -25,7 +25,7 @@ def test_optimizer_returns_float():
     assert isinstance(price, float)
 
 
-def test_optimizer_within_bounds():
+def test_optimizer_within_bounds() -> None:
     from app.pricing.optimizer import PriceOptimizer
 
     opt = PriceOptimizer(_ConstantModel(), min_multiplier=0.5, max_multiplier=2.0)
@@ -33,14 +33,14 @@ def test_optimizer_within_bounds():
     assert 50.0 <= price <= 200.0
 
 
-def test_optimizer_zero_base_price():
+def test_optimizer_zero_base_price() -> None:
     from app.pricing.optimizer import PriceOptimizer
 
     opt = PriceOptimizer(_ConstantModel())
     assert opt.optimize(0.0, [0.0]) == 0.0
 
 
-def test_optimizer_revenue_at_price():
+def test_optimizer_revenue_at_price() -> None:
     from app.pricing.optimizer import PriceOptimizer
 
     opt = PriceOptimizer(_ConstantModel())

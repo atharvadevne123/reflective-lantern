@@ -5,7 +5,6 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 import pytest
-
 from app.data_utils import (
     compute_log_returns,
     fill_missing_ohlcv,
@@ -17,12 +16,10 @@ from app.data_utils import (
 
 class TestFillMissingOhlcv:
     def test_fills_nan_with_ffill(self) -> None:
-        df = pd.DataFrame(
-            {
-                "close": [1.0, np.nan, 3.0],
-                "volume": [100.0, np.nan, 300.0],
-            }
-        )
+        df = pd.DataFrame({
+            "close": [1.0, np.nan, 3.0],
+            "volume": [100.0, np.nan, 300.0],
+        })
         result = fill_missing_ohlcv(df)
         assert not result["close"].isna().any()
 

@@ -28,7 +28,7 @@ TestSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=TEST_ENG
 
 
 @pytest.fixture(scope="session", autouse=True)
-def create_test_tables():
+def create_test_tables() -> None:
     Base.metadata.create_all(bind=TEST_ENGINE)
     yield
     Base.metadata.drop_all(bind=TEST_ENGINE)
@@ -36,7 +36,7 @@ def create_test_tables():
 
 
 @pytest.fixture
-def db_session():
+def db_session() -> None:
     connection = TEST_ENGINE.connect()
     transaction = connection.begin()
     session = TestSessionLocal(bind=connection)
@@ -47,7 +47,7 @@ def db_session():
 
 
 @pytest.fixture
-def trained_model():
+def trained_model() -> None:
     from app.model import train_model
 
     df = make_synthetic_dataset(n_samples=300, seed=0)
@@ -75,7 +75,7 @@ def small_dataset() -> pd.DataFrame:
 
 
 @pytest.fixture
-def mock_model():
+def mock_model() -> None:
     """A fast mock pipeline for API tests that avoids full ML training."""
     mock = MagicMock()
     mock.predict.return_value = np.array([5.2])
@@ -83,13 +83,13 @@ def mock_model():
 
 
 @pytest.fixture
-def app_client(trained_model, db_session):
+def app_client(trained_model, db_session) -> None:
     from app.main import _model_cache, app
 
     pipeline, _ = trained_model
     _model_cache["pipeline"] = pipeline
 
-    def override_db():
+    def override_db() -> None:
         yield db_session
 
     app.dependency_overrides[get_db] = override_db

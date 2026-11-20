@@ -30,7 +30,7 @@ def _add_predictions(db_session, count: int = 3) -> None:
         )
 
 
-def test_export_predictions_csv_empty_db(db_session):
+def test_export_predictions_csv_empty_db(db_session) -> None:
     from app.reporting import export_predictions_csv
 
     result = export_predictions_csv(db_session)
@@ -38,7 +38,7 @@ def test_export_predictions_csv_empty_db(db_session):
     assert len(lines) == 1  # header only
 
 
-def test_export_predictions_csv_has_header(db_session):
+def test_export_predictions_csv_has_header(db_session) -> None:
     from app.reporting import export_predictions_csv
 
     result = export_predictions_csv(db_session)
@@ -49,7 +49,7 @@ def test_export_predictions_csv_has_header(db_session):
     assert "defect_probability" in header
 
 
-def test_export_predictions_csv_includes_rows(db_session):
+def test_export_predictions_csv_includes_rows(db_session) -> None:
     from app.reporting import export_predictions_csv
 
     _add_predictions(db_session, 4)
@@ -58,14 +58,14 @@ def test_export_predictions_csv_includes_rows(db_session):
     assert len(lines) == 5  # 1 header + 4 rows
 
 
-def test_export_drift_reports_json_empty(db_session):
+def test_export_drift_reports_json_empty(db_session) -> None:
     from app.reporting import export_drift_reports_json
 
     result = export_drift_reports_json(db_session)
     assert result == []
 
 
-def test_prediction_summary_json_empty(db_session):
+def test_prediction_summary_json_empty(db_session) -> None:
     from app.reporting import prediction_summary_json
 
     result = prediction_summary_json(db_session)
@@ -75,7 +75,7 @@ def test_prediction_summary_json_empty(db_session):
     assert "defect_count" in result
 
 
-def test_prediction_summary_json_with_data(db_session):
+def test_prediction_summary_json_with_data(db_session) -> None:
     from app.reporting import prediction_summary_json
 
     _add_predictions(db_session, 4)
@@ -85,7 +85,7 @@ def test_prediction_summary_json_with_data(db_session):
 
 
 @pytest.mark.parametrize("hours", [1, 12, 24, 168])
-def test_export_predictions_csv_window(db_session, hours):
+def test_export_predictions_csv_window(db_session, hours) -> None:
     from app.reporting import export_predictions_csv
 
     _add_predictions(db_session, 2)
@@ -93,7 +93,7 @@ def test_export_predictions_csv_window(db_session, hours):
     assert result  # should always have header
 
 
-def test_export_predictions_csv_has_sensor_columns(db_session):
+def test_export_predictions_csv_has_sensor_columns(db_session) -> None:
     from app.reporting import export_predictions_csv
 
     _add_predictions(db_session, 1)
@@ -104,7 +104,7 @@ def test_export_predictions_csv_has_sensor_columns(db_session):
     assert "vibration" in header
 
 
-def test_prediction_summary_json_keys(db_session):
+def test_prediction_summary_json_keys(db_session) -> None:
     from app.reporting import prediction_summary_json
 
     result = prediction_summary_json(db_session)
@@ -112,7 +112,7 @@ def test_prediction_summary_json_keys(db_session):
         assert key in result
 
 
-def test_export_drift_with_data(db_session):
+def test_export_drift_with_data(db_session) -> None:
     from app.database import DriftReport
     from app.reporting import export_drift_reports_json
 
@@ -132,7 +132,7 @@ def test_export_drift_with_data(db_session):
     assert result[0]["feature"] == "pressure"
 
 
-def test_export_predictions_csv_respects_limit(db_session):
+def test_export_predictions_csv_respects_limit(db_session) -> None:
     from app.reporting import export_predictions_csv
 
     _add_predictions(db_session, 5)

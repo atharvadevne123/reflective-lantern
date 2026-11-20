@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import math
+
 import numpy as np
 import pytest
 
@@ -1642,3 +1644,294 @@ class TestLoadFactor:
         from app.time_series import load_factor
 
         assert load_factor([]) == pytest.approx(0.0)
+
+
+@pytest.mark.parametrize(
+    "values,expected_load_factor",
+    [
+        ([5.0, 5.0, 5.0], 1.0),
+        ([0.0, 0.0, 0.0], 0.0),
+        ([1.0, 2.0, 3.0, 4.0], pytest.approx(0.625, rel=0.01)),
+    ],
+)
+def test_load_factor_known_cases(values, expected_load_factor) -> None:
+    """load_factor returns the ratio of mean to peak for known inputs."""
+    from app.time_series import load_factor
+
+    result = load_factor(values)
+    assert result == expected_load_factor
+
+
+@pytest.mark.parametrize("n", [24, 48, 72])
+def test_cumulative_sum_length_matches_input(n: int) -> None:
+    """cumulative_sum returns a series of the same length as the input."""
+    from app.time_series import cumulative_sum
+
+    values = [1.0] * n
+    result = cumulative_sum(values)
+    assert len(result) == n
+
+
+@pytest.mark.parametrize("window", [2, 3, 5])
+def test_simple_moving_average_length_matches_input(window: int) -> None:
+    """simple_moving_average returns a series of the same length as the input."""
+    from app.time_series import simple_moving_average
+
+    values = list(range(20))
+    result = simple_moving_average([float(v) for v in values], window=window)
+    assert len(result) == len(values)
+
+
+@pytest.mark.parametrize("n", [5, 10, 20])
+def test_moving_max_is_at_least_moving_min(n: int) -> None:
+    """Every element of moving_max is >= the corresponding element of moving_min."""
+    from app.time_series import moving_max, moving_min
+
+    values = [float(i % 5) for i in range(n)]
+    mx = moving_max(values, window=3)
+    mn = moving_min(values, window=3)
+    assert all(
+        hi >= lo for hi, lo in zip(mx, mn, strict=False) if not (math.isnan(hi) or math.isnan(lo))
+    )
+
+
+class TestClipOutliersEdgeCases:
+    def test_clipping_constant_series_unchanged(self) -> None:
+        from app.time_series import clip_outliers
+
+        values = [5.0] * 20
+        result = clip_outliers(values)
+        assert result == pytest.approx(values)
+
+    @pytest.mark.parametrize("n", [10, 20, 50])
+    def test_clip_output_length_matches_input(self, n: int) -> None:
+        from app.time_series import clip_outliers
+
+        values = list(range(n))
+        result = clip_outliers([float(v) for v in values])
+        assert len(result) == n
+
+    def test_no_values_outside_percentile_range(self) -> None:
+        from app.time_series import clip_outliers
+
+        values = list(range(100))
+        result = clip_outliers([float(v) for v in values], lower_pct=10.0, upper_pct=90.0)
+        assert min(result) >= 9.0
+        assert max(result) <= 90.0
+
+
+class TestLoadFactorExtended:
+    def test_constant_series_gives_one(self) -> None:
+        from app.time_series import load_factor
+
+        assert load_factor([5.0] * 10) == pytest.approx(1.0)
+
+    def test_mixed_series_less_than_one(self) -> None:
+        from app.time_series import load_factor
+
+        assert load_factor([1.0, 1.0, 1.0, 10.0]) < 1.0
+
+    @pytest.mark.parametrize("n", [5, 10, 24])
+    def test_result_in_valid_range(self, n: int) -> None:
+        from app.time_series import load_factor
+
+        values = [float(i % 3 + 1) for i in range(n)]
+        lf = load_factor(values)
+        assert 0.0 <= lf <= 1.0
+
+
+class TestPeakToValleyRatio:
+    def test_constant_series_gives_one(self) -> None:
+        from app.time_series import peak_to_valley_ratio
+
+        assert peak_to_valley_ratio([4.0] * 8) == pytest.approx(1.0)
+
+    def test_larger_spike_higher_ratio(self) -> None:
+        from app.time_series import peak_to_valley_ratio
+
+        ratio_low = peak_to_valley_ratio([1.0, 1.0, 5.0])
+        ratio_high = peak_to_valley_ratio([1.0, 1.0, 10.0])
+        assert ratio_high > ratio_low
+
+    @pytest.mark.parametrize("peak", [5.0, 10.0, 20.0])
+    def test_ratio_positive_for_positive_series(self, peak: float) -> None:
+        from app.time_series import peak_to_valley_ratio
+
+        assert peak_to_valley_ratio([1.0, peak]) > 0.0
+
+
+class TestMovingMedian:
+    def test_output_length_matches_input(self) -> None:
+        from app.time_series import moving_median
+
+        values = list(range(10))
+        result = moving_median([float(v) for v in values], window=3)
+        assert len(result) == len(values)
+
+    def test_constant_series_unchanged(self) -> None:
+        from app.time_series import moving_median
+
+        values = [7.0] * 8
+        result = moving_median(values, window=3)
+        assert all(v == pytest.approx(7.0) for v in result)
+
+    @pytest.mark.parametrize("window", [2, 3, 5])
+    def test_various_windows_correct_length(self, window: int) -> None:
+        from app.time_series import moving_median
+
+        values = [float(i) for i in range(20)]
+        result = moving_median(values, window=window)
+        assert len(result) == len(values)
+
+
+class TestRangeOfSeries:
+    def test_basic_range(self) -> None:
+        from app.time_series import range_of_series
+
+        assert range_of_series([1.0, 5.0, 3.0]) == pytest.approx(4.0)
+
+    def test_single_element(self) -> None:
+        from app.time_series import range_of_series
+
+        assert range_of_series([7.0]) == pytest.approx(0.0)
+
+    def test_all_same(self) -> None:
+        from app.time_series import range_of_series
+
+        assert range_of_series([2.0, 2.0, 2.0]) == pytest.approx(0.0)
+
+    def test_empty_raises(self) -> None:
+        from app.time_series import range_of_series
+
+        with pytest.raises(ValueError):
+            range_of_series([])
+
+    @pytest.mark.parametrize(
+        "values,expected",
+        [
+            ([0.0, 10.0], 10.0),
+            ([-5.0, 5.0], 10.0),
+        ],
+    )
+    def test_parametrized_range(self, values, expected) -> None:
+        from app.time_series import range_of_series
+
+        assert range_of_series(values) == pytest.approx(expected)
+
+
+class TestMovingMin:
+    def test_empty_returns_empty(self) -> None:
+        from app.time_series import moving_min
+
+        assert moving_min([]) == []
+
+    def test_output_length_matches_input(self) -> None:
+        from app.time_series import moving_min
+
+        values = [1.0, 2.0, 3.0, 4.0, 5.0]
+        assert len(moving_min(values, window=3)) == len(values)
+
+    def test_minimum_values(self) -> None:
+        from app.time_series import moving_min
+
+        values = [3.0, 1.0, 2.0, 5.0, 4.0]
+        result = moving_min(values, window=2)
+        assert result[1] == pytest.approx(1.0)
+
+    @pytest.mark.parametrize("window", [2, 3, 4])
+    def test_various_windows(self, window: int) -> None:
+        from app.time_series import moving_min
+
+        values = list(range(1, 11, 1))
+        values = [float(v) for v in values]
+        result = moving_min(values, window=window)
+        assert len(result) == len(values)
+
+
+class TestMovingMedianExtended:
+    def test_empty_returns_empty(self) -> None:
+        from app.time_series import moving_median
+
+        assert moving_median([]) == []
+
+    def test_output_length_matches_input(self) -> None:
+        from app.time_series import moving_median
+
+        values = [1.0, 2.0, 3.0, 4.0]
+        assert len(moving_median(values, window=3)) == len(values)
+
+    def test_median_of_sorted_is_middle(self) -> None:
+        from app.time_series import moving_median
+
+        values = [1.0, 2.0, 3.0, 4.0, 5.0]
+        result = moving_median(values, window=3)
+        assert result[2] == pytest.approx(2.0)
+
+    @pytest.mark.parametrize("window", [2, 3])
+    def test_parametrized_window(self, window: int) -> None:
+        from app.time_series import moving_median
+
+        values = [5.0, 3.0, 1.0, 4.0, 2.0]
+        result = moving_median(values, window=window)
+        assert isinstance(result, list)
+
+
+@pytest.mark.parametrize(
+    "values,period,expected_len",
+    [
+        ([1.0, 2.0, 3.0, 4.0, 5.0, 6.0], 2, 6),
+        ([10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0], 4, 8),
+    ],
+)
+def test_seasonal_baseline_output_length_parametrized(
+    values: list, period: int, expected_len: int
+) -> None:
+    from app.time_series import seasonal_baseline
+
+    result = seasonal_baseline(values, period=period)
+    assert isinstance(result, list)
+    assert len(result) == expected_len
+
+
+class TestCumulativeSum:
+    def test_empty_list_returns_empty(self) -> None:
+        from app.time_series import cumulative_sum
+
+        assert cumulative_sum([]) == []
+
+    def test_single_value(self) -> None:
+        from app.time_series import cumulative_sum
+
+        assert cumulative_sum([5.0]) == [5.0]
+
+    def test_running_totals_correct(self) -> None:
+        from app.time_series import cumulative_sum
+
+        result = cumulative_sum([1.0, 2.0, 3.0])
+        assert result == pytest.approx([1.0, 3.0, 6.0])
+
+    def test_length_matches_input(self) -> None:
+        from app.time_series import cumulative_sum
+
+        values = [1.0, 2.0, 3.0, 4.0]
+        assert len(cumulative_sum(values)) == len(values)
+
+    def test_last_value_equals_total_sum(self) -> None:
+        from app.time_series import cumulative_sum
+
+        values = [1.0, 5.0, 3.0, 2.0]
+        result = cumulative_sum(values)
+        assert result[-1] == pytest.approx(sum(values))
+
+    @pytest.mark.parametrize(
+        "values,expected",
+        [
+            ([1.0, 2.0], [1.0, 3.0]),
+            ([0.0, 0.0, 0.0], [0.0, 0.0, 0.0]),
+            ([10.0, -5.0, 3.0], [10.0, 5.0, 8.0]),
+        ],
+    )
+    def test_parametrized_cumsum(self, values: list, expected: list) -> None:
+        from app.time_series import cumulative_sum
+
+        assert cumulative_sum(values) == pytest.approx(expected)

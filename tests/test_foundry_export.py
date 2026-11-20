@@ -7,6 +7,8 @@ import io
 import json
 from pathlib import Path
 
+import pytest
+
 from scripts.foundry_export import (
     DATASET_COLUMNS,
     build_ontology_objects,
@@ -58,7 +60,9 @@ def test_build_run_rows_improvement_count(history_dir: Path) -> None:
 def test_build_run_rows_non_string_email_status(tmp_path: Path) -> None:
     h = tmp_path / "history"
     h.mkdir()
-    (h / "Weird.json").write_text(json.dumps([{"date": "2026-07-01", "commits": 5, "email_status": {"sent": False}}]))
+    (h / "Weird.json").write_text(
+        json.dumps([{"date": "2026-07-01", "commits": 5, "email_status": {"sent": False}}])
+    )
     rows = build_run_rows(h)
     assert rows[0]["email_status"] == ""
 
@@ -113,7 +117,9 @@ def test_build_ontology_objects_one_run_object_per_row(
 def test_build_ontology_objects_repo_aggregates(multi_repo_history_dir: Path) -> None:
     rows = build_run_rows(multi_repo_history_dir)
     objects = build_ontology_objects(rows)
-    alpha = next(o for o in objects if o["objectType"] == "Repository" and o["primaryKey"] == "Alpha")
+    alpha = next(
+        o for o in objects if o["objectType"] == "Repository" and o["primaryKey"] == "Alpha"
+    )
     assert alpha["properties"]["totalRuns"] == 2
     assert alpha["properties"]["totalCommits"] == 120
 
@@ -208,3 +214,40 @@ def test_build_ontology_objects_returns_list(history_dir) -> None:
     rows = build_run_rows(history_dir)
     objs = build_ontology_objects(rows)
     assert isinstance(objs, list)
+
+
+@pytest.mark.parametrize(
+    "mode_value,expected",
+    [
+        ("improvement", "improvement"),
+        ("IMPROVEMENT", "improvement"),
+        ("Innovation", "innovation"),
+        ("INNOVATION", "innovation"),
+    ],
+)
+def test_build_run_rows_normalises_mode(tmp_path: Path, mode_value: str, expected: str) -> None:
+    h = tmp_path / "history"
+    h.mkdir()
+    (h / "Repo.json").write_text(
+        json.dumps([{"date": "2026-08-01", "commits": 60, "mode": mode_value}])
+    )
+    rows = build_run_rows(h)
+    assert rows[0]["mode"] == expected
+
+
+@pytest.mark.parametrize(
+    "commits_value,expected_commits",
+    [
+        (60, 60),
+        (0, 0),
+        (120, 120),
+    ],
+)
+def test_build_run_rows_commits_field(
+    tmp_path: Path, commits_value: int, expected_commits: int
+) -> None:
+    h = tmp_path / "history"
+    h.mkdir()
+    (h / "Repo.json").write_text(json.dumps([{"date": "2026-08-01", "commits": commits_value}]))
+    rows = build_run_rows(h)
+    assert rows[0]["commits"] == expected_commits

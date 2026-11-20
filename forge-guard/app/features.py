@@ -25,12 +25,19 @@ class LagFeatureTransformer(BaseEstimator, TransformerMixin):
     """Appends lag-1 and lag-2 features for each sensor column."""
 
     def __init__(self, lags: int = 2) -> None:
+        """Set the number of lag steps to append per sensor column.
+
+        Args:
+            lags: How many lag steps to generate (e.g. 2 → lag1, lag2).
+        """
         self.lags = lags
 
     def fit(self, X: pd.DataFrame, y: object = None) -> LagFeatureTransformer:
+        """No fitting required; returns self."""
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Append lag features to each sensor column in X."""
         df = X.copy()
         for col in SENSOR_COLS:
             if col in df.columns:
@@ -43,12 +50,19 @@ class RollingStatsTransformer(BaseEstimator, TransformerMixin):
     """Adds rolling mean and std over a configurable window."""
 
     def __init__(self, window: int = 5) -> None:
+        """Set the rolling window size for mean and std features.
+
+        Args:
+            window: Number of rows to include in the rolling calculation.
+        """
         self.window = window
 
     def fit(self, X: pd.DataFrame, y: object = None) -> RollingStatsTransformer:
+        """No fitting required; returns self."""
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Add rolling mean and std columns for each sensor column."""
         df = X.copy()
         for col in SENSOR_COLS:
             if col in df.columns:
@@ -61,9 +75,11 @@ class RatioFeatureTransformer(BaseEstimator, TransformerMixin):
     """Computes domain-informed ratio features from sensor readings."""
 
     def fit(self, X: pd.DataFrame, y: object = None) -> RatioFeatureTransformer:
+        """No fitting required; returns self."""
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Add domain-informed ratio columns derived from sensor readings."""
         df = X.copy()
         eps = 1e-9
         if "temperature" in df.columns and "pressure" in df.columns:
@@ -83,9 +99,11 @@ class PolynomialSensorTransformer(BaseEstimator, TransformerMixin):
     HIGH_SIGNAL = ["vibration", "tool_wear", "temperature"]
 
     def fit(self, X: pd.DataFrame, y: object = None) -> PolynomialSensorTransformer:
+        """No fitting required; returns self."""
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Add squared terms for high-signal sensor columns."""
         df = X.copy()
         for col in self.HIGH_SIGNAL:
             if col in df.columns:
@@ -97,11 +115,13 @@ class DataFrameToArray(BaseEstimator, TransformerMixin):
     """Converts a DataFrame to a NumPy array and records feature names."""
 
     def fit(self, X: pd.DataFrame, y: object = None) -> DataFrameToArray:
+        """Record feature column names from the training DataFrame."""
         global FEATURE_NAMES
         FEATURE_NAMES = list(X.columns)
         return self
 
     def transform(self, X: pd.DataFrame) -> np.ndarray:
+        """Convert DataFrame to a float64 NumPy array."""
         return X.values.astype(np.float64)
 
 
@@ -217,3 +237,17 @@ def defect_risk_index(
         + 0.15 * float(pressure > 58)
     )
     return round(min(1.0, score), 6)
+
+
+__all__ = [
+    "DataFrameToArray",
+    "LagFeatureTransformer",
+    "PolynomialSensorTransformer",
+    "RatioFeatureTransformer",
+    "RollingStatsTransformer",
+    "build_feature_pipeline",
+    "defect_risk_index",
+    "engineer_single",
+    "generate_synthetic_data",
+    "sensor_range_feature",
+]

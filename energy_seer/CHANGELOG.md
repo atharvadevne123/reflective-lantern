@@ -1,5 +1,27 @@
 # Changelog
 
+## [1.1.0] - 2026-10-26
+
+### Added
+- `validate_temperature`, `validate_humidity`, `validate_horizon` in `validators.py`
+- `weighted_moving_average` and `exponential_smoothing` forecasters
+- `psi_alert` function for human-readable PSI alerts
+- `summarise_anomalies` helper in `monitoring.py`
+- `efficiency_percentile` in `efficiency_score.py`
+- `demand_trend` function in `demand_spike.py`
+- `compute_anomaly_rate` helper in `grid_report.py`
+- `counter_exists` and `reset_prefix` in `telemetry.py`
+- `get_with_default` and `keys` helpers in `cache.py`
+- `/api/v1/version` endpoint
+- `scripts/health_check.py` liveness probe
+- `train_time_sec` in model training metrics
+- 50+ new unit tests across all modules
+
+### Changed
+- `Makefile` — added `health`, `typecheck`, and `test-fast` targets
+- `_grade()` in `efficiency_score.py` memoised with `@lru_cache`
+- Module-level docstrings improved throughout
+
 ## [1.0.0] - 2026-07-14
 
 ### Added

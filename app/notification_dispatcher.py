@@ -22,6 +22,8 @@ logger = logging.getLogger(__name__)
 
 
 class Severity(StrEnum):
+    """Notification severity levels, ordered from least to most severe."""
+
     INFO = "info"
     WARNING = "warning"
     ERROR = "error"
@@ -58,21 +60,39 @@ class NotificationDispatcher:
     """Dispatches notifications to all eligible registered channels."""
 
     def __init__(self) -> None:
+        """Initialise the dispatcher with an empty channel registry."""
         self._channels: dict[str, Channel] = {}
 
     def register(self, channel: Channel) -> None:
-        """Add or replace a channel by name."""
+        """Add or replace a channel by name.
+
+        Args:
+            channel: :class:`Channel` instance to register; overwrites any
+                existing channel with the same :attr:`~Channel.name`.
+        """
         self._channels[channel.name] = channel
 
     def unregister(self, name: str) -> None:
-        """Remove a channel by name."""
+        """Remove a channel by name.
+
+        Args:
+            name: Name of the channel to remove. No-ops if not registered.
+        """
         self._channels.pop(name, None)
 
     def dispatch(self, notification: Notification) -> dict[str, bool]:
         """Send *notification* to all eligible channels.
 
+        A channel is eligible when it is enabled and its minimum severity is
+        at or below the notification's severity.
+
+        Args:
+            notification: The :class:`Notification` to deliver.
+
         Returns:
-            Mapping of channel name to delivery success.
+            Mapping of channel name → ``True`` (delivered) or ``False``
+            (send raised an exception). Disabled or filtered channels are
+            not included.
         """
         results: dict[str, bool] = {}
         notif_rank = _SEVERITY_ORDER.index(notification.severity)
@@ -93,6 +113,42 @@ class NotificationDispatcher:
         return results
 
     def set_enabled(self, name: str, enabled: bool) -> None:
-        """Toggle a channel on or off."""
+        """Toggle a channel on or off.
+
+        Args:
+            name: Channel name to update.
+            enabled: ``True`` to enable, ``False`` to disable. No-ops when the
+                channel is not registered.
+        """
         if name in self._channels:
             self._channels[name].enabled = enabled
+
+    def channel_names(self) -> list[str]:
+        """Return sorted list of all registered channel names.
+
+        Returns:
+            Alphabetically sorted list of every channel name in the registry,
+            regardless of enabled state.
+        """
+        return sorted(self._channels)
+
+    def enabled_channels(self) -> list[str]:
+        """Return names of all currently enabled channels.
+
+        Returns:
+            List of channel names whose :attr:`~Channel.enabled` flag is
+            ``True``, in insertion order.
+        """
+        return [name for name, ch in self._channels.items() if ch.enabled]
+
+    def __len__(self) -> int:
+        """Return the number of registered channels."""
+        return len(self._channels)
+
+    def disabled_channels(self) -> list[str]:
+        """Return names of all currently disabled channels.
+
+        Returns:
+            Sorted list of channel names where ``enabled`` is False.
+        """
+        return sorted(name for name, ch in self._channels.items() if not ch.enabled)

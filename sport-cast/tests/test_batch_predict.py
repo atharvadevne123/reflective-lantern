@@ -1,5 +1,4 @@
 """Batch prediction endpoint tests."""
-
 from __future__ import annotations
 
 

@@ -26,7 +26,6 @@ def app_with_middleware():
     @app.get("/rate-limited")
     async def rate_limited():
         from starlette.responses import Response
-
         return Response(status_code=429, content="Too Many Requests")
 
     return app

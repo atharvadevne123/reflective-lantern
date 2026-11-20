@@ -15,11 +15,11 @@ class _Other(Exception):
     pass
 
 
-def _make_flaky(fail_times: int, exc: type = _Boom):
+def _make_flaky(fail_times: int, exc: type = _Boom) -> None:
     """Return a function that raises exc for the first fail_times calls."""
     calls = [0]
 
-    def fn():
+    def fn() -> None:
         calls[0] += 1
         if calls[0] <= fail_times:
             raise exc(f"fail #{calls[0]}")
@@ -36,14 +36,14 @@ def _make_flaky(fail_times: int, exc: type = _Boom):
         (2, 3, "ok"),
     ],
 )
-def test_retry_succeeds_after_failures(fail_times, max_attempts, expected, monkeypatch):
+def test_retry_succeeds_after_failures(fail_times, max_attempts, expected, monkeypatch) -> None:
     monkeypatch.setattr("time.sleep", lambda _: None)
     fn = _make_flaky(fail_times)
     wrapped = retry(exceptions=(_Boom,), max_attempts=max_attempts, base_delay=0)(fn)
     assert wrapped() == expected
 
 
-def test_retry_raises_after_max_attempts(monkeypatch):
+def test_retry_raises_after_max_attempts(monkeypatch) -> None:
     monkeypatch.setattr("time.sleep", lambda _: None)
     fn = _make_flaky(5)
     wrapped = retry(exceptions=(_Boom,), max_attempts=3, base_delay=0)(fn)
@@ -51,7 +51,7 @@ def test_retry_raises_after_max_attempts(monkeypatch):
         wrapped()
 
 
-def test_retry_does_not_catch_unlisted_exceptions(monkeypatch):
+def test_retry_does_not_catch_unlisted_exceptions(monkeypatch) -> None:
     monkeypatch.setattr("time.sleep", lambda _: None)
     fn = _make_flaky(1, exc=_Other)
     wrapped = retry(exceptions=(_Boom,), max_attempts=3, base_delay=0)(fn)
@@ -59,20 +59,20 @@ def test_retry_does_not_catch_unlisted_exceptions(monkeypatch):
         wrapped()
 
 
-def test_retry_preserves_function_name():
-    def my_func():
+def test_retry_preserves_function_name() -> None:
+    def my_func() -> None:
         return 1
 
     wrapped = retry()(my_func)
     assert wrapped.__name__ == "my_func"
 
 
-def test_retry_passes_args_and_kwargs(monkeypatch):
+def test_retry_passes_args_and_kwargs(monkeypatch) -> None:
     monkeypatch.setattr("time.sleep", lambda _: None)
     calls = [0]
 
     @retry(exceptions=(_Boom,), max_attempts=2, base_delay=0)
-    def add(a, b=0):
+    def add(a, b=0) -> None:
         calls[0] += 1
         if calls[0] == 1:
             raise _Boom()
@@ -81,17 +81,17 @@ def test_retry_passes_args_and_kwargs(monkeypatch):
     assert add(3, b=4) == 7
 
 
-def test_retry_on_network_error_returns_callable():
+def test_retry_on_network_error_returns_callable() -> None:
     decorator = retry_on_network_error(max_attempts=2, base_delay=0)
     assert callable(decorator)
 
 
-def test_retry_on_network_error_retries_on_connection_error(monkeypatch):
+def test_retry_on_network_error_retries_on_connection_error(monkeypatch) -> None:
     monkeypatch.setattr("time.sleep", lambda _: None)
     calls = [0]
 
     @retry_on_network_error(max_attempts=3, base_delay=0)
-    def flaky():
+    def flaky() -> None:
         calls[0] += 1
         if calls[0] < 3:
             raise ConnectionError("timeout")
@@ -102,12 +102,12 @@ def test_retry_on_network_error_retries_on_connection_error(monkeypatch):
 
 
 @pytest.mark.parametrize("max_attempts", [1, 2, 5])
-def test_retry_attempt_count_respected(max_attempts, monkeypatch):
+def test_retry_attempt_count_respected(max_attempts, monkeypatch) -> None:
     monkeypatch.setattr("time.sleep", lambda _: None)
     calls = [0]
 
     @retry(exceptions=(_Boom,), max_attempts=max_attempts, base_delay=0)
-    def always_fail():
+    def always_fail() -> None:
         calls[0] += 1
         raise _Boom()
 
@@ -152,7 +152,14 @@ class TestBackoffTiming:
     def test_delay_is_capped_by_max_delay(self, monkeypatch: pytest.MonkeyPatch) -> None:
         sleeps = self._record_sleeps(monkeypatch)
 
-        @retry(exceptions=(_Boom,), max_attempts=6, base_delay=1.0, max_delay=3.0, backoff=10.0, jitter=0.0)
+        @retry(
+            exceptions=(_Boom,),
+            max_attempts=6,
+            base_delay=1.0,
+            max_delay=3.0,
+            backoff=10.0,
+            jitter=0.0,
+        )
         def always_fails() -> None:
             raise _Boom("down")
 
@@ -287,3 +294,369 @@ class TestRetryOnNetworkError:
         with pytest.raises(ValueError):
             bad_input()
         assert calls[0] == 1
+
+
+def test_retry_succeeds_on_first_attempt(monkeypatch) -> None:
+    monkeypatch.setattr("time.sleep", lambda _: None)
+
+    @retry(exceptions=(_Boom,), max_attempts=3, base_delay=0)
+    def always_succeed() -> None:
+        return 42
+
+    assert always_succeed() == 42
+
+
+@pytest.mark.parametrize("return_val", [0, "ok", [], {"k": "v"}])
+def test_retry_returns_correct_value(return_val, monkeypatch) -> None:
+    monkeypatch.setattr("time.sleep", lambda _: None)
+
+    @retry(exceptions=(_Boom,), max_attempts=1, base_delay=0)
+    def fn() -> None:
+        return return_val
+
+    assert fn() == return_val
+
+
+@pytest.mark.parametrize("max_attempts", [1, 2, 3, 5])
+def test_retry_exhausts_exactly_max_attempts(max_attempts: int, monkeypatch) -> None:
+    """retry raises after exactly max_attempts failed calls."""
+    monkeypatch.setattr("time.sleep", lambda _: None)
+    call_count = 0
+
+    @retry(exceptions=(_Boom,), max_attempts=max_attempts, base_delay=0)
+    def always_fail() -> None:
+        nonlocal call_count
+        call_count += 1
+        raise _Boom("fail")
+
+    with pytest.raises(_Boom):
+        always_fail()
+    assert call_count == max_attempts
+
+
+@pytest.mark.parametrize("exc_class", [ValueError, RuntimeError, KeyError])
+def test_retry_does_not_catch_unregistered_exceptions(exc_class: type, monkeypatch) -> None:
+    """retry only catches the exceptions listed in its exceptions parameter."""
+    monkeypatch.setattr("time.sleep", lambda _: None)
+
+    @retry(exceptions=(_Boom,), max_attempts=3, base_delay=0)
+    def raise_other() -> None:
+        raise exc_class("not retried")
+
+    with pytest.raises(exc_class):
+        raise_other()
+
+
+@pytest.mark.parametrize("max_attempts", [1, 2, 3, 5])
+def test_retry_succeeds_on_first_try_no_sleep(max_attempts: int, monkeypatch) -> None:
+    """When the function succeeds immediately, no sleep occurs regardless of max_attempts."""
+    from app.retry import retry
+
+    sleep_calls = []
+    monkeypatch.setattr("time.sleep", lambda d: sleep_calls.append(d))
+
+    @retry(exceptions=(Exception,), max_attempts=max_attempts, base_delay=0.1)
+    def ok() -> None:
+        return 42
+
+    assert ok() == 42
+    assert sleep_calls == []
+
+
+@pytest.mark.parametrize("n_failures", [1, 2, 3])
+def test_retry_attempt_count_on_eventual_success(n_failures: int, monkeypatch) -> None:
+    """retry invokes the function exactly n_failures + 1 times when it fails n_failures times."""
+    from app.retry import retry
+
+    monkeypatch.setattr("time.sleep", lambda _: None)
+    calls = []
+
+    @retry(exceptions=(_Boom,), max_attempts=n_failures + 1, base_delay=0)
+    def flaky() -> None:
+        calls.append(1)
+        if len(calls) <= n_failures:
+            raise _Boom("fail")
+        return "done"
+
+    result = flaky()
+    assert result == "done"
+    assert len(calls) == n_failures + 1
+
+
+class TestRetryNetworkError:
+    def test_retry_on_network_error_returns_value(self, monkeypatch) -> None:
+        from app.retry import retry_on_network_error
+
+        monkeypatch.setattr("time.sleep", lambda _: None)
+
+        @retry_on_network_error(max_attempts=3)
+        def fetch() -> None:
+            return "data"
+
+        assert fetch() == "data"
+
+    @pytest.mark.parametrize("attempts", [1, 2, 3])
+    def test_retry_on_network_error_propagates_after_exhaustion(
+        self, attempts: int, monkeypatch
+    ) -> None:
+        from app.retry import retry_on_network_error
+
+        monkeypatch.setattr("time.sleep", lambda _: None)
+
+        @retry_on_network_error(max_attempts=attempts)
+        def always_fail() -> None:
+            raise ConnectionError("network down")
+
+        with pytest.raises(ConnectionError):
+            always_fail()
+
+
+class TestRetrySucceedsOnFirstAttempt:
+    def test_successful_function_not_retried(self, monkeypatch) -> None:
+        from app.retry import retry
+
+        call_count = [0]
+        monkeypatch.setattr("time.sleep", lambda _: None)
+
+        @retry(max_attempts=3)
+        def succeed() -> None:
+            call_count[0] += 1
+            return "ok"
+
+        result = succeed()
+        assert result == "ok"
+        assert call_count[0] == 1
+
+    def test_retry_respects_max_attempts(self, monkeypatch) -> None:
+        from app.retry import retry
+
+        call_count = [0]
+        monkeypatch.setattr("time.sleep", lambda _: None)
+
+        @retry(exceptions=(ValueError,), max_attempts=3)
+        def always_fail() -> None:
+            call_count[0] += 1
+            raise ValueError("nope")
+
+        with pytest.raises(ValueError):
+            always_fail()
+        assert call_count[0] == 3
+
+    @pytest.mark.parametrize("max_attempts", [1, 2, 4])
+    def test_call_count_matches_max_attempts(self, monkeypatch, max_attempts: int) -> None:
+        from app.retry import retry
+
+        call_count = [0]
+        monkeypatch.setattr("time.sleep", lambda _: None)
+
+        @retry(exceptions=(RuntimeError,), max_attempts=max_attempts)
+        def fail() -> None:
+            call_count[0] += 1
+            raise RuntimeError("always fails")
+
+        with pytest.raises(RuntimeError):
+            fail()
+        assert call_count[0] == max_attempts
+
+
+class TestRetrySucceedsEventually:
+    def test_succeeds_after_one_failure(self, monkeypatch) -> None:
+        from app.retry import retry
+
+        attempts = [0]
+        monkeypatch.setattr("time.sleep", lambda _: None)
+
+        @retry(exceptions=(OSError,), max_attempts=3)
+        def fail_once() -> None:
+            attempts[0] += 1
+            if attempts[0] < 2:
+                raise OSError("temporary")
+            return "success"
+
+        result = fail_once()
+        assert result == "success"
+        assert attempts[0] == 2
+
+
+@pytest.mark.parametrize("max_retries", [0, 1, 2])
+def test_retry_zero_or_few_attempts(max_retries: int, monkeypatch) -> None:
+    """retry with max_attempts=1 never retries; higher values retry up to that count."""
+    monkeypatch.setattr("time.sleep", lambda _: None)
+    calls = [0]
+
+    @retry(exceptions=(_Boom,), max_attempts=max(max_retries, 1), base_delay=0)
+    def always_fail() -> None:
+        calls[0] += 1
+        raise _Boom("fail")
+
+    with pytest.raises(_Boom):
+        always_fail()
+    assert calls[0] == max(max_retries, 1)
+
+
+@pytest.mark.parametrize(
+    "backoff,base,expected_min_second_sleep",
+    [
+        (2.0, 1.0, 2.0),
+        (3.0, 1.0, 3.0),
+        (1.5, 2.0, 3.0),
+    ],
+)
+def test_retry_exponential_backoff_values(
+    backoff: float, base: float, expected_min_second_sleep: float, monkeypatch
+) -> None:
+    """Delay grows by backoff factor between attempts."""
+    sleeps: list[float] = []
+    monkeypatch.setattr("app.retry.time.sleep", sleeps.append)
+
+    @retry(exceptions=(_Boom,), max_attempts=3, base_delay=base, backoff=backoff, jitter=0.0)
+    def always_fail() -> None:
+        raise _Boom("fail")
+
+    with pytest.raises(_Boom):
+        always_fail()
+    # Second sleep should be at least backoff * base
+    assert len(sleeps) == 2
+    assert sleeps[1] >= expected_min_second_sleep - 0.01
+
+
+class TestWithRetryHelper:
+    def test_with_retry_success(self, monkeypatch) -> None:
+        from app.retry import with_retry
+
+        monkeypatch.setattr("time.sleep", lambda _: None)
+        result = with_retry(lambda: 42)
+        assert result == 42
+
+    def test_with_retry_retries_on_failure(self, monkeypatch) -> None:
+        from app.retry import with_retry
+
+        monkeypatch.setattr("time.sleep", lambda _: None)
+        calls = [0]
+
+        def flaky():
+            calls[0] += 1
+            if calls[0] < 2:
+                raise ValueError("temporary")
+            return "ok"
+
+        result = with_retry(flaky, max_attempts=3)
+        assert result == "ok"
+        assert calls[0] == 2
+
+    def test_with_retry_exhausted_raises(self, monkeypatch) -> None:
+        from app.retry import with_retry
+
+        monkeypatch.setattr("time.sleep", lambda _: None)
+        with pytest.raises(RuntimeError):
+            with_retry(lambda: (_ for _ in ()).throw(RuntimeError("boom")), max_attempts=2)
+
+
+class TestRetryOnNetworkErrorExt:
+    def test_returns_callable_decorator(self) -> None:
+        from app.retry import retry_on_network_error
+
+        decorator = retry_on_network_error(max_attempts=2)
+        assert callable(decorator)
+
+    def test_decorated_function_succeeds(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        from app.retry import retry_on_network_error
+
+        monkeypatch.setattr("app.retry.time.sleep", lambda _: None)
+
+        @retry_on_network_error(max_attempts=3)
+        def succeed() -> str:
+            return "done"
+
+        assert succeed() == "done"
+
+    def test_raises_after_exhaustion(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        from app.retry import retry_on_network_error
+
+        monkeypatch.setattr("app.retry.time.sleep", lambda _: None)
+
+        @retry_on_network_error(max_attempts=2)
+        def always_fail() -> None:
+            raise ConnectionError("network down")
+
+        with pytest.raises(ConnectionError):
+            always_fail()
+
+    @pytest.mark.parametrize("max_attempts", [1, 2, 3])
+    def test_call_count_bounded_by_max_attempts(
+        self, max_attempts: int, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from app.retry import retry_on_network_error
+
+        monkeypatch.setattr("app.retry.time.sleep", lambda _: None)
+        calls = [0]
+
+        @retry_on_network_error(max_attempts=max_attempts)
+        def counter() -> None:
+            calls[0] += 1
+            raise ConnectionError("boom")
+
+        with pytest.raises(ConnectionError):
+            counter()
+        assert calls[0] == max_attempts
+
+
+@pytest.mark.parametrize(
+    "max_attempts,n_failures,should_succeed",
+    [
+        (3, 2, True),  # succeeds on 3rd attempt
+        (3, 3, False),  # exhausts all attempts
+        (1, 0, True),  # succeeds first time
+        (5, 4, True),  # succeeds on 5th attempt
+    ],
+)
+def test_retry_eventual_success(
+    max_attempts: int, n_failures: int, should_succeed: bool, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from app.retry import retry
+
+    monkeypatch.setattr("app.retry.time.sleep", lambda _: None)
+    calls = [0]
+
+    @retry(exceptions=(ValueError,), max_attempts=max_attempts, base_delay=0.0)
+    def flaky() -> str:
+        calls[0] += 1
+        if calls[0] <= n_failures:
+            raise ValueError("temporary")
+        return "ok"
+
+    if should_succeed:
+        result = flaky()
+        assert result == "ok"
+    else:
+        with pytest.raises(ValueError):
+            flaky()
+
+
+@pytest.mark.parametrize("delay", [0.0, 0.001])
+def test_retry_respects_max_attempts_with_delay(delay: float) -> None:
+    """retry gives up after max_attempts regardless of base_delay."""
+    from app.retry import retry
+
+    calls = [0]
+
+    @retry(exceptions=(RuntimeError,), max_attempts=3, base_delay=delay)
+    def always_fails() -> None:
+        calls[0] += 1
+        raise RuntimeError("boom")
+
+    with pytest.raises(RuntimeError):
+        always_fails()
+    assert calls[0] == 3
+
+
+def test_retry_does_not_suppress_unregistered_exception() -> None:
+    """retry only catches listed exception types."""
+    from app.retry import retry
+
+    @retry(exceptions=(ValueError,), max_attempts=3, base_delay=0.0)
+    def wrong_error() -> None:
+        raise TypeError("not in the list")
+
+    with pytest.raises(TypeError):
+        wrong_error()

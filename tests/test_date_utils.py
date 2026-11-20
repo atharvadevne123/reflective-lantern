@@ -359,7 +359,9 @@ class TestFormatDuration:
         with pytest.raises(ValueError, match="non-negative"):
             format_duration(-1.0)
 
-    @pytest.mark.parametrize("seconds,expected", [(60.0, "1m 0s"), (3600.0, "1h 0m 0s"), (86400.0, "24h 0m 0s")])
+    @pytest.mark.parametrize(
+        "seconds,expected", [(60.0, "1m 0s"), (3600.0, "1h 0m 0s"), (86400.0, "24h 0m 0s")]
+    )
     def test_boundary_values(self, seconds: float, expected: str) -> None:
         from app.date_utils import format_duration
 
@@ -393,7 +395,9 @@ class TestIsLeapYear:
         with pytest.raises(ValueError, match="positive"):
             is_leap_year(0)
 
-    @pytest.mark.parametrize("year,expected", [(2020, True), (2100, False), (2000, True), (1999, False)])
+    @pytest.mark.parametrize(
+        "year,expected", [(2020, True), (2100, False), (2000, True), (1999, False)]
+    )
     def test_parametrized(self, year: int, expected: bool) -> None:
         from app.date_utils import is_leap_year
 
@@ -491,7 +495,9 @@ def test_quarter_of_year_q4() -> None:
     assert quarter_of_year(datetime(2026, 12, 31)) == 4
 
 
-@pytest.mark.parametrize("month,expected_q", [(1, 1), (3, 1), (4, 2), (6, 2), (7, 3), (9, 3), (10, 4), (12, 4)])
+@pytest.mark.parametrize(
+    "month,expected_q", [(1, 1), (3, 1), (4, 2), (6, 2), (7, 3), (9, 3), (10, 4), (12, 4)]
+)
 def test_quarter_parametrize(month, expected_q) -> None:
     from app.date_utils import quarter_of_year
 
@@ -711,7 +717,9 @@ class TestDaysInMonthExtended:
 
 
 class TestIsLeapYearExtended:
-    @pytest.mark.parametrize("year,expected", [(2024, True), (2023, False), (1900, False), (2000, True)])
+    @pytest.mark.parametrize(
+        "year,expected", [(2024, True), (2023, False), (1900, False), (2000, True)]
+    )
     def test_parametrized(self, year: int, expected: bool) -> None:
         from app.date_utils import is_leap_year
 
@@ -855,10 +863,7 @@ class TestNextWeekday:
             next_weekday(datetime.date(2026, 8, 11), weekday=8)
 
 
-import pytest as _pytest
-
-
-@_pytest.mark.parametrize(
+@pytest.mark.parametrize(
     "year,expected_leap",
     [(2000, True), (1900, False), (2024, True), (2026, False), (2100, False)],
 )
@@ -868,7 +873,7 @@ def test_is_leap_year_parametrized(year: int, expected_leap: bool) -> None:
     assert is_leap_year(year) == expected_leap
 
 
-@_pytest.mark.parametrize(
+@pytest.mark.parametrize(
     "year,month,expected_days",
     [
         (2024, 2, 29),
@@ -883,7 +888,7 @@ def test_days_in_month_parametrized(year: int, month: int, expected_days: int) -
     assert days_in_month(year, month) == expected_days
 
 
-@_pytest.mark.parametrize(
+@pytest.mark.parametrize(
     "month,expected_quarter",
     [(1, 1), (3, 1), (4, 2), (6, 2), (7, 3), (9, 3), (10, 4), (12, 4)],
 )
@@ -894,7 +899,7 @@ def test_quarter_of_year_parametrized(month: int, expected_quarter: int) -> None
     assert quarter_of_year(dt) == expected_quarter
 
 
-@_pytest.mark.parametrize("n_hours", [1, 24, 48, 168])
+@pytest.mark.parametrize("n_hours", [1, 24, 48, 168])
 def test_generate_hourly_timestamps_count(n_hours: int) -> None:
     from app.date_utils import generate_hourly_timestamps
 
@@ -903,7 +908,7 @@ def test_generate_hourly_timestamps_count(n_hours: int) -> None:
     assert len(result) == n_hours
 
 
-@_pytest.mark.parametrize(
+@pytest.mark.parametrize(
     "dt,expected_is_weekend",
     [
         (_dt.datetime(2026, 8, 15), True),  # Saturday
@@ -917,7 +922,7 @@ def test_is_weekend_parametrized(dt, expected_is_weekend: bool) -> None:
     assert is_weekend(dt) == expected_is_weekend
 
 
-@_pytest.mark.parametrize("seconds,expected_contains", [(60.0, "1m"), (3600.0, "1h"), (90.0, "1m")])
+@pytest.mark.parametrize("seconds,expected_contains", [(60.0, "1m"), (3600.0, "1h"), (90.0, "1m")])
 def test_format_duration_parametrized(seconds: float, expected_contains: str) -> None:
     from app.date_utils import format_duration
 
@@ -926,7 +931,7 @@ def test_format_duration_parametrized(seconds: float, expected_contains: str) ->
     assert len(result) > 0
 
 
-@_pytest.mark.parametrize(
+@pytest.mark.parametrize(
     "start,end,expected",
     [
         (_dt.datetime(2026, 1, 1), _dt.datetime(2026, 1, 11), 10),
@@ -1039,3 +1044,315 @@ class TestEndOfDay:
 
         dt = datetime(2026, 1, 1, tzinfo=UTC)
         assert end_of_day(dt).tzinfo is UTC
+
+
+@pytest.mark.parametrize(
+    "year,month,day",
+    [
+        (2026, 1, 1),
+        (2026, 6, 15),
+        (2026, 12, 31),
+    ],
+)
+def test_end_of_day_always_23_59_59(year: int, month: int, day: int) -> None:
+    """end_of_day always produces 23:59:59 regardless of the input date."""
+    from datetime import UTC, datetime
+
+    from app.date_utils import end_of_day
+
+    dt = datetime(year, month, day, tzinfo=UTC)
+    result = end_of_day(dt)
+    assert (result.hour, result.minute, result.second) == (23, 59, 59)
+
+
+@pytest.mark.parametrize(
+    "year,month,day",
+    [
+        (2026, 1, 1),
+        (2026, 3, 10),
+        (2026, 9, 2),
+    ],
+)
+def test_end_of_day_same_date(year: int, month: int, day: int) -> None:
+    """end_of_day keeps the same calendar date as the input."""
+    from datetime import UTC, datetime
+
+    from app.date_utils import end_of_day
+
+    dt = datetime(year, month, day, tzinfo=UTC)
+    result = end_of_day(dt)
+    assert (result.year, result.month, result.day) == (year, month, day)
+
+
+@pytest.mark.parametrize("n_hours", [6, 12, 36])
+def test_generate_hourly_timestamps_extended(n_hours: int) -> None:
+    """generate_hourly_timestamps returns exactly n_hours timestamps for non-standard lengths."""
+    from datetime import UTC, datetime
+
+    from app.date_utils import generate_hourly_timestamps
+
+    start = datetime(2026, 6, 15, tzinfo=UTC)
+    result = generate_hourly_timestamps(start, n_hours)
+    assert len(result) == n_hours
+
+
+@pytest.mark.parametrize("days", [0, 1, 7, 30])
+def test_days_between_round_trip(days: int) -> None:
+    """days_between start and start+days equals days."""
+    from datetime import UTC, datetime, timedelta
+
+    from app.date_utils import days_between
+
+    start = datetime(2026, 1, 1, tzinfo=UTC)
+    end = start + timedelta(days=days)
+    assert days_between(start, end) == days
+
+
+@pytest.mark.parametrize(
+    "quarter,months", [(1, [1, 2, 3]), (2, [4, 5, 6]), (3, [7, 8, 9]), (4, [10, 11, 12])]
+)
+def test_quarter_of_year_by_month(quarter: int, months: list[int]) -> None:
+    """quarter_of_year returns the correct quarter for each month."""
+    from datetime import UTC, datetime
+
+    from app.date_utils import quarter_of_year
+
+    for month in months:
+        dt = datetime(2026, month, 1, tzinfo=UTC)
+        assert quarter_of_year(dt) == quarter
+
+
+class TestIsLeapYearEdgeCases:
+    @pytest.mark.parametrize("year", [2000, 2004, 2020, 2024])
+    def test_known_leap_years(self, year: int) -> None:
+        from app.date_utils import is_leap_year
+
+        assert is_leap_year(year) is True
+
+    @pytest.mark.parametrize("year", [1900, 2001, 2023, 2025])
+    def test_known_non_leap_years(self, year: int) -> None:
+        from app.date_utils import is_leap_year
+
+        assert is_leap_year(year) is False
+
+
+class TestNextBusinessDayExtended:
+    def test_monday_gives_tuesday(self) -> None:
+        from datetime import UTC
+
+        from app.date_utils import next_business_day
+
+        monday = datetime(2026, 9, 7, 12, 0, tzinfo=UTC)
+        result = next_business_day(monday)
+        assert result.weekday() == 1
+
+    def test_friday_gives_monday(self) -> None:
+        from datetime import UTC
+
+        from app.date_utils import next_business_day
+
+        friday = datetime(2026, 9, 11, 12, 0, tzinfo=UTC)
+        result = next_business_day(friday)
+        assert result.weekday() == 0
+
+    def test_saturday_gives_monday(self) -> None:
+        from datetime import UTC
+
+        from app.date_utils import next_business_day
+
+        saturday = datetime(2026, 9, 12, 12, 0, tzinfo=UTC)
+        result = next_business_day(saturday)
+        assert result.weekday() == 0
+
+
+class TestDaysUntil:
+    def test_future_date_positive(self) -> None:
+        from datetime import UTC
+
+        from app.date_utils import days_until
+
+        start = datetime(2026, 9, 1, tzinfo=UTC)
+        target = datetime(2026, 9, 11, tzinfo=UTC)
+        assert days_until(start, target) == 10
+
+    def test_same_date_zero(self) -> None:
+        from datetime import UTC
+
+        from app.date_utils import days_until
+
+        dt = datetime(2026, 9, 11, tzinfo=UTC)
+        assert days_until(dt, dt) == 0
+
+    def test_past_date_non_positive(self) -> None:
+        from datetime import UTC
+
+        from app.date_utils import days_until
+
+        start = datetime(2026, 9, 11, tzinfo=UTC)
+        target = datetime(2026, 9, 1, tzinfo=UTC)
+        assert days_until(start, target) <= 0
+
+
+class TestClampToRange:
+    def test_within_range_unchanged(self) -> None:
+        from datetime import UTC
+
+        from app.date_utils import clamp_to_range
+
+        start = datetime(2026, 1, 1, tzinfo=UTC)
+        end = datetime(2026, 12, 31, tzinfo=UTC)
+        mid = datetime(2026, 6, 15, tzinfo=UTC)
+        assert clamp_to_range(mid, start, end) == mid
+
+    def test_before_start_clamped_to_start(self) -> None:
+        from datetime import UTC
+
+        from app.date_utils import clamp_to_range
+
+        start = datetime(2026, 6, 1, tzinfo=UTC)
+        end = datetime(2026, 12, 31, tzinfo=UTC)
+        early = datetime(2026, 1, 1, tzinfo=UTC)
+        assert clamp_to_range(early, start, end) == start
+
+    def test_after_end_clamped_to_end(self) -> None:
+        from datetime import UTC
+
+        from app.date_utils import clamp_to_range
+
+        start = datetime(2026, 1, 1, tzinfo=UTC)
+        end = datetime(2026, 6, 1, tzinfo=UTC)
+        late = datetime(2026, 12, 31, tzinfo=UTC)
+        assert clamp_to_range(late, start, end) == end
+
+    @pytest.mark.parametrize("offset_days", [-30, 0, 30])
+    def test_various_offsets_stay_in_range(self, offset_days: int) -> None:
+        from datetime import UTC, timedelta
+
+        from app.date_utils import clamp_to_range
+
+        start = datetime(2026, 1, 1, tzinfo=UTC)
+        end = datetime(2026, 12, 31, tzinfo=UTC)
+        mid = datetime(2026, 6, 15, tzinfo=UTC)
+        dt = mid + timedelta(days=offset_days)
+        result = clamp_to_range(dt, start, end)
+        assert start <= result <= end
+
+
+class TestIsSameDayNaive:
+    def test_same_day_naive(self) -> None:
+        from datetime import datetime
+
+        from app.date_utils import is_same_day
+
+        a = datetime(2026, 6, 15, 10, 0)
+        b = datetime(2026, 6, 15, 22, 30)
+        assert is_same_day(a, b)
+
+    def test_different_day_naive(self) -> None:
+        from datetime import datetime
+
+        from app.date_utils import is_same_day
+
+        a = datetime(2026, 6, 15)
+        b = datetime(2026, 6, 16)
+        assert not is_same_day(a, b)
+
+
+class TestEndOfDayNaive:
+    def test_end_of_day_time_naive(self) -> None:
+        from datetime import datetime
+
+        from app.date_utils import end_of_day
+
+        dt = datetime(2026, 6, 15, 10, 0)
+        eod = end_of_day(dt)
+        assert eod.hour == 23
+        assert eod.minute == 59
+        assert eod.second == 59
+
+
+class TestMinutesBetweenNaive:
+    def test_one_hour_apart_naive(self) -> None:
+        from datetime import datetime
+
+        from app.date_utils import minutes_between
+
+        a = datetime(2026, 6, 15, 10, 0)
+        b = datetime(2026, 6, 15, 11, 0)
+        assert minutes_between(a, b) == 60
+
+    def test_zero_minutes_naive(self) -> None:
+        from datetime import datetime
+
+        from app.date_utils import minutes_between
+
+        a = datetime(2026, 6, 15)
+        assert minutes_between(a, a) == 0
+
+
+class TestStartOfDayExtended:
+    def test_midnight_unchanged(self) -> None:
+        from datetime import datetime
+
+        from app.date_utils import start_of_day
+
+        dt = datetime(2026, 6, 15, 0, 0, 0, 0)
+        assert start_of_day(dt) == dt
+
+    def test_any_time_returns_midnight(self) -> None:
+        from datetime import datetime
+
+        from app.date_utils import start_of_day
+
+        dt = datetime(2026, 6, 15, 14, 30, 45, 123456)
+        result = start_of_day(dt)
+        assert result.hour == 0
+        assert result.minute == 0
+        assert result.second == 0
+        assert result.microsecond == 0
+
+    def test_date_part_preserved(self) -> None:
+        from datetime import datetime
+
+        from app.date_utils import start_of_day
+
+        dt = datetime(2026, 12, 31, 23, 59, 59)
+        result = start_of_day(dt)
+        assert result.year == 2026
+        assert result.month == 12
+        assert result.day == 31
+
+    @pytest.mark.parametrize("hour", [0, 6, 12, 23])
+    def test_start_of_day_always_midnight(self, hour: int) -> None:
+        pass
+
+    base = datetime(2026, 6, 1, 12, 0, 0)
+    start = base + timedelta(seconds=start_s)
+    end = base + timedelta(seconds=end_s)
+    assert elapsed_seconds(start, end) == pytest.approx(expected)
+
+
+@pytest.mark.parametrize(
+    "year,month,expected_days",
+    [
+        (2024, 2, 29),  # leap year Feb
+        (2023, 2, 28),  # non-leap Feb
+        (2024, 1, 31),
+        (2024, 4, 30),
+    ],
+)
+def test_days_in_month_parametrized_extra(year: int, month: int, expected_days: int) -> None:
+    """days_in_month returns the correct number of days for each month (extended cases)."""
+    from app.date_utils import days_in_month
+
+    assert days_in_month(year, month) == expected_days
+
+
+@pytest.mark.parametrize(
+    "year,expected", [(2024, True), (2023, False), (2000, True), (1900, False)]
+)
+def test_is_leap_year_parametrized_extra(year: int, expected: bool) -> None:
+    """is_leap_year returns True for leap years and False otherwise (extended cases)."""
+    from app.date_utils import is_leap_year
+
+    assert is_leap_year(year) is expected

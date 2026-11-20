@@ -36,7 +36,6 @@ class TestSensorReading:
 
     def test_rejects_nan_value(self) -> None:
         import math
-
         with pytest.raises(Exception):
             SensorReading(
                 sensor_id="s1",
@@ -46,7 +45,6 @@ class TestSensorReading:
 
     def test_rejects_inf_value(self) -> None:
         import math
-
         with pytest.raises(Exception):
             SensorReading(
                 sensor_id="s1",
@@ -65,12 +63,16 @@ class TestSensorReading:
 
 class TestBatchSensorReadings:
     def test_create_valid(self) -> None:
-        reading = SensorReading(sensor_id="s1", timestamp=datetime.now(), values={"t": 1.0})
+        reading = SensorReading(
+            sensor_id="s1", timestamp=datetime.now(), values={"t": 1.0}
+        )
         batch = BatchSensorReadings(readings=[reading])
         assert len(batch.readings) == 1
 
     def test_default_horizon(self) -> None:
-        reading = SensorReading(sensor_id="s1", timestamp=datetime.now(), values={"t": 1.0})
+        reading = SensorReading(
+            sensor_id="s1", timestamp=datetime.now(), values={"t": 1.0}
+        )
         batch = BatchSensorReadings(readings=[reading])
         assert batch.horizon == 5
 
@@ -79,7 +81,9 @@ class TestBatchSensorReadings:
             BatchSensorReadings(readings=[])
 
     def test_rejects_horizon_zero(self) -> None:
-        reading = SensorReading(sensor_id="s1", timestamp=datetime.now(), values={"t": 1.0})
+        reading = SensorReading(
+            sensor_id="s1", timestamp=datetime.now(), values={"t": 1.0}
+        )
         with pytest.raises(Exception):
             BatchSensorReadings(readings=[reading], horizon=0)
 

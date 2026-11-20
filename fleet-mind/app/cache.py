@@ -64,33 +64,3 @@ def clear_cache() -> None:
 def cache_size() -> int:
     """Return the number of entries currently in the prediction cache."""
     return len(_prediction_cache)
-
-
-_cache_hits = 0
-_cache_misses = 0
-
-
-def get_cached_prediction_tracked(reading: dict[str, float]) -> object:
-    """Return cached prediction and update hit/miss counters."""
-    global _cache_hits, _cache_misses
-    result = get_cached_prediction(reading)
-    if result is not None:
-        _cache_hits += 1
-    else:
-        _cache_misses += 1
-    return result
-
-
-def cache_hit_rate() -> float:
-    """Return cache hit rate since last reset (0.0 if no requests)."""
-    total = _cache_hits + _cache_misses
-    if total == 0:
-        return 0.0
-    return _cache_hits / total
-
-
-def reset_cache_stats() -> None:
-    """Reset hit and miss counters."""
-    global _cache_hits, _cache_misses
-    _cache_hits = 0
-    _cache_misses = 0

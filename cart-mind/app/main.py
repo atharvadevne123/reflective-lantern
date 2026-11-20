@@ -6,6 +6,7 @@ import json
 import logging
 import time
 import uuid
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from typing import Any
 
@@ -65,7 +66,7 @@ _state: dict[str, Any] = {}
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     init_db()
     _state["model"] = load_model()
     _state["index"], _state["item_ids"] = load_faiss_index()
@@ -92,7 +93,7 @@ app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 
 class CorrelationIDMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next):
+    async def dispatch(self, request: Request, call_next) -> Response:
         cid = request.headers.get("X-Correlation-ID", str(uuid.uuid4()))
         request.state.correlation_id = cid
         start = time.perf_counter()
@@ -116,7 +117,7 @@ RATE_WINDOW = 60.0
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next):
+    async def dispatch(self, request: Request, call_next) -> Response:
         client_ip = request.client.host if request.client else "unknown"
         now = time.time()
         last_reset, count = _rate_buckets.get(client_ip, (now, 0))

@@ -7,27 +7,27 @@ import math
 import pytest
 
 
-def test_mae_perfect():
+def test_mae_perfect() -> None:
     from app.evaluation.metrics import mae
 
     assert mae([1.0, 2.0, 3.0], [1.0, 2.0, 3.0]) == 0.0
 
 
-def test_mae_basic():
+def test_mae_basic() -> None:
     from app.evaluation.metrics import mae
 
     result = mae([0.0, 10.0], [5.0, 5.0])
     assert abs(result - 5.0) < 1e-9
 
 
-def test_mae_empty():
+def test_mae_empty() -> None:
     from app.evaluation.metrics import mae
 
     with pytest.raises(ValueError):
         mae([], [])
 
 
-def test_rmse_basic():
+def test_rmse_basic() -> None:
     from app.evaluation.metrics import rmse
 
     result = rmse([0.0, 0.0, 0.0], [3.0, 4.0, 5.0])
@@ -35,27 +35,27 @@ def test_rmse_basic():
     assert abs(result - expected) < 1e-9
 
 
-def test_mape_basic():
+def test_mape_basic() -> None:
     from app.evaluation.metrics import mape
 
     result = mape([100.0, 200.0], [90.0, 220.0])
     assert result > 0
 
 
-def test_r_squared_perfect():
+def test_r_squared_perfect() -> None:
     from app.evaluation.metrics import r_squared
 
     assert r_squared([1.0, 2.0, 3.0], [1.0, 2.0, 3.0]) == 1.0
 
 
-def test_revenue_uplift_basic():
+def test_revenue_uplift_basic() -> None:
     from app.evaluation.metrics import revenue_uplift
 
     uplift = revenue_uplift(100.0, 110.0)
     assert abs(uplift - 10.0) < 1e-9
 
 
-def test_revenue_uplift_zero_baseline():
+def test_revenue_uplift_zero_baseline() -> None:
     from app.evaluation.metrics import revenue_uplift
 
     assert revenue_uplift(0.0, 100.0) == 0.0
@@ -101,7 +101,6 @@ def test_revenue_uplift_non_negative_when_optimized_ge_baseline(
 
 def test_mae_empty_raises() -> None:
     import pytest
-
     from app.evaluation.metrics import mae
 
     with pytest.raises(ValueError):
@@ -134,3 +133,59 @@ def test_r_squared_worst_fit_negative(v: float) -> None:
     actual = [0.0, v]
     predicted = [v, 0.0]
     assert r_squared(actual, predicted) < 0.0
+
+
+@pytest.mark.parametrize("n", [2, 10, 100])
+def test_rmse_zero_for_perfect_predictions(n: int) -> None:
+    from app.evaluation.metrics import rmse
+
+    vals = list(range(n))
+    assert rmse(vals, vals) == pytest.approx(0.0, abs=1e-9)
+
+
+def test_revenue_uplift_positive_improvement() -> None:
+    from app.evaluation.metrics import revenue_uplift
+
+    result = revenue_uplift(100.0, 120.0)
+    assert result > 0.0
+
+
+def test_mae_non_negative() -> None:
+    from app.evaluation.metrics import mae
+
+    result = mae([1.0, 2.0, 3.0], [3.0, 2.0, 1.0])
+    assert result >= 0.0
+
+
+import pytest
+
+
+@pytest.mark.parametrize(
+    "actual,predicted,expected_mae",
+    [
+        ([0.0], [0.0], 0.0),
+        ([0.0], [1.0], 1.0),
+        ([1.0, 3.0], [2.0, 2.0], 1.0),
+        ([10.0, 20.0], [12.0, 18.0], 2.0),
+    ],
+)
+def test_mae_known_values(actual, predicted, expected_mae: float) -> None:
+    """mae returns the correct mean absolute error for known inputs."""
+    from app.evaluation.metrics import mae
+
+    assert mae(actual, predicted) == pytest.approx(expected_mae, abs=1e-9)
+
+
+@pytest.mark.parametrize(
+    "baseline,optimised",
+    [
+        (100.0, 110.0),
+        (50.0, 75.0),
+        (200.0, 201.0),
+    ],
+)
+def test_revenue_uplift_positive_for_improvement(baseline: float, optimised: float) -> None:
+    """revenue_uplift is positive whenever optimised > baseline."""
+    from app.evaluation.metrics import revenue_uplift
+
+    assert revenue_uplift(baseline, optimised) > 0.0

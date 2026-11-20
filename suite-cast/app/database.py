@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 import uuid
+from collections.abc import Generator
 from datetime import datetime
 
 from sqlalchemy import Column, DateTime, Float, Integer, String, create_engine
-from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy.orm import Session, declarative_base, sessionmaker
 from sqlalchemy.types import JSON
 
 from .config import settings
@@ -47,7 +48,7 @@ class ModelMetrics(Base):
     trained_at = Column(DateTime, default=datetime.utcnow)
 
 
-def get_db():
+def get_db() -> Generator[Session, None, None]:
     """Yield a DB session; close on exit."""
     db = SessionLocal()
     try:

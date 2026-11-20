@@ -12,13 +12,8 @@ class TestJsonFormatter:
     def test_format_returns_string(self) -> None:
         formatter = JsonFormatter()
         record = logging.LogRecord(
-            name="test",
-            level=logging.INFO,
-            pathname="",
-            lineno=0,
-            msg="hello",
-            args=(),
-            exc_info=None,
+            name="test", level=logging.INFO, pathname="", lineno=0,
+            msg="hello", args=(), exc_info=None
         )
         result = formatter.format(record)
         assert isinstance(result, str)
@@ -26,13 +21,8 @@ class TestJsonFormatter:
     def test_format_is_valid_json(self) -> None:
         formatter = JsonFormatter()
         record = logging.LogRecord(
-            name="test",
-            level=logging.WARNING,
-            pathname="",
-            lineno=0,
-            msg="test message",
-            args=(),
-            exc_info=None,
+            name="test", level=logging.WARNING, pathname="", lineno=0,
+            msg="test message", args=(), exc_info=None
         )
         data = json.loads(formatter.format(record))
         assert isinstance(data, dict)
@@ -40,13 +30,8 @@ class TestJsonFormatter:
     def test_format_has_required_keys(self) -> None:
         formatter = JsonFormatter()
         record = logging.LogRecord(
-            name="mylogger",
-            level=logging.ERROR,
-            pathname="",
-            lineno=0,
-            msg="error happened",
-            args=(),
-            exc_info=None,
+            name="mylogger", level=logging.ERROR, pathname="", lineno=0,
+            msg="error happened", args=(), exc_info=None
         )
         data = json.loads(formatter.format(record))
         assert "ts" in data
@@ -57,7 +42,8 @@ class TestJsonFormatter:
     def test_format_level_name(self) -> None:
         formatter = JsonFormatter()
         record = logging.LogRecord(
-            name="l", level=logging.DEBUG, pathname="", lineno=0, msg="dbg", args=(), exc_info=None
+            name="l", level=logging.DEBUG, pathname="", lineno=0,
+            msg="dbg", args=(), exc_info=None
         )
         data = json.loads(formatter.format(record))
         assert data["level"] == "DEBUG"
@@ -65,13 +51,8 @@ class TestJsonFormatter:
     def test_format_message_content(self) -> None:
         formatter = JsonFormatter()
         record = logging.LogRecord(
-            name="l",
-            level=logging.INFO,
-            pathname="",
-            lineno=0,
-            msg="specific message here",
-            args=(),
-            exc_info=None,
+            name="l", level=logging.INFO, pathname="", lineno=0,
+            msg="specific message here", args=(), exc_info=None
         )
         data = json.loads(formatter.format(record))
         assert "specific message here" in data["message"]

@@ -48,11 +48,28 @@ def extract_pdf(data: bytes) -> tuple[list[str], dict[str, Any]]:
 
     Returns:
         Tuple of (list of per-page texts, metadata dict).
-    """
-    from pypdf import PdfReader
 
-    reader = PdfReader(BytesIO(data))
-    pages = [(page.extract_text() or "") for page in reader.pages]
+    Raises:
+        ValueError: If the bytes are not a valid PDF.
+    """
+    try:
+        from pypdf import PdfReader
+    except ImportError as exc:
+        raise ImportError("pypdf is required for PDF extraction: pip install pypdf") from exc
+
+    try:
+        reader = PdfReader(BytesIO(data))
+    except Exception as exc:
+        raise ValueError(f"Could not parse PDF: {exc}") from exc
+
+    pages: list[str] = []
+    for i, page in enumerate(reader.pages):
+        try:
+            pages.append(page.extract_text() or "")
+        except Exception:
+            logger.warning("Failed to extract text from PDF page %d; using empty string", i + 1)
+            pages.append("")
+
     meta: dict[str, Any] = {"page_count": len(pages)}
     if reader.metadata:
         for key in ("title", "author", "creation_date"):
@@ -83,10 +100,7 @@ def extract_email(data: bytes) -> tuple[list[str], dict[str, Any]]:
     body = ""
     if body_part is not None:
         content = body_part.get_content()
-        if body_part.get_content_type() == "text/html":
-            body = extract_html(content)
-        else:
-            body = content
+        body = extract_html(content) if body_part.get_content_type() == "text/html" else content
 
     # Prepend subject so retrieval can match on it
     text = f"{meta['subject']}\n\n{body}".strip()

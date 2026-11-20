@@ -1,4 +1,4 @@
-"""Date and time utility helpers for Watt-Guard."""
+"""Date and time utility helpers for Logistics-Flow."""
 
 from __future__ import annotations
 
@@ -111,6 +111,7 @@ __all__ = [
     "days_in_month",
     "days_until",
     "elapsed_seconds",
+    "end_of_day",
     "fiscal_quarter",
     "format_duration",
     "format_iso",
@@ -119,8 +120,10 @@ __all__ = [
     "is_business_day",
     "is_business_hour",
     "is_leap_year",
+    "is_same_day",
     "is_weekend",
     "iso_to_datetime",
+    "minutes_between",
     "next_business_day",
     "next_midnight",
     "next_weekday",
@@ -579,3 +582,16 @@ def end_of_day(dt: datetime) -> datetime:
         Datetime at the very end of *dt*'s calendar day.
     """
     return dt.replace(hour=23, minute=59, second=59, microsecond=999999)
+
+
+def end_of_month(dt: datetime) -> datetime:
+    """Return the last microsecond of the month containing *dt*.
+
+    Args:
+        dt: Any datetime (timezone is preserved).
+
+    Returns:
+        Datetime at 23:59:59.999999 on the last day of *dt*'s month.
+    """
+    last_day = days_in_month(dt.year, dt.month)
+    return dt.replace(day=last_day, hour=23, minute=59, second=59, microsecond=999999)

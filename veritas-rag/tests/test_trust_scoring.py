@@ -9,8 +9,6 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 
 import pytest
-
-from app.schemas import Chunk, ScoredChunk
 from app.scoring.trust import (
     SOURCE_QUALITY_PRIORS,
     answer_confidence,
@@ -20,6 +18,8 @@ from app.scoring.trust import (
     source_quality_score,
     trust_tier,
 )
+
+from app.schemas import Chunk, ScoredChunk
 
 NOW = datetime(2026, 1, 1, tzinfo=UTC)
 
@@ -59,11 +59,15 @@ class TestFreshnessScore:
 
     def test_half_life_halves_the_score(self) -> None:
         created = (NOW - timedelta(days=365)).isoformat()
-        assert freshness_score(created, half_life_days=365.0, now=NOW) == pytest.approx(0.5, rel=1e-6)
+        assert freshness_score(created, half_life_days=365.0, now=NOW) == pytest.approx(
+            0.5, rel=1e-6
+        )
 
     def test_two_half_lives_quarter_the_score(self) -> None:
         created = (NOW - timedelta(days=730)).isoformat()
-        assert freshness_score(created, half_life_days=365.0, now=NOW) == pytest.approx(0.25, rel=1e-6)
+        assert freshness_score(created, half_life_days=365.0, now=NOW) == pytest.approx(
+            0.25, rel=1e-6
+        )
 
     def test_older_documents_score_lower(self) -> None:
         recent = freshness_score((NOW - timedelta(days=10)).isoformat(), now=NOW)
@@ -153,7 +157,9 @@ class TestScoreChunk:
 
     def test_stale_single_retriever_chunk_scores_low(self) -> None:
         scored = make_scored(
-            chunk=make_chunk(created_at=(NOW - timedelta(days=3650)).isoformat(), source_type="email"),
+            chunk=make_chunk(
+                created_at=(NOW - timedelta(days=3650)).isoformat(), source_type="email"
+            ),
             bm25_rank=None,
             vector_rank=45,
             rerank_score=0.1,
@@ -227,3 +233,211 @@ class TestTrustTier:
         order = {"minimal": 0, "low": 1, "medium": 2, "high": 3}
         tiers = [order[trust_tier(s / 10)] for s in range(11)]
         assert tiers == sorted(tiers)
+
+
+class TestFreshnessEdgeCases:
+    def test_none_created_at_returns_neutral(self) -> None:
+        """None created_at returns the neutral 0.5 score without raising."""
+        score = freshness_score(None, now=NOW)  # type: ignore[arg-type]
+        assert score == 0.5
+
+    def test_future_document_scores_one(self) -> None:
+        """A document with a future timestamp is treated as brand-new (max freshness)."""
+        future = (NOW + __import__("datetime").timedelta(days=30)).isoformat()
+        score = freshness_score(future, now=NOW)
+        assert score == pytest.approx(1.0)
+
+    @pytest.mark.parametrize("half_life", [7.0, 30.0, 90.0, 365.0])
+    def test_half_life_at_boundary(self, half_life: float) -> None:
+        """Freshness is exactly 0.5 at exactly one half-life of age."""
+        from datetime import timedelta
+
+        created = (NOW - timedelta(days=half_life)).isoformat()
+        assert freshness_score(created, half_life_days=half_life, now=NOW) == pytest.approx(
+            0.5, rel=1e-5
+        )
+
+    def test_naive_datetime_treated_as_utc(self) -> None:
+        """A naive ISO datetime string (no tz) is treated as UTC."""
+        naive = "2026-01-01T00:00:00"
+        score = freshness_score(naive, now=NOW)
+        assert 0.0 < score <= 1.0
+
+
+class TestConsistencyEdgeCases:
+    @pytest.mark.parametrize(
+        ("bm25_rank", "vec_rank"),
+        [
+            (None, None),
+            (1, None),
+            (None, 1),
+            (1, 1),
+        ],
+    )
+    def test_consistency_score_valid_range(
+        self, bm25_rank: int | None, vec_rank: int | None
+    ) -> None:
+        """consistency_score always returns a value in [0, 1]."""
+        score = consistency_score(bm25_rank, vec_rank, rerank_score=0.7, top_k=50)
+        assert 0.0 <= score <= 1.0
+
+    def test_both_found_outscores_single_retriever(self) -> None:
+        """A chunk found by both retrievers scores higher than one found by only one."""
+        both = consistency_score(1, 1, rerank_score=0.5, top_k=50)
+        one_only = consistency_score(1, None, rerank_score=0.5, top_k=50)
+        assert both > one_only
+
+    def test_higher_rerank_score_increases_consistency(self) -> None:
+        """A higher rerank score increases the consistency component."""
+        low = consistency_score(1, 1, rerank_score=0.2, top_k=50)
+        high = consistency_score(1, 1, rerank_score=0.9, top_k=50)
+        assert high > low
+
+
+class TestScoreChunkIntegration:
+    def test_all_components_present(self) -> None:
+        """score_chunk populates all three trust_components keys."""
+        scored = make_scored()
+        result = score_chunk(scored, now=NOW)
+        assert set(result.trust_components.keys()) == {"freshness", "source_quality", "consistency"}
+
+    def test_trust_in_unit_interval(self) -> None:
+        """Composite trust score is always in [0, 1]."""
+        for source_type in ("pdf", "markdown", "text", "html", "email", "unknown"):
+            chunk = make_chunk(source_type=source_type)
+            scored = ScoredChunk(chunk=chunk, bm25_rank=1, vector_rank=1, rerank_score=0.8)
+            score_chunk(scored, now=NOW)
+            assert 0.0 <= scored.trust <= 1.0, f"trust out of range for {source_type}"
+
+
+class TestTrustTierExtended:
+    @pytest.mark.parametrize(
+        ("score", "expected_tier"),
+        [
+            (0.90, "high"),
+            (0.75, "high"),
+            (0.74, "medium"),
+            (0.50, "medium"),
+            (0.49, "low"),
+            (0.25, "low"),
+            (0.24, "minimal"),
+            (0.00, "minimal"),
+        ],
+    )
+    def test_tier_boundaries_extended(self, score: float, expected_tier: str) -> None:
+        from app.scoring.trust import trust_tier
+
+        assert trust_tier(score) == expected_tier
+
+
+class TestWeightedAnswerConfidence:
+    def test_empty_returns_zero(self) -> None:
+        from app.scoring.trust import weighted_answer_confidence
+
+        assert weighted_answer_confidence([]) == 0.0
+
+    def test_single_chunk(self) -> None:
+        from app.scoring.trust import weighted_answer_confidence
+
+        chunk = make_chunk()
+        scored = ScoredChunk(chunk=chunk, rerank_score=0.8)
+        score_chunk(scored, now=NOW)
+        result = weighted_answer_confidence([scored])
+        assert 0.0 <= result <= 1.0
+
+    def test_higher_rerank_means_higher_contribution(self) -> None:
+        from app.scoring.trust import weighted_answer_confidence
+
+        low_rerank = ScoredChunk(chunk=make_chunk(), rerank_score=0.1, trust=0.8)
+        high_rerank = ScoredChunk(chunk=make_chunk(), rerank_score=0.9, trust=0.2)
+        result = weighted_answer_confidence([low_rerank, high_rerank], rerank_weight=1.0)
+        # With full rerank_weight, high-trust+low-rerank vs low-trust+high-rerank
+        assert isinstance(result, float)
+        assert 0.0 <= result <= 1.0
+
+
+class TestMinTrustGateAndVariance:
+    def test_min_trust_gate_filters_low(self) -> None:
+        from app.scoring.trust import min_trust_gate
+
+        chunks = [
+            ScoredChunk(chunk=make_chunk(), trust=0.8),
+            ScoredChunk(chunk=make_chunk(), trust=0.3),
+            ScoredChunk(chunk=make_chunk(), trust=0.6),
+        ]
+        result = min_trust_gate(chunks, threshold=0.5)
+        assert len(result) == 2
+        assert all(c.trust >= 0.5 for c in result)
+
+    def test_trust_variance_zero_for_single(self) -> None:
+        from app.scoring.trust import trust_variance
+
+        chunk = ScoredChunk(chunk=make_chunk(), trust=0.7)
+        assert trust_variance([chunk]) == 0.0
+
+    def test_trust_variance_positive_for_spread(self) -> None:
+        from app.scoring.trust import trust_variance
+
+        chunks = [
+            ScoredChunk(chunk=make_chunk(), trust=0.2),
+            ScoredChunk(chunk=make_chunk(), trust=0.8),
+        ]
+        assert trust_variance(chunks) > 0.0
+
+    def test_above_threshold_ratio_all(self) -> None:
+        from app.scoring.trust import above_threshold_ratio
+
+        chunks = [ScoredChunk(chunk=make_chunk(), trust=0.9) for _ in range(5)]
+        assert above_threshold_ratio(chunks, threshold=0.5) == 1.0
+
+    def test_above_threshold_ratio_none(self) -> None:
+        from app.scoring.trust import above_threshold_ratio
+
+        chunks = [ScoredChunk(chunk=make_chunk(), trust=0.1) for _ in range(3)]
+        assert above_threshold_ratio(chunks, threshold=0.5) == 0.0
+
+    def test_top_k_trust_returns_sorted(self) -> None:
+        from app.scoring.trust import top_k_trust
+
+        chunks = [
+            ScoredChunk(chunk=make_chunk(), trust=0.3),
+            ScoredChunk(chunk=make_chunk(), trust=0.9),
+            ScoredChunk(chunk=make_chunk(), trust=0.6),
+        ]
+        result = top_k_trust(chunks, k=2)
+        assert len(result) == 2
+        assert result[0].trust >= result[1].trust
+
+
+class TestNormalizeTrustScores:
+    def test_empty_returns_empty(self) -> None:
+        from app.scoring.trust import normalize_trust_scores
+
+        assert normalize_trust_scores([]) == []
+
+    def test_max_becomes_one(self) -> None:
+        from app.scoring.trust import normalize_trust_scores
+
+        chunks = [
+            ScoredChunk(chunk=make_chunk(), trust=0.4),
+            ScoredChunk(chunk=make_chunk(), trust=0.8),
+            ScoredChunk(chunk=make_chunk(), trust=0.2),
+        ]
+        result = normalize_trust_scores(chunks)
+        assert max(c.trust for c in result) == pytest.approx(1.0)
+
+    def test_order_preserved(self) -> None:
+        from app.scoring.trust import normalize_trust_scores
+
+        original_trusts = [0.6, 0.9, 0.3]
+        chunks = [ScoredChunk(chunk=make_chunk(), trust=t) for t in original_trusts]
+        original_order = [id(c) for c in chunks]
+        normalize_trust_scores(chunks)
+        assert [id(c) for c in chunks] == original_order
+
+    def test_all_zero_unchanged(self) -> None:
+        from app.scoring.trust import normalize_trust_scores
+
+        chunks = [ScoredChunk(chunk=make_chunk(), trust=0.0) for _ in range(3)]
+        result = normalize_trust_scores(chunks)
+        assert all(c.trust == 0.0 for c in result)

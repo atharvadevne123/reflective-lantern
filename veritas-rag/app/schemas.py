@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
+__all__ = ["Answer", "Chunk", "Citation", "Document", "ScoredChunk"]
+
 
 @dataclass
 class Document:
@@ -79,6 +81,12 @@ class ScoredChunk:
     rerank_score: float = 0.0
     trust: float = 0.0
     trust_components: dict[str, float] = field(default_factory=dict)
+
+    def __repr__(self) -> str:
+        return (
+            f"ScoredChunk(chunk_id={self.chunk.chunk_id!r}, "
+            f"trust={self.trust:.4f}, rerank={self.rerank_score:.4f})"
+        )
 
 
 @dataclass

@@ -1,4 +1,29 @@
-"""Simple in-memory TTL cache for prediction results."""
+"""Simple in-memory TTL cache for prediction results.
+
+Provides a thread-safe TTL cache and a collection of standalone helper
+functions for common cache operations.
+
+Core class:
+
+- :class:`TTLCache` — thread-safe cache with per-entry time-to-live,
+  LRU-style capacity eviction, and hit/miss/eviction counters.
+
+Standalone helpers:
+
+- :func:`build_cache_key` — build a ``:``-delimited string key from parts.
+- :func:`cache_key_from_dict` — deterministic key from a parameter dict.
+- :func:`warm_cache` — bulk-populate a cache from a mapping.
+- :func:`batch_get` / :func:`batch_set` / :func:`batch_delete` — vectorised
+  cache operations.
+- :func:`peek` — inspect a value without incrementing hit/miss counters.
+- :func:`cache_hit_rate` / :func:`cache_miss_rate` — compute rates from raw
+  counters.
+- :func:`cache_fill_rate` / :func:`cache_remaining_capacity` — capacity
+  utilisation helpers.
+
+The module also exposes a process-level singleton ``prediction_cache``
+pre-configured with a 30-second TTL and a 500-entry capacity.
+"""
 
 from __future__ import annotations
 
@@ -11,9 +36,20 @@ logger = logging.getLogger(__name__)
 
 
 class TTLCache:
-    """Thread-safe TTL cache for single-process use."""
+    """Thread-safe TTL cache for single-process use.
+
+    All public methods are protected by a reentrant lock so that concurrent
+    callers share the same store safely.  Expired entries are lazily removed
+    on ``get()`` and can also be purged in bulk via ``evict_expired()``.
+    """
 
     def __init__(self, ttl_seconds: int = 60, max_size: int = 1000) -> None:
+        """Initialise cache with TTL and maximum entry count.
+
+        Args:
+            ttl_seconds: Seconds before a cached entry expires.
+            max_size: Maximum number of entries before eviction.
+        """
         self._ttl = ttl_seconds
         self._max = max_size
         self._store: dict[str, tuple[Any, float]] = {}
@@ -23,7 +59,16 @@ class TTLCache:
         self.evictions = 0
 
     def get(self, key: str) -> Any | None:
-        """Return the cached value for *key*, or None if absent or expired."""
+        """Return the cached value for *key*, or None if absent or expired.
+
+        Args:
+            key: Cache key to look up.
+
+        Returns:
+            The cached value when the entry exists and has not expired;
+            ``None`` otherwise.  Increments :attr:`hits` or :attr:`misses`
+            accordingly.
+        """
         with self._lock:
             entry = self._store.get(key)
             if entry is None:
@@ -41,6 +86,11 @@ class TTLCache:
         """Store *value* under *key* with the configured TTL.
 
         Evicts the entry with the earliest expiry when the cache is full.
+
+        Args:
+            key: Cache key to write.
+            value: Arbitrary value to store. The TTL clock starts at the
+                moment of this call.
         """
         with self._lock:
             if len(self._store) >= self._max:
@@ -50,7 +100,11 @@ class TTLCache:
             self._store[key] = (value, time.monotonic() + self._ttl)
 
     def invalidate(self, key: str) -> None:
-        """Remove *key* from the cache (no-op if absent)."""
+        """Remove *key* from the cache (no-op if absent).
+
+        Args:
+            key: Cache key to remove. No-ops silently if not present.
+        """
         with self._lock:
             self._store.pop(key, None)
 
@@ -70,6 +124,11 @@ class TTLCache:
             for k in expired:
                 del self._store[k]
         return len(expired)
+
+    def __len__(self) -> int:
+        """Return the number of entries currently stored (including potentially expired)."""
+        with self._lock:
+            return len(self._store)
 
     def __contains__(self, key: str) -> bool:
         """Return True if *key* is present and not expired."""
@@ -91,6 +150,11 @@ class TTLCache:
         """Fraction of get() calls that returned a value (0.0 if none yet)."""
         total = self.hits + self.misses
         return self.hits / total if total > 0 else 0.0
+
+    def __bool__(self) -> bool:
+        """Return True when the cache holds at least one entry."""
+        with self._lock:
+            return bool(self._store)
 
     def get_or_set(self, key: str, default: Any) -> Any:
         """Return cached value; if absent or expired, store *default* and return it."""
@@ -123,9 +187,12 @@ __all__ = [
     "cache_hit_rate",
     "cache_key_count",
     "cache_key_from_dict",
+    "cache_miss_rate",
+    "cache_remaining_capacity",
     "cache_stats_summary",
     "evict_expired_keys",
     "get_or_default",
+    "is_cache_empty",
     "peek",
     "prediction_cache",
     "warm_cache",

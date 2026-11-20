@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 
-def test_increment_default():
+def test_increment_default() -> None:
     from app.utils.metrics_collector import MetricsCollector
 
     mc = MetricsCollector()
@@ -11,7 +11,7 @@ def test_increment_default():
     assert mc.counter("hits") == 1
 
 
-def test_increment_by():
+def test_increment_by() -> None:
     from app.utils.metrics_collector import MetricsCollector
 
     mc = MetricsCollector()
@@ -19,14 +19,14 @@ def test_increment_by():
     assert mc.counter("hits") == 5
 
 
-def test_counter_zero_for_unseen():
+def test_counter_zero_for_unseen() -> None:
     from app.utils.metrics_collector import MetricsCollector
 
     mc = MetricsCollector()
     assert mc.counter("nope") == 0
 
 
-def test_record_timing_avg():
+def test_record_timing_avg() -> None:
     from app.utils.metrics_collector import MetricsCollector
 
     mc = MetricsCollector()
@@ -35,14 +35,14 @@ def test_record_timing_avg():
     assert abs(mc.avg_timing("req") - 2.0) < 1e-9
 
 
-def test_avg_timing_empty():
+def test_avg_timing_empty() -> None:
     from app.utils.metrics_collector import MetricsCollector
 
     mc = MetricsCollector()
     assert mc.avg_timing("missing") == 0.0
 
 
-def test_snapshot_structure():
+def test_snapshot_structure() -> None:
     from app.utils.metrics_collector import MetricsCollector
 
     mc = MetricsCollector()
@@ -52,7 +52,7 @@ def test_snapshot_structure():
     assert "avg_timings" in snap
 
 
-def test_reset_clears():
+def test_reset_clears() -> None:
     from app.utils.metrics_collector import MetricsCollector
 
     mc = MetricsCollector()

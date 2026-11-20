@@ -22,10 +22,12 @@ def timed(label: str | None = None, log_level: int = logging.DEBUG) -> Callable:
     """
 
     def decorator(func: Callable) -> Callable:
+        """Wrap *func* to log its wall-clock duration on every call."""
         name = label or func.__qualname__
 
         @functools.wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args: object, **kwargs: object) -> object:
+            """Call the wrapped function and log elapsed time."""
             start = time.perf_counter()
             try:
                 result = func(*args, **kwargs)
@@ -43,12 +45,14 @@ class _Stats:
     """Running statistics for call durations."""
 
     def __init__(self) -> None:
+        """Initialise all running-statistics accumulators to zero."""
         self.calls: int = 0
         self.total_ms: float = 0.0
         self.min_ms: float = float("inf")
         self.max_ms: float = 0.0
 
     def record(self, ms: float) -> None:
+        """Update running stats with a new observation of *ms* milliseconds."""
         self.calls += 1
         self.total_ms += ms
         self.min_ms = min(self.min_ms, ms)
@@ -56,9 +60,11 @@ class _Stats:
 
     @property
     def avg_ms(self) -> float:
+        """Return the mean call duration in milliseconds, or 0.0 when no calls recorded."""
         return self.total_ms / self.calls if self.calls else 0.0
 
     def to_dict(self) -> dict[str, float | int]:
+        """Serialise current stats to a plain dict with values rounded to 3dp."""
         return {
             "calls": self.calls,
             "total_ms": round(self.total_ms, 3),
@@ -82,11 +88,13 @@ def tracked(label: str | None = None) -> Callable:
     """
 
     def decorator(func: Callable) -> Callable:
+        """Wrap *func* to record per-call timing into the global registry."""
         name = label or func.__qualname__
         _registry[name] = _Stats()
 
         @functools.wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args: object, **kwargs: object) -> object:
+            """Call the wrapped function and record its duration in the registry."""
             start = time.perf_counter()
             try:
                 return func(*args, **kwargs)
@@ -121,11 +129,33 @@ def reset_stats(label: str | None = None) -> None:
         label: Specific label to reset, or None to reset all.
     """
     if label is not None:
-        if label in _registry:
-            _registry[label] = _Stats()
+        _registry.pop(label, None)
     else:
-        for key in list(_registry):
-            _registry[key] = _Stats()
+        _registry.clear()
 
 
-__all__ = ["get_stats", "reset_stats", "timed", "tracked"]
+def tracked_names() -> list[str]:
+    """Return sorted list of labels currently in the stats registry."""
+    return sorted(_registry)
+
+
+def call_count(label: str) -> int:
+    """Return the number of recorded calls for a given label, or 0 if unknown."""
+    stats = _registry.get(label)
+    return stats.calls if stats else 0
+
+
+def total_calls() -> int:
+    """Return the sum of all call counts across every tracked label."""
+    return sum(s.calls for s in _registry.values())
+
+
+__all__ = [
+    "call_count",
+    "get_stats",
+    "reset_stats",
+    "timed",
+    "total_calls",
+    "tracked",
+    "tracked_names",
+]

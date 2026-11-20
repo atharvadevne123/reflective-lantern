@@ -428,7 +428,9 @@ def test_flag_anomaly_rate_boundary(rate, expected) -> None:
         (100.0, 10.0, 1.0, 3.0, True),  # far outlier
     ],
 )
-def test_zscore_flag_parametrized(value: float, mean: float, std: float, threshold: float, expected: bool) -> None:
+def test_zscore_flag_parametrized(
+    value: float, mean: float, std: float, threshold: float, expected: bool
+) -> None:
     assert zscore_flag(value, mean=mean, std=std, threshold=threshold) == expected
 
 
@@ -456,7 +458,9 @@ def test_batch_compute_severity_empty() -> None:
 
 
 def test_anomaly_rate_all_critical() -> None:
-    severities = [{"severity": "critical", "z_flagged": True, "iqr_flagged": True} for _ in range(10)]
+    severities = [
+        {"severity": "critical", "z_flagged": True, "iqr_flagged": True} for _ in range(10)
+    ]
     assert anomaly_rate(severities) == pytest.approx(1.0)
 
 
@@ -573,7 +577,9 @@ def test_anomaly_rate_all_critical_simple() -> None:
     ],
 )
 def test_anomaly_rate_partial(n_anomalies, n_total, expected) -> None:
-    severities = [{"severity": "warning"}] * n_anomalies + [{"severity": "none"}] * (n_total - n_anomalies)
+    severities = [{"severity": "warning"}] * n_anomalies + [{"severity": "none"}] * (
+        n_total - n_anomalies
+    )
     assert anomaly_rate(severities) == pytest.approx(expected)
 
 
@@ -878,7 +884,9 @@ def test_zscore_flag_negative_value_below_mean() -> None:
         (100.0, 0.0, 1.0, 2.0, True),
     ],
 )
-def test_zscore_flag_new_parametrized(value: float, mean: float, std: float, threshold: float, expected: bool) -> None:
+def test_zscore_flag_new_parametrized(
+    value: float, mean: float, std: float, threshold: float, expected: bool
+) -> None:
     assert zscore_flag(value, mean, std, threshold) is expected
 
 
@@ -1151,7 +1159,9 @@ class TestAnomalyPeakRatio:
         (10.5, 10.0, 1.0, 3.0, False),
     ],
 )
-def test_zscore_flag_various_cases(value: float, mean: float, std: float, threshold: float, expected: bool) -> None:
+def test_zscore_flag_various_cases(
+    value: float, mean: float, std: float, threshold: float, expected: bool
+) -> None:
     from app.anomaly import zscore_flag
 
     assert zscore_flag(value, mean, std, threshold) == expected
@@ -1216,8 +1226,14 @@ class TestAnomalyRate:
     @pytest.mark.parametrize(
         "sevs,expected",
         [
-            ([{"severity": "none"}, {"severity": "none"}, {"severity": "critical"}], pytest.approx(1 / 3, rel=1e-4)),
-            ([{"severity": "warning"}, {"severity": "critical"}, {"severity": "none"}], pytest.approx(2 / 3, rel=1e-4)),
+            (
+                [{"severity": "none"}, {"severity": "none"}, {"severity": "critical"}],
+                pytest.approx(1 / 3, rel=1e-4),
+            ),
+            (
+                [{"severity": "warning"}, {"severity": "critical"}, {"severity": "none"}],
+                pytest.approx(2 / 3, rel=1e-4),
+            ),
         ],
     )
     def test_partial_anomaly_rate(self, sevs: list, expected: object) -> None:
@@ -1291,7 +1307,9 @@ class TestInterAnomalyGap:
     def test_regular_gaps(self) -> None:
         from app.anomaly import inter_anomaly_gap
 
-        assert inter_anomaly_gap([True, False, False, True, False, False, True]) == pytest.approx(3.0)
+        assert inter_anomaly_gap([True, False, False, True, False, False, True]) == pytest.approx(
+            3.0
+        )
 
     def test_no_anomaly(self) -> None:
         from app.anomaly import inter_anomaly_gap
@@ -1308,3 +1326,140 @@ class TestInterAnomalyGap:
 
         with pytest.raises(ValueError):
             inter_anomaly_gap([])
+
+
+@pytest.mark.parametrize(
+    "flags,expected_rate",
+    [
+        ([False, False, False], 0.0),
+        ([True, True, True], 1.0),
+        ([True, False, True, False], 0.5),
+    ],
+)
+def test_anomaly_rate_fraction_correct(flags, expected_rate: float) -> None:
+    """flag_anomaly_rate returns the fraction of True values in the sequence."""
+    assert flag_anomaly_rate(flags) == pytest.approx(expected_rate)
+
+
+@pytest.mark.parametrize("n_anomalies", [0, 1, 5, 10])
+def test_anomaly_rate_for_known_count(n_anomalies: int) -> None:
+    """flag_anomaly_rate equals n_anomalies / total when total is fixed."""
+    total = 20
+    flags = [True] * n_anomalies + [False] * (total - n_anomalies)
+    assert flag_anomaly_rate(flags) == pytest.approx(n_anomalies / total)
+
+
+@pytest.mark.parametrize("n", [10, 20, 50])
+def test_zscore_flag_output_length_matches_input(n: int) -> None:
+    """zscore_flag returns a bool for each individual reading."""
+    results = [zscore_flag(float(i % 5), mean=2.0, std=1.5) for i in range(n)]
+    assert len(results) == n
+    assert all(isinstance(r, bool) for r in results)
+
+
+@pytest.mark.parametrize("n", [5, 10, 20])
+def test_iqr_flag_output_length_matches_input(n: int) -> None:
+    """iqr_flag returns a bool for each individual reading."""
+    results = [iqr_flag(float(i % 3), q1=0.0, q3=2.0) for i in range(n)]
+    assert len(results) == n
+    assert all(isinstance(r, bool) for r in results)
+
+
+def test_zscore_flag_constant_series_no_anomalies() -> None:
+    """A value equal to the mean has z-score 0 — not flagged."""
+    assert not zscore_flag(5.0, mean=5.0, std=1.0, threshold=3.0)
+
+
+@pytest.mark.parametrize("threshold", [1.5, 2.0, 3.0])
+def test_zscore_flag_detects_spike_at_lower_threshold(threshold: float) -> None:
+    """A value many std-devs above the mean is always flagged."""
+    assert zscore_flag(1000.0, mean=1.0, std=1.0, threshold=threshold)
+
+
+class TestFlagAnomalyRateExtended:
+    def test_all_normal_gives_zero(self) -> None:
+        assert flag_anomaly_rate([False] * 10) == pytest.approx(0.0)
+
+    def test_all_anomalous_gives_one(self) -> None:
+        assert flag_anomaly_rate([True] * 10) == pytest.approx(1.0)
+
+    def test_empty_list_gives_zero(self) -> None:
+        assert flag_anomaly_rate([]) == pytest.approx(0.0)
+
+    @pytest.mark.parametrize("n_true,n_total", [(1, 10), (5, 10), (3, 6)])
+    def test_partial_anomaly_rate(self, n_true: int, n_total: int) -> None:
+        flags = [True] * n_true + [False] * (n_total - n_true)
+        rate = flag_anomaly_rate(flags)
+        assert rate == pytest.approx(n_true / n_total)
+
+
+class TestConsecutiveAnomalyRunsExtended:
+    def test_no_anomalies_empty_result(self) -> None:
+        runs = consecutive_anomaly_runs([False] * 10)
+        assert runs == []
+
+    def test_single_anomaly_one_run(self) -> None:
+        flags = [False, True, False]
+        runs = consecutive_anomaly_runs(flags)
+        assert len(runs) == 1
+
+    def test_two_separate_runs_detected(self) -> None:
+        flags = [True, True, False, True, True]
+        runs = consecutive_anomaly_runs(flags)
+        assert len(runs) == 2
+
+    @pytest.mark.parametrize("n", [1, 3, 5])
+    def test_run_count_bounded_by_anomalies(self, n: int) -> None:
+        flags = [True, False] * n
+        runs = consecutive_anomaly_runs(flags)
+        assert len(runs) <= n
+
+
+class TestAnomalyDensityExtended:
+    def test_all_anomalies_small(self) -> None:
+        from app.anomaly import anomaly_density
+
+        result = anomaly_density([1, 1, 1], window_size=3)
+        assert result == pytest.approx([1.0, 1.0, 1.0])
+
+    def test_no_anomalies_small(self) -> None:
+        from app.anomaly import anomaly_density
+
+        result = anomaly_density([0, 0, 0], window_size=2)
+        assert result == pytest.approx([0.0, 0.0, 0.0])
+
+    def test_mixed_flags(self) -> None:
+        from app.anomaly import anomaly_density
+
+        result = anomaly_density([1, 0, 1, 0], window_size=2)
+        assert result[0] == pytest.approx(1.0)
+        assert result[1] == pytest.approx(0.5)
+
+    def test_empty_flags_raises(self) -> None:
+        from app.anomaly import anomaly_density
+
+        with pytest.raises(ValueError):
+            anomaly_density([])
+
+    def test_bad_window_raises(self) -> None:
+        from app.anomaly import anomaly_density
+
+        with pytest.raises(ValueError):
+            anomaly_density([1], window_size=0)
+
+
+@pytest.mark.parametrize(
+    "flags,window_size,expected_last",
+    [
+        ([1, 1, 1, 1], 2, 1.0),
+        ([0, 0, 0, 0], 2, 0.0),
+        ([1, 0, 1, 0], 4, 0.5),
+    ],
+)
+def test_anomaly_density_parametrized(
+    flags: list[int], window_size: int, expected_last: float
+) -> None:
+    from app.anomaly import anomaly_density
+
+    result = anomaly_density(flags, window_size=window_size)
+    assert result[-1] == pytest.approx(expected_last)

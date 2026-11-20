@@ -352,3 +352,37 @@ class TestNearestDistance:
         dist = nearest_distance(v)
         assert dist is not None
         assert dist == pytest.approx(0.0, abs=1e-5)
+
+
+class TestLoadPatternIndexAdditional:
+    def test_add_zero_vector(self) -> None:
+        idx = LoadPatternIndex(dim=4)
+        idx.add([0.0, 0.0, 0.0, 0.0])
+        assert idx.size == 1
+
+    def test_search_returns_dict_with_rank_key(self) -> None:
+        idx = LoadPatternIndex(dim=3)
+        idx.add([1.0, 2.0, 3.0])
+        results = idx.search([1.0, 2.0, 3.0], k=1)
+        if results:
+            assert "rank" in results[0]
+
+    def test_search_k_larger_than_index_returns_all(self) -> None:
+        idx = LoadPatternIndex(dim=3)
+        idx.add([1.0, 0.0, 0.0])
+        idx.add([0.0, 1.0, 0.0])
+        results = idx.search([1.0, 0.0, 0.0], k=100)
+        assert len(results) <= 2
+
+    def test_add_increments_size_by_one(self) -> None:
+        idx = LoadPatternIndex(dim=3)
+        for i in range(5):
+            before = idx.size
+            idx.add([float(i), float(i), float(i)])
+            assert idx.size == before + 1
+
+    def test_search_without_build_returns_list(self) -> None:
+        idx = LoadPatternIndex(dim=4)
+        idx.add([1.0, 0.0, 0.0, 0.0])
+        results = idx.search([1.0, 0.0, 0.0, 0.0], k=1)
+        assert isinstance(results, list)

@@ -45,6 +45,11 @@ class AlertQueue:
     """In-memory queue of recent alerts with a configurable max size."""
 
     def __init__(self, max_size: int = 200) -> None:
+        """Initialise the alert queue with a maximum capacity.
+
+        Args:
+            max_size: Maximum number of alerts to retain; oldest are evicted first.
+        """
         self._max = max_size
         self._alerts: list[Alert] = []
 
@@ -54,7 +59,10 @@ class AlertQueue:
             self._alerts.pop(0)
         self._alerts.append(alert)
         logger.debug(
-            "AlertQueue.push: severity=%s source=%s queue_size=%d", alert.severity, alert.source, len(self._alerts)
+            "AlertQueue.push: severity=%s source=%s queue_size=%d",
+            alert.severity,
+            alert.source,
+            len(self._alerts),
         )
 
     def filter_by_severity(self, min_severity: str) -> list[Alert]:
@@ -445,3 +453,20 @@ def alerts_contain_severity(alerts: list[Alert], severity: str) -> bool:
     """
     target = severity.lower()
     return any(a.severity.lower() == target for a in alerts)
+
+
+def alerts_by_source(alerts: list[Alert]) -> dict[str, list[Alert]]:
+    """Group *alerts* by their source attribute.
+
+    Args:
+        alerts: Sequence of Alert objects.
+
+    Returns:
+        Dict mapping each source string to the list of alerts from that source.
+        Alerts without a ``source`` attribute are grouped under the key ``""``.
+    """
+    groups: dict[str, list[Alert]] = {}
+    for alert in alerts:
+        src = getattr(alert, "source", "") or ""
+        groups.setdefault(src, []).append(alert)
+    return groups

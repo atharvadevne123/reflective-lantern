@@ -240,3 +240,43 @@ class TestDegradationSeverity:
         from app.monitoring import degradation_severity
 
         assert degradation_severity(0.5) == "high"
+
+
+def test_compute_drift_returns_dict_with_expected_keys() -> None:
+    """compute_drift result always contains the required output keys."""
+    ref = [float(i) for i in range(50)]
+    current = [float(i) + 5 for i in range(50)]
+    result = compute_drift(ref, current)
+    for key in ("drift_detected", "ks_statistic", "p_value"):
+        assert key in result
+
+
+def test_reference_window_size_zero_after_reset() -> None:
+    """After reset_reference_window, get_reference_window_size returns 0."""
+    set_reference_window([1.0] * 20)
+    reset_reference_window()
+    assert get_reference_window_size() == 0
+
+
+def test_summarize_drift_history_drift_rate_is_float() -> None:
+    """drift_rate in the summary is always a float."""
+    results = [
+        {"drift_detected": True, "ks_statistic": 0.8, "p_value": 0.001},
+        {"drift_detected": False, "ks_statistic": 0.1, "p_value": 0.7},
+    ]
+    summary = summarize_drift_history(results)
+    assert isinstance(summary["drift_rate"], float)
+
+
+@pytest.mark.parametrize("window_size", [10, 20, 50])
+def test_set_reference_window_various_sizes(window_size: int) -> None:
+    """set_reference_window stores exactly window_size samples (up to the cap)."""
+    set_reference_window([1.0] * window_size)
+    assert get_reference_window_size() == window_size
+
+
+def test_compute_feature_drift_summary_feature_key_present() -> None:
+    """Each entry in the feature drift summary has a 'feature' key."""
+    set_reference_window([1.0] * 50)
+    results = compute_feature_drift_summary({"my_feat": [1.0] * 30})
+    assert all("feature" in r for r in results)

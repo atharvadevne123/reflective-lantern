@@ -284,7 +284,7 @@ class TestBatchFailureReporting:
         calls = {"n": 0}
         real = main_module.predict_magnitude
 
-        def flaky(pipeline, features):
+        def flaky(pipeline, features) -> None:
             calls["n"] += 1
             if calls["n"] == 2:
                 raise RuntimeError("synthetic failure")

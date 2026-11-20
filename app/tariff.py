@@ -98,7 +98,9 @@ def time_of_use_cost(
     if not 0 <= start_hour <= 23:
         raise ValueError(f"start_hour must be in 0-23, got {start_hour}")
     if peak_rate < 0 or off_peak_rate < 0:
-        raise ValueError(f"rates must be non-negative, got peak={peak_rate} off_peak={off_peak_rate}")
+        raise ValueError(
+            f"rates must be non-negative, got peak={peak_rate} off_peak={off_peak_rate}"
+        )
     _validated_total(hourly_kwh)
 
     peak_set = set(peak_hours)
@@ -143,16 +145,15 @@ def tiered_cost(hourly_kwh: list[float], bands: list[TieredBand] | None = None) 
     for band in bands:
         if remaining <= 0:
             break
-        if band.limit_kwh is None:
-            band_capacity = remaining
-        else:
-            band_capacity = max(0.0, band.limit_kwh - consumed)
+        band_capacity = remaining if band.limit_kwh is None else max(0.0, band.limit_kwh - consumed)
         charged = min(remaining, band_capacity)
         cost += charged * band.rate
         consumed += charged
         remaining -= charged
     if remaining > 0:
-        logger.warning("Tiered tariff bands did not cover %.3f kWh; add an unbounded band", remaining)
+        logger.warning(
+            "Tiered tariff bands did not cover %.3f kWh; add an unbounded band", remaining
+        )
     return round(cost, 2)
 
 
@@ -179,7 +180,9 @@ def compare_tariffs(
     options = {"flat": flat, "time_of_use": tou, "tiered": tiered}
     cheapest = min(options, key=lambda name: options[name])
     saving = round(flat - options[cheapest], 2)
-    logger.info("Cheapest tariff: %s at %.2f (saves %.2f vs flat)", cheapest, options[cheapest], saving)
+    logger.info(
+        "Cheapest tariff: %s at %.2f (saves %.2f vs flat)", cheapest, options[cheapest], saving
+    )
     return TariffComparison(
         flat_cost=flat,
         time_of_use_cost=tou,
@@ -221,7 +224,9 @@ def peak_shift_saving(
         return 0.0
 
     peak_set = set(peak_hours)
-    peak_kwh = sum(kwh for offset, kwh in enumerate(hourly_kwh) if (start_hour + offset) % 24 in peak_set)
+    peak_kwh = sum(
+        kwh for offset, kwh in enumerate(hourly_kwh) if (start_hour + offset) % 24 in peak_set
+    )
     shifted = peak_kwh * shiftable_fraction
     return round(shifted * (peak_rate - off_peak_rate), 2)
 
@@ -244,6 +249,64 @@ def _validated_total(hourly_kwh: list[float]) -> float:
     return float(sum(hourly_kwh))
 
 
+def annual_cost_estimate(monthly_kwh: list[float], rate: float = DEFAULT_FLAT_RATE) -> float:
+    """Estimate the annual electricity cost from monthly consumption totals.
+
+    Short month lists are annualised by pro-rating; a full 12-month list is
+    used as-is.
+
+    Args:
+        monthly_kwh: Monthly energy consumption values in kWh (1-12 entries).
+        rate: Flat rate per kWh.
+
+    Returns:
+        Estimated annual cost rounded to 2 decimal places.
+
+    Raises:
+        ValueError: If *monthly_kwh* is empty or has more than 12 entries,
+            or *rate* is negative.
+    """
+    if not monthly_kwh:
+        return 0.0
+    if len(monthly_kwh) > 12:
+        raise ValueError(f"monthly_kwh must have at most 12 entries, got {len(monthly_kwh)}")
+    if rate < 0:
+        raise ValueError(f"rate must be non-negative, got {rate}")
+    monthly_avg = sum(monthly_kwh) / len(monthly_kwh)
+    return round(monthly_avg * 12 * rate, 2)
+
+
+def peak_hour_fraction(
+    hourly_kwh: list[float],
+    start_hour: int = 0,
+    peak_hours: tuple[int, ...] = DEFAULT_PEAK_HOURS,
+) -> float:
+    """Return the fraction of total consumption that falls during peak hours.
+
+    Args:
+        hourly_kwh: Consumption values in kWh, one entry per hour.
+        start_hour: Clock hour (0-23) of the first entry.
+        peak_hours: Clock hours considered on-peak.
+
+    Returns:
+        Fraction in [0.0, 1.0] rounded to 4 decimal places. Returns 0.0 when
+        total consumption is zero.
+
+    Raises:
+        ValueError: If *start_hour* is outside 0-23.
+    """
+    if not 0 <= start_hour <= 23:
+        raise ValueError(f"start_hour must be in 0-23, got {start_hour}")
+    total = sum(hourly_kwh)
+    if total <= 0:
+        return 0.0
+    peak_set = set(peak_hours)
+    peak_kwh = sum(
+        kwh for offset, kwh in enumerate(hourly_kwh) if (start_hour + offset) % 24 in peak_set
+    )
+    return round(peak_kwh / total, 4)
+
+
 __all__ = [
     "DEFAULT_FLAT_RATE",
     "DEFAULT_OFF_PEAK_RATE",
@@ -251,9 +314,62 @@ __all__ = [
     "DEFAULT_PEAK_RATE",
     "TariffComparison",
     "TieredBand",
+    "annual_cost_estimate",
     "compare_tariffs",
+    "cost_per_hour_average",
+    "daily_cost_summary",
     "flat_rate_cost",
+    "peak_hour_fraction",
     "peak_shift_saving",
     "tiered_cost",
     "time_of_use_cost",
 ]
+
+
+def daily_cost_summary(
+    hourly_kwh: list[float], rate: float = DEFAULT_FLAT_RATE
+) -> dict[str, float]:
+    """Return a summary dict of cost statistics for a daily load profile.
+
+    Args:
+        hourly_kwh: Exactly 24 hourly kWh readings.
+        rate: Price per kWh (default flat rate).
+
+    Returns:
+        Dict with ``total_cost``, ``hourly_mean_cost``, ``peak_hour_cost``
+        (cost of the highest-consumption hour), and ``off_peak_cost``
+        (cost of the lowest-consumption hour).
+
+    Raises:
+        ValueError: If *hourly_kwh* is empty.
+    """
+    if not hourly_kwh:
+        raise ValueError("hourly_kwh must not be empty")
+    total = round(sum(hourly_kwh) * rate, 4)
+    mean_h = round((sum(hourly_kwh) / len(hourly_kwh)) * rate, 4)
+    peak_h = round(max(hourly_kwh) * rate, 4)
+    off_peak_h = round(min(hourly_kwh) * rate, 4)
+    return {
+        "total_cost": total,
+        "hourly_mean_cost": mean_h,
+        "peak_hour_cost": peak_h,
+        "off_peak_cost": off_peak_h,
+    }
+
+
+def cost_per_hour_average(hourly_kwh: list[float], rate: float = DEFAULT_FLAT_RATE) -> float:
+    """Return the average hourly energy cost for a load profile.
+
+    Args:
+        hourly_kwh: Energy consumption per hour in kWh.
+        rate: Flat rate in currency per kWh.
+
+    Returns:
+        Average cost per hour.
+
+    Raises:
+        ValueError: If *hourly_kwh* is empty.
+    """
+    if not hourly_kwh:
+        raise ValueError("hourly_kwh must not be empty")
+    return flat_rate_cost(hourly_kwh, rate) / len(hourly_kwh)

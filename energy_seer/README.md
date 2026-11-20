@@ -19,11 +19,16 @@ Energy-Seer predicts hourly energy consumption for smart meters, detects grid an
 
 - **Ensemble Forecasting** — XGBoost + LightGBM + RandomForest VotingRegressor with 5-fold CV
 - **Anomaly Detection** — IsolationForest + Z-score with severity classification (low/medium/high/critical)
-- **Drift Monitoring** — KS-test per feature with configurable p-value threshold
+- **Drift Monitoring** — KS-test + PSI per feature with configurable thresholds
 - **Multi-step Forecast** — Up to 168-hour (7-day) horizon auto-stepping
+- **Weighted Moving Average** — Linear-weighted forecaster for short horizons
+- **Exponential Smoothing** — Simple EMA forecaster with configurable alpha
 - **RAG Pattern Search** — FAISS-based similar consumption pattern retrieval
+- **Efficiency Scoring** — Building energy efficiency on 0–100 scale with letter grades
+- **PSI Alerts** — Population Stability Index alerts for distribution drift
 - **Airflow DAG** — Weekly automated retraining with R² validation gate
 - **Rate Limiting** — 300 requests/minute per IP with correlation ID tracing
+- **Health Check Script** — `scripts/health_check.py` liveness probe
 
 ## Quick Start
 

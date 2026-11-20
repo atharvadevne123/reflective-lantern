@@ -110,10 +110,6 @@ class ThreatIntelRetriever:
         norm = np.linalg.norm(vec) + 1e-9
         return vec / norm
 
-    def retrieve(self, query: str, top_k: int = 3) -> list[dict[str, Any]]:
-        """Alias for search(); returns top-k threat intel entries."""
-        return self.search(query, top_k=top_k)
-
     def search(self, query: str, top_k: int = 3) -> list[dict[str, Any]]:
         """Return top-k threat intel entries most similar to query.
 

@@ -39,3 +39,22 @@ def strip_email_quotes(text: str) -> str:
     corpora; stripping it before dedup dramatically improves precision.
     """
     return _EMAIL_QUOTE_PREFIX.sub("", text)
+
+
+def truncate_to_bytes(text: str, max_bytes: int = 1_000_000) -> str:
+    """Truncate *text* so its UTF-8 encoding does not exceed *max_bytes*.
+
+    Truncation happens on a character boundary, so no partial multi-byte
+    sequence is ever emitted.
+
+    Args:
+        text: Input text.
+        max_bytes: Maximum number of UTF-8 bytes to retain.
+
+    Returns:
+        Text whose UTF-8 encoding is at most *max_bytes* bytes.
+    """
+    encoded = text.encode("utf-8")
+    if len(encoded) <= max_bytes:
+        return text
+    return encoded[:max_bytes].decode("utf-8", errors="ignore")

@@ -2,8 +2,7 @@
 
 Simulates charge/discharge against a load and tariff to size a battery and
 value peak shaving. Accounts for round-trip efficiency, depth-of-discharge
-limits, and per-cycle degradation — the three things that separate nameplate
-capacity from usable capacity.
+limits, and per-cycle degradation.
 """
 
 from __future__ import annotations
@@ -14,26 +13,13 @@ from dataclasses import dataclass
 logger = logging.getLogger(__name__)
 
 DEFAULT_ROUND_TRIP_EFFICIENCY: float = 0.90
-"""Energy returned per unit stored, covering both conversion directions."""
-
 DEFAULT_MAX_DEPTH_OF_DISCHARGE: float = 0.80
-"""Fraction of nameplate capacity that may be cycled without harming life."""
-
 DEFAULT_DEGRADATION_PER_CYCLE: float = 0.0002
-"""Fractional capacity loss per full equivalent cycle."""
 
 
 @dataclass
 class BatterySpec:
-    """Physical limits of a storage system.
-
-    Args:
-        capacity_kwh: Nameplate energy capacity.
-        max_charge_kw: Maximum charge power.
-        max_discharge_kw: Maximum discharge power.
-        round_trip_efficiency: Energy returned per unit stored, in (0, 1].
-        max_depth_of_discharge: Usable fraction of capacity, in (0, 1].
-    """
+    """Physical limits of a storage system."""
 
     capacity_kwh: float
     max_charge_kw: float
@@ -42,12 +28,6 @@ class BatterySpec:
     max_depth_of_discharge: float = DEFAULT_MAX_DEPTH_OF_DISCHARGE
 
     def __post_init__(self) -> None:
-        """Validate the specification.
-
-        Raises:
-            ValueError: If any capacity or power limit is not positive, or
-                either fractional term falls outside (0, 1].
-        """
         if self.capacity_kwh <= 0:
             raise ValueError(f"capacity_kwh must be positive, got {self.capacity_kwh}")
         if self.max_charge_kw <= 0 or self.max_discharge_kw <= 0:
@@ -55,9 +35,13 @@ class BatterySpec:
                 f"power limits must be positive, got charge={self.max_charge_kw} discharge={self.max_discharge_kw}"
             )
         if not 0.0 < self.round_trip_efficiency <= 1.0:
-            raise ValueError(f"round_trip_efficiency must be in (0, 1], got {self.round_trip_efficiency}")
+            raise ValueError(
+                f"round_trip_efficiency must be in (0, 1], got {self.round_trip_efficiency}"
+            )
         if not 0.0 < self.max_depth_of_discharge <= 1.0:
-            raise ValueError(f"max_depth_of_discharge must be in (0, 1], got {self.max_depth_of_discharge}")
+            raise ValueError(
+                f"max_depth_of_discharge must be in (0, 1], got {self.max_depth_of_discharge}"
+            )
 
     @property
     def usable_kwh(self) -> float:
@@ -67,7 +51,19 @@ class BatterySpec:
 
 @dataclass
 class DispatchResult:
-    """Outcome of simulating a battery against an hourly load."""
+    """Outcome of simulating a battery against an hourly load.
+
+    Attributes:
+        peak_before_kw: Highest grid draw before battery dispatch.
+        peak_after_kw: Highest grid draw after battery dispatch.
+        peak_reduction_kw: Absolute peak reduction achieved (before − after).
+        peak_reduction_pct: Peak reduction as a percentage of the pre-dispatch peak.
+        energy_discharged_kwh: Total energy discharged from the battery in kWh.
+        energy_charged_kwh: Total energy drawn from the grid for charging in kWh.
+        equivalent_cycles: Number of full equivalent charge/discharge cycles used.
+        capacity_lost_pct: Estimated capacity degradation as a percentage.
+        grid_hourly_kw: Per-hour net grid draw after battery dispatch.
+    """
 
     peak_before_kw: float
     peak_after_kw: float
@@ -85,25 +81,7 @@ def peak_shave(
     spec: BatterySpec,
     target_peak_kw: float,
 ) -> DispatchResult:
-    """Discharge to hold load under a target, recharging when there is headroom.
-
-    The battery discharges whenever load exceeds *target_peak_kw* and charges
-    whenever load sits below it, subject to power limits, usable capacity,
-    and round-trip efficiency. Charging losses are applied on the way in, so
-    storing 1 kWh draws ``1 / efficiency`` kWh from the grid.
-
-    Args:
-        hourly_load_kw: Site demand per hour in kW.
-        spec: Battery limits.
-        target_peak_kw: Demand ceiling to defend.
-
-    Returns:
-        A populated :class:`DispatchResult`. When the battery cannot fully
-        defend the target, ``peak_after_kw`` reports the peak actually achieved.
-
-    Raises:
-        ValueError: If *target_peak_kw* is negative or any load is negative.
-    """
+    """Discharge to hold load under a target, recharging when there is headroom."""
     if target_peak_kw < 0:
         raise ValueError(f"target_peak_kw must be non-negative, got {target_peak_kw}")
     for hour, load in enumerate(hourly_load_kw):
@@ -114,7 +92,7 @@ def peak_shave(
         return DispatchResult(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, [])
 
     usable = spec.usable_kwh
-    stored = usable  # Assume the battery starts charged for the event.
+    stored = usable
     discharged_total = charged_total = 0.0
     grid: list[float] = []
 
@@ -127,8 +105,11 @@ def peak_shave(
         else:
             headroom = min(target_peak_kw - load, spec.max_charge_kw)
             room_in_pack = usable - stored
-            # Charging is lossy: drawing `d` from the grid stores `d * efficiency`.
-            drawn = min(headroom, room_in_pack / spec.round_trip_efficiency) if room_in_pack > 0 else 0.0
+            drawn = (
+                min(headroom, room_in_pack / spec.round_trip_efficiency)
+                if room_in_pack > 0
+                else 0.0
+            )
             stored += drawn * spec.round_trip_efficiency
             charged_total += drawn
             grid.append(round(load + drawn, 4))
@@ -140,7 +121,9 @@ def peak_shave(
 
     if peak_after > target_peak_kw:
         logger.warning(
-            "Battery could not defend %.2f kW target; peak reached %.2f kW", target_peak_kw, peak_after
+            "Battery could not defend %.2f kW target; peak reached %.2f kW",
+            target_peak_kw,
+            peak_after,
         )
     return DispatchResult(
         peak_before_kw=peak_before,
@@ -156,21 +139,7 @@ def peak_shave(
 
 
 def required_capacity_kwh(hourly_load_kw: list[float], target_peak_kw: float) -> float:
-    """Return the usable energy needed to hold load under a target.
-
-    Sizes for the largest single excursion above the target, which is what
-    the battery must ride through without recharging.
-
-    Args:
-        hourly_load_kw: Site demand per hour in kW.
-        target_peak_kw: Demand ceiling to defend.
-
-    Returns:
-        Required usable capacity in kWh rounded to 4 decimal places.
-
-    Raises:
-        ValueError: If *target_peak_kw* is negative.
-    """
+    """Return the usable energy needed to hold load under a target."""
     if target_peak_kw < 0:
         raise ValueError(f"target_peak_kw must be non-negative, got {target_peak_kw}")
 
@@ -188,21 +157,71 @@ def demand_charge_saving(
     result: DispatchResult,
     demand_charge_per_kw: float,
 ) -> float:
-    """Value a peak reduction against a monthly demand charge.
-
-    Args:
-        result: Outcome of a :func:`peak_shave` run.
-        demand_charge_per_kw: Tariff charged per kW of billing peak.
-
-    Returns:
-        Saving rounded to 2 decimal places.
-
-    Raises:
-        ValueError: If *demand_charge_per_kw* is negative.
-    """
+    """Value a peak reduction against a monthly demand charge."""
     if demand_charge_per_kw < 0:
         raise ValueError(f"demand_charge_per_kw must be non-negative, got {demand_charge_per_kw}")
     return round(result.peak_reduction_kw * demand_charge_per_kw, 2)
+
+
+def round_trip_losses_kwh(charged_kwh: float, efficiency: float) -> float:
+    """Return the energy lost in a charge/discharge round trip."""
+    if charged_kwh < 0:
+        raise ValueError(f"charged_kwh must be non-negative, got {charged_kwh}")
+    if not 0.0 < efficiency <= 1.0:
+        raise ValueError(f"efficiency must be in (0, 1], got {efficiency}")
+    return round(charged_kwh * (1.0 - efficiency), 4)
+
+
+def break_even_cycles(capex: float, saving_per_cycle: float) -> float:
+    """Return the cycles needed to recover a capital expenditure."""
+    if capex < 0:
+        raise ValueError(f"capex must be non-negative, got {capex}")
+    if saving_per_cycle < 0:
+        raise ValueError(f"saving_per_cycle must be non-negative, got {saving_per_cycle}")
+    if saving_per_cycle == 0:
+        return float("inf")
+    return round(capex / saving_per_cycle, 2)
+
+
+def usable_capacity_kwh(
+    nameplate_kwh: float, max_dod: float = DEFAULT_MAX_DEPTH_OF_DISCHARGE
+) -> float:
+    """Return the usable energy capacity after applying depth-of-discharge."""
+    if nameplate_kwh < 0:
+        raise ValueError(f"nameplate_kwh must be non-negative, got {nameplate_kwh}")
+    if not 0.0 < max_dod <= 1.0:
+        raise ValueError(f"max_dod must be in (0, 1], got {max_dod}")
+    return round(nameplate_kwh * max_dod, 4)
+
+
+def cycles_to_degrade(
+    initial_capacity_kwh: float,
+    target_fraction: float = 0.8,
+    degradation_per_cycle: float = DEFAULT_DEGRADATION_PER_CYCLE,
+) -> int:
+    """Estimate number of cycles until capacity drops to *target_fraction* of initial.
+
+    Args:
+        initial_capacity_kwh: Starting capacity in kWh.
+        target_fraction: Fraction of initial capacity at which degraded.
+        degradation_per_cycle: Fractional capacity lost per full cycle.
+
+    Returns:
+        Integer number of cycles until the target is reached.
+
+    Raises:
+        ValueError: If *target_fraction* not in (0, 1] or *degradation_per_cycle* not positive.
+    """
+    if not (0 < target_fraction <= 1.0):
+        raise ValueError("target_fraction must be in (0, 1]")
+    if degradation_per_cycle <= 0:
+        raise ValueError("degradation_per_cycle must be positive")
+    if target_fraction >= 1.0:
+        return 0
+    import math
+
+    cycles = math.log(target_fraction) / math.log(1 - degradation_per_cycle)
+    return max(0, int(cycles))
 
 
 __all__ = [
@@ -211,7 +230,11 @@ __all__ = [
     "DEFAULT_ROUND_TRIP_EFFICIENCY",
     "BatterySpec",
     "DispatchResult",
+    "break_even_cycles",
+    "cycles_to_degrade",
     "demand_charge_saving",
     "peak_shave",
     "required_capacity_kwh",
+    "round_trip_losses_kwh",
+    "usable_capacity_kwh",
 ]

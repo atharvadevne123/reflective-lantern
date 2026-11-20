@@ -23,8 +23,10 @@ def log_model(model_path: str, artifact_name: str = "model") -> None:
 
 
 def start_run(run_name: str = "energy-seer") -> None:
+    """Start an MLflow experiment run (stub logs locally)."""
     logger.info("mlflow_run_start name=%s", run_name)
 
 
 def end_run() -> None:
+    """End the active MLflow run (stub logs locally)."""
     logger.info("mlflow_run_end")

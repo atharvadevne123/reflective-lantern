@@ -20,7 +20,6 @@ _FALLBACK_LOG = Path(os.getenv("MLFLOW_FALLBACK_LOG", "/tmp/fleet_mind_mlflow.js
 
 try:
     import mlflow  # type: ignore[import]
-
     _HAS_MLFLOW = True
 except ImportError:
     _HAS_MLFLOW = False

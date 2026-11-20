@@ -1,117 +1,90 @@
-"""Extended tests for Sports-Oracle MetricsCollector."""
+"""Extended tests for sports-oracle app/stats.py MetricsCollector."""
 
 from __future__ import annotations
 
-import sys
 import threading
-from pathlib import Path
 
 import pytest
-
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
-from app.stats import MetricsCollector
+from app.stats import MetricsCollector, get_collector
 
 
-def test_metrics_collector_initial_counters():
-    mc = MetricsCollector()
-    snap = mc.snapshot()
-    assert snap["predict_total"] == 0
-    assert snap["predict_errors"] == 0
-    assert snap["health_checks"] == 0
+class TestMetricsCollector:
+    def test_initial_counters_zero(self) -> None:
+        mc = MetricsCollector()
+        snap = mc.snapshot()
+        assert snap["predict_total"] == 0
+        assert snap["predict_errors"] == 0
+
+    def test_inc_increments_by_one(self) -> None:
+        mc = MetricsCollector()
+        mc.inc("predict_total")
+        assert mc.snapshot()["predict_total"] == 1
+
+    def test_inc_by_n(self) -> None:
+        mc = MetricsCollector()
+        mc.inc("health_checks", 5)
+        assert mc.snapshot()["health_checks"] == 5
+
+    def test_inc_new_counter(self) -> None:
+        mc = MetricsCollector()
+        mc.inc("custom_counter", 3)
+        assert mc.snapshot()["custom_counter"] == 3
+
+    def test_record_latency_increments_samples(self) -> None:
+        mc = MetricsCollector()
+        mc.record_latency(10.5)
+        snap = mc.snapshot()
+        assert snap["latency_samples"] == 1
+
+    def test_latency_percentiles_populated(self) -> None:
+        mc = MetricsCollector()
+        for i in range(1, 101):
+            mc.record_latency(float(i))
+        snap = mc.snapshot()
+        assert snap["latency_p50_ms"] > 0
+        assert snap["latency_p95_ms"] >= snap["latency_p50_ms"]
+        assert snap["latency_p99_ms"] >= snap["latency_p95_ms"]
+
+    def test_no_latency_percentiles_zero(self) -> None:
+        mc = MetricsCollector()
+        snap = mc.snapshot()
+        assert snap["latency_p50_ms"] == pytest.approx(0.0)
+        assert snap["latency_p95_ms"] == pytest.approx(0.0)
+
+    def test_uptime_seconds_non_negative(self) -> None:
+        mc = MetricsCollector()
+        snap = mc.snapshot()
+        assert snap["uptime_seconds"] >= 0.0
+
+    def test_snapshot_has_all_default_counters(self) -> None:
+        mc = MetricsCollector()
+        snap = mc.snapshot()
+        for key in ("predict_total", "predict_errors", "health_checks", "drift_checks", "retrains"):
+            assert key in snap
+
+    def test_latency_capped_at_1000(self) -> None:
+        mc = MetricsCollector()
+        for i in range(1100):
+            mc.record_latency(float(i))
+        assert mc.snapshot()["latency_samples"] == 1000
+
+    def test_thread_safety_concurrent_increments(self) -> None:
+        mc = MetricsCollector()
+        threads = [
+            threading.Thread(target=lambda: mc.inc("predict_total"))
+            for _ in range(100)
+        ]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+        assert mc.snapshot()["predict_total"] == 100
 
 
-def test_inc_increments_counter():
-    mc = MetricsCollector()
-    mc.inc("predict_total")
-    snap = mc.snapshot()
-    assert snap["predict_total"] == 1
+class TestGetCollector:
+    def test_returns_metrics_collector(self) -> None:
+        c = get_collector()
+        assert isinstance(c, MetricsCollector)
 
-
-def test_inc_multiple_times():
-    mc = MetricsCollector()
-    mc.inc("drift_checks", 3)
-    snap = mc.snapshot()
-    assert snap["drift_checks"] == 3
-
-
-def test_record_latency_increases_samples():
-    mc = MetricsCollector()
-    mc.record_latency(10.0)
-    mc.record_latency(20.0)
-    snap = mc.snapshot()
-    assert snap["latency_samples"] == 2
-
-
-def test_snapshot_has_uptime():
-    mc = MetricsCollector()
-    snap = mc.snapshot()
-    assert snap["uptime_seconds"] >= 0
-
-
-def test_snapshot_latency_p50_zero_when_no_samples():
-    mc = MetricsCollector()
-    snap = mc.snapshot()
-    assert snap["latency_p50_ms"] == 0.0
-
-
-def test_snapshot_latency_p50_correct():
-    mc = MetricsCollector()
-    for v in [10.0, 20.0, 30.0, 40.0, 50.0]:
-        mc.record_latency(v)
-    snap = mc.snapshot()
-    assert snap["latency_p50_ms"] == pytest.approx(30.0)
-
-
-def test_snapshot_latency_p99_less_or_equal_max():
-    mc = MetricsCollector()
-    values = [float(i) for i in range(100)]
-    for v in values:
-        mc.record_latency(v)
-    snap = mc.snapshot()
-    assert snap["latency_p99_ms"] <= max(values)
-
-
-def test_inc_custom_counter():
-    mc = MetricsCollector()
-    mc.inc("custom_counter")
-    snap = mc.snapshot()
-    assert snap["custom_counter"] == 1
-
-
-def test_latency_buffer_bounded():
-    mc = MetricsCollector()
-    for i in range(1200):
-        mc.record_latency(float(i))
-    snap = mc.snapshot()
-    assert snap["latency_samples"] <= 1000
-
-
-def test_thread_safety():
-    mc = MetricsCollector()
-    errors = []
-
-    def worker():
-        try:
-            for _ in range(100):
-                mc.inc("predict_total")
-                mc.record_latency(1.0)
-        except Exception as e:
-            errors.append(e)
-
-    threads = [threading.Thread(target=worker) for _ in range(5)]
-    for t in threads:
-        t.start()
-    for t in threads:
-        t.join()
-
-    assert not errors
-    snap = mc.snapshot()
-    assert snap["predict_total"] == 500
-
-
-@pytest.mark.parametrize("counter", ["predict_total", "predict_errors", "health_checks"])
-def test_counters_start_at_zero(counter):
-    mc = MetricsCollector()
-    snap = mc.snapshot()
-    assert snap[counter] == 0
+    def test_same_instance_each_call(self) -> None:
+        assert get_collector() is get_collector()

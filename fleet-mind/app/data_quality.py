@@ -68,7 +68,10 @@ def assess_batch_quality(readings: list[dict[str, Any]]) -> dict[str, Any]:
     if not readings:
         return {"total_rows": 0, "quality_score": 0.0}
 
-    numeric_readings = [{k: v for k, v in r.items() if k in RAW_FEATURES} for r in readings]
+    numeric_readings = [
+        {k: v for k, v in r.items() if k in RAW_FEATURES}
+        for r in readings
+    ]
     df = pd.DataFrame(numeric_readings)
 
     missing = check_missing_values(df)
@@ -86,44 +89,6 @@ def assess_batch_quality(readings: list[dict[str, Any]]) -> dict[str, Any]:
         "outliers": {k: len(v) for k, v in outliers.items()},
         "quality_score": round(quality_score, 4),
     }
-    logger.info(
-        "Batch quality assessment: score=%.4f missing=%d outliers=%d",
-        quality_score,
-        missing_cells,
-        outlier_cells,
-    )
+    logger.info("Batch quality assessment: score=%.4f missing=%d outliers=%d",
+                quality_score, missing_cells, outlier_cells)
     return result
-
-
-def completeness_rate(df: pd.DataFrame, required_columns: list[str] | None = None) -> float:
-    """Return fraction of non-null cells across required columns (0-1).
-
-    Args:
-        df: DataFrame to assess.
-        required_columns: Columns to check; defaults to RAW_FEATURES.
-
-    Returns:
-        Fraction of non-null cells across all required columns.
-    """
-    cols = required_columns or [c for c in RAW_FEATURES if c in df.columns]
-    if not cols or df.empty:
-        return 1.0
-    total = len(df) * len(cols)
-    non_null = sum(int(df[c].notna().sum()) for c in cols if c in df.columns)
-    return non_null / total if total > 0 else 1.0
-
-
-def duplicate_rate(readings: list[dict[str, Any]]) -> float:
-    """Return fraction of duplicate records in a batch.
-
-    Args:
-        readings: Batch of telemetry dicts.
-
-    Returns:
-        Fraction in [0, 1) where 0 means no duplicates.
-    """
-    if not readings:
-        return 0.0
-    total = len(readings)
-    unique = len({tuple(sorted(r.items())) for r in readings})
-    return (total - unique) / total

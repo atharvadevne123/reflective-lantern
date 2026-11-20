@@ -23,12 +23,19 @@ def _make_df(n: int = 200, seed: int = 11) -> pd.DataFrame:
     )
 
 
+def _make_df_with_aliases(n: int = 200, seed: int = 11) -> pd.DataFrame:
+    """Like _make_df but with extra column aliases for compatibility tests."""
+    df = _make_df(n, seed)
+    df["temperature"] = df["temperature_c"]
+    return df
+
+
 def test_train_predict_end_to_end() -> None:
     from app.features import make_feature_row
     from app.model import predict, train_model
 
     df = _make_df()
-    bundle, metrics = train_model(df, df["consumption_kwh"])
+    bundle, metrics = train_model(df, df["consumption_kwh"], save=False)
     assert metrics["r2_mean"] > -2.0
 
     row = make_feature_row(12, 0, 6, 25.0, 60.0, 80, 1, 20.0)
@@ -55,7 +62,7 @@ def test_pipeline_stable_across_calls() -> None:
     from app.model import predict, train_model
 
     df = _make_df(150, seed=77)
-    bundle, _ = train_model(df, df["consumption_kwh"])
+    bundle, _ = train_model(df, df["consumption_kwh"], save=False)
 
     row = make_feature_row(9, 2, 4, 18.0, 55.0, 40, 0, 10.0)
     p1 = predict(bundle, row)
@@ -70,7 +77,7 @@ def test_hvac_effect_on_prediction(hvac) -> None:
     from app.model import predict, train_model
 
     df = _make_df(400)
-    bundle, _ = train_model(df, df["consumption_kwh"])
+    bundle, _ = train_model(df, df["consumption_kwh"], save=False)
 
     off = float(predict(bundle, make_feature_row(14, 1, 7, 30.0, 60.0, 100, 0, 20.0))[0])
     on = float(predict(bundle, make_feature_row(14, 1, 7, 30.0, 60.0, 100, 1, 20.0))[0])
@@ -83,7 +90,7 @@ def test_train_various_sizes(n_samples) -> None:
     from app.model import train_model
 
     df = _make_df(n_samples)
-    bundle, metrics = train_model(df, df["consumption_kwh"])
+    bundle, metrics = train_model(df, df["consumption_kwh"], save=False)
     assert metrics["r2_mean"] is not None
     assert bundle is not None
 
@@ -93,7 +100,7 @@ def test_prediction_is_non_negative_for_typical_input() -> None:
     from app.model import predict, train_model
 
     df = _make_df(200)
-    bundle, _ = train_model(df, df["consumption_kwh"])
+    bundle, _ = train_model(df, df["consumption_kwh"], save=False)
     row = make_feature_row(10, 1, 5, 20.0, 55.0, 60, 0, 15.0)
     preds = predict(bundle, row)
     # Prediction may be negative for extreme inputs; just check it's a float
@@ -115,6 +122,126 @@ def test_train_model_returns_metrics_keys() -> None:
     from app.model import train_model
 
     df = _make_df(150)
-    _, metrics = train_model(df, df["consumption_kwh"])
+    _, metrics = train_model(df, df["consumption_kwh"], save=False)
     assert "r2_mean" in metrics
     assert "rmse_mean" in metrics
+
+
+@pytest.mark.parametrize("key", ["r2_mean", "rmse_mean"])
+def test_train_model_metric_is_float(key: str) -> None:
+    """Each metric returned by train_model is a float value."""
+    from app.model import train_model
+
+    df = _make_df(150)
+    _, metrics = train_model(df, df["consumption_kwh"], save=False)
+    assert isinstance(metrics[key], float)
+
+
+@pytest.mark.parametrize("n_rows", [100, 200, 300])
+def test_anomaly_model_trains_on_various_sizes(n_rows: int) -> None:
+    """train_anomaly_model completes successfully for different dataset sizes."""
+    from app.model import train_anomaly_model
+
+    df = _make_df(n_rows)
+    bundle = train_anomaly_model(df)
+    assert bundle is not None
+
+
+@pytest.mark.parametrize("n_rows", [50, 100, 200])
+def test_run_pipeline_returns_predictions_list(n_rows: int) -> None:
+    """run_pipeline returns a list of predictions for any reasonable dataset size."""
+    from app.pipeline import run_pipeline
+
+    df = _make_df(n_rows)
+    result = run_pipeline(df)
+    assert isinstance(result.get("predictions"), list)
+
+
+@pytest.mark.parametrize("col", ["consumption_kwh", "temperature", "hour"])
+def test_feature_columns_present_in_training_df(col: str) -> None:
+    """Expected feature columns are present in the synthetic training dataframe."""
+    df = _make_df_with_aliases(100)
+    assert col in df.columns
+
+
+@pytest.mark.parametrize("n_samples", [50, 100, 300, 500])
+def test_train_model_various_sizes(n_samples: int) -> None:
+    """Model trains without error at various dataset sizes."""
+    from app.model import train_model
+
+    df = _make_df(n_samples)
+    _bundle, metrics = train_model(df, df["consumption_kwh"], save=False)
+    assert "r2_mean" in metrics
+    assert isinstance(metrics["r2_mean"], float)
+
+
+def test_anomaly_score_returns_severity_field() -> None:
+    from app.features import make_feature_row
+    from app.model import score_anomaly, train_anomaly_model
+
+    df = _make_df(200)
+    bundle = train_anomaly_model(df)
+    row = make_feature_row(6, 0, 1, 0.0, 20.0, 0, 0, 0.0)
+    result = score_anomaly(bundle, row)
+    assert "severity" in result
+    assert result["severity"] in ("none", "warning", "critical")
+
+
+def test_train_model_r2_is_numeric() -> None:
+    from app.model import train_model
+
+    df = _make_df(150)
+    _, metrics = train_model(df, df["consumption_kwh"], save=False)
+    assert isinstance(metrics.get("r2_mean"), float)
+    assert metrics["r2_mean"] == metrics["r2_mean"]  # not NaN
+
+
+@pytest.mark.parametrize("hour", [0, 6, 12, 18, 23])
+def test_make_feature_row_hour_variants(hour: int) -> None:
+    from app.features import make_feature_row
+
+    row = make_feature_row(hour, 0, 1, 20.0, 50.0, 50, 0, 10.0)
+    assert row is not None
+    assert len(row) > 0
+
+
+def test_run_pipeline_missing_target_column_raises() -> None:
+    """run_pipeline must raise ValueError when consumption_kwh column is absent."""
+    import pandas as pd
+
+    from app.pipeline import run_pipeline
+
+    df = pd.DataFrame({"hour": [1, 2, 3], "other": [0.1, 0.2, 0.3]})
+    with pytest.raises(ValueError, match="consumption_kwh"):
+        run_pipeline(df)
+
+
+def test_run_pipeline_predictions_length_matches_input() -> None:
+    import pandas as pd
+
+    from app.pipeline import run_pipeline
+
+    df = pd.DataFrame(
+        {
+            "consumption_kwh": [10.0, 20.0, 15.0, 25.0, 30.0],
+            "hour": [0, 6, 12, 18, 23],
+        }
+    )
+    result = run_pipeline(df)
+    assert len(result["predictions"]) == 5
+
+
+def test_run_pipeline_returns_metrics_dict() -> None:
+    import pandas as pd
+
+    from app.pipeline import run_pipeline
+
+    df = pd.DataFrame(
+        {
+            "consumption_kwh": [float(i) for i in range(1, 21)],
+            "hour": list(range(20)),
+        }
+    )
+    result = run_pipeline(df)
+    assert "metrics" in result
+    assert isinstance(result["metrics"], dict)

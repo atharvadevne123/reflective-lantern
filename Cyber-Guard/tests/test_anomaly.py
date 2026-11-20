@@ -18,7 +18,7 @@ from app.model import generate_synthetic_data
 
 
 @pytest.fixture(scope="module")
-def trained_detector():
+def trained_detector() -> None:
     X, _ = generate_synthetic_data(300)
     with tempfile.TemporaryDirectory() as tmpdir:
         path = os.path.join(tmpdir, "anomaly.joblib")
@@ -26,13 +26,13 @@ def trained_detector():
         yield load_anomaly_detector(path)
 
 
-def test_score_anomaly_returns_expected_keys(trained_detector, sample_dataframe):
+def test_score_anomaly_returns_expected_keys(trained_detector, sample_dataframe) -> None:
     result = score_anomaly(sample_dataframe, trained_detector)
     assert set(result) == {"anomaly_score", "decision_score", "is_anomaly"}
     assert isinstance(result["is_anomaly"], bool)
 
 
-def test_typical_connection_is_not_anomalous(trained_detector):
+def test_typical_connection_is_not_anomalous(trained_detector) -> None:
     """A connection drawn from the training distribution should look normal."""
     X, _ = generate_synthetic_data(50)
     rate = batch_anomaly_rate(X, trained_detector)
@@ -41,7 +41,7 @@ def test_typical_connection_is_not_anomalous(trained_detector):
     assert rate < 0.5
 
 
-def test_extreme_connection_is_flagged(trained_detector):
+def test_extreme_connection_is_flagged(trained_detector) -> None:
     """A connection orders of magnitude outside training range is an outlier."""
     extreme = pd.DataFrame(
         [
@@ -60,7 +60,7 @@ def test_extreme_connection_is_flagged(trained_detector):
     assert result["anomaly_score"] > 0
 
 
-def test_batch_anomaly_rate_empty(trained_detector):
+def test_batch_anomaly_rate_empty(trained_detector) -> None:
     empty = pd.DataFrame(
         columns=[
             "src_bytes",
@@ -74,19 +74,19 @@ def test_batch_anomaly_rate_empty(trained_detector):
     assert batch_anomaly_rate(empty, trained_detector) == 0.0
 
 
-def test_batch_anomaly_rate_in_unit_interval(trained_detector):
+def test_batch_anomaly_rate_in_unit_interval(trained_detector) -> None:
     X, _ = generate_synthetic_data(100)
     rate = batch_anomaly_rate(X, trained_detector)
     assert 0.0 <= rate <= 1.0
 
 
-def test_anomaly_score_is_negated_decision(trained_detector, sample_dataframe):
+def test_anomaly_score_is_negated_decision(trained_detector, sample_dataframe) -> None:
     """anomaly_score must be the sign-flipped decision score, higher == weirder."""
     result = score_anomaly(sample_dataframe, trained_detector)
     assert result["anomaly_score"] == pytest.approx(-result["decision_score"], abs=1e-4)
 
 
-def test_train_anomaly_detector_persists(tmp_path):
+def test_train_anomaly_detector_persists(tmp_path) -> None:
     X, _ = generate_synthetic_data(120)
     path = tmp_path / "anom.joblib"
     train_anomaly_detector(X, model_path=str(path))
@@ -94,7 +94,7 @@ def test_train_anomaly_detector_persists(tmp_path):
 
 
 @pytest.mark.parametrize("contamination", [0.01, 0.1])
-def test_contamination_setting_accepted(contamination: float, tmp_path):
+def test_contamination_setting_accepted(contamination: float, tmp_path) -> None:
     X, _ = generate_synthetic_data(120)
     path = tmp_path / f"anom_{contamination}.joblib"
     pipe = train_anomaly_detector(X, contamination=contamination, model_path=str(path))

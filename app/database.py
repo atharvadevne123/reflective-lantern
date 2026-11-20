@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import logging
 import os
-from collections.abc import Generator
 from datetime import datetime
 
 from sqlalchemy import Column, DateTime, Float, Integer, String, create_engine
@@ -12,24 +11,47 @@ from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 logger = logging.getLogger(__name__)
 
-DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./watt_guard.db")
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./logistics_flow.db")
 
-_is_sqlite = "sqlite" in DATABASE_URL
-_engine_kwargs: dict[str, object] = {"echo": False}
-if _is_sqlite:
-    _engine_kwargs["connect_args"] = {"check_same_thread": False}
-else:
-    _engine_kwargs["pool_size"] = int(os.getenv("DB_POOL_SIZE", "5"))
-    _engine_kwargs["max_overflow"] = int(os.getenv("DB_MAX_OVERFLOW", "10"))
-    _engine_kwargs["pool_pre_ping"] = True
-
-engine = create_engine(DATABASE_URL, **_engine_kwargs)
-
+engine = create_engine(DATABASE_URL, echo=False)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
 class Base(DeclarativeBase):
-    """Declarative base for all ORM models."""
+    """Declarative base class for all SQLAlchemy ORM models."""
+
+
+class Prediction(Base):
+    """Stores each inference call for monitoring and drift detection."""
+
+    __tablename__ = "predictions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+    carrier = Column(String(64))
+    distance_km = Column(Float)
+    weight_kg = Column(Float)
+    route_type = Column(String(32))
+    hour_of_day = Column(Integer)
+    day_of_week = Column(Integer)
+    predicted_minutes = Column(Float)
+    confidence = Column(Float)
+    model_version = Column(String(32))
+
+
+class DriftLog(Base):
+    """Records KS-test drift results over time."""
+
+    __tablename__ = "drift_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    checked_at = Column(DateTime, nullable=True)
+    feature = Column(String(64))
+    feature_name = Column(String(64))
+    ks_statistic = Column(Float)
+    p_value = Column(Float)
+    drift_detected = Column(Integer)  # 0/1
 
 
 class EnergyReading(Base):
@@ -37,110 +59,80 @@ class EnergyReading(Base):
 
     __tablename__ = "energy_readings"
 
-    id: int = Column(Integer, primary_key=True, index=True)
-    building_id: str = Column(String(64), index=True, nullable=False)
-    timestamp: datetime = Column(DateTime, nullable=False, index=True)
-    consumption_kwh: float = Column(Float, nullable=False)
-    temperature_c: float = Column(Float)
-    humidity_pct: float = Column(Float)
-    occupancy: int = Column(Integer)
-    hvac_state: int = Column(Integer, default=0)
-    created_at: datetime = Column(DateTime, default=datetime.utcnow)
+    id = Column(Integer, primary_key=True, index=True)
+    building_id = Column(String(128), index=True)
+    timestamp = Column(DateTime, default=datetime.utcnow, index=True)
+    consumption_kwh = Column(Float)
+    temperature_c = Column(Float, nullable=True)
+    humidity_pct = Column(Float, nullable=True)
+    occupancy = Column(Integer, nullable=True)
+    hvac_state = Column(Integer, nullable=True)
 
 
 class PredictionLog(Base):
-    """Audit log of every prediction made by the forecasting model."""
+    """Stores per-building energy consumption predictions."""
 
     __tablename__ = "prediction_logs"
 
-    id: int = Column(Integer, primary_key=True, index=True)
-    building_id: str = Column(String(64), index=True)
-    timestamp: datetime = Column(DateTime, nullable=False, index=True)
-    predicted_kwh: float = Column(Float, nullable=False)
-    actual_kwh: float = Column(Float)
-    model_version: str = Column(String(32), default="1.0.0")
-    latency_ms: float = Column(Float)
-    created_at: datetime = Column(DateTime, default=datetime.utcnow, index=True)
+    id = Column(Integer, primary_key=True, index=True)
+    building_id = Column(String(128), index=True)
+    timestamp = Column(DateTime, default=datetime.utcnow, index=True)
+    predicted_kwh = Column(Float)
+    actual_kwh = Column(Float, nullable=True)
+    latency_ms = Column(Float, nullable=True)
+    model_version = Column(String(32), default="1.0.0")
 
 
 class AnomalyLog(Base):
-    """Record of anomaly detection results."""
+    """Records detected anomalies in energy consumption."""
 
     __tablename__ = "anomaly_logs"
 
-    id: int = Column(Integer, primary_key=True, index=True)
-    building_id: str = Column(String(64), index=True)
-    timestamp: datetime = Column(DateTime, nullable=False)
-    consumption_kwh: float = Column(Float, nullable=False)
-    anomaly_score: float = Column(Float, nullable=False)
-    is_anomaly: int = Column(Integer, nullable=False)
-    severity: str = Column(String(16))
-    created_at: datetime = Column(DateTime, default=datetime.utcnow)
+    id = Column(Integer, primary_key=True, index=True)
+    building_id = Column(String(128), index=True)
+    timestamp = Column(DateTime, default=datetime.utcnow, index=True)
+    consumption_kwh = Column(Float)
+    anomaly_score = Column(Float)
+    is_anomaly = Column(Integer)  # 0/1
+    severity = Column(String(32), nullable=True)
 
 
-class DriftLog(Base):
-    """KS-test drift detection result per feature."""
+class ModelMetrics(Base):
+    """Stores model evaluation metrics after each training run."""
 
-    __tablename__ = "drift_logs"
+    __tablename__ = "model_metrics"
 
-    id: int = Column(Integer, primary_key=True, index=True)
-    feature_name: str = Column(String(64), nullable=False)
-    ks_statistic: float = Column(Float, nullable=False)
-    p_value: float = Column(Float, nullable=False)
-    drift_detected: int = Column(Integer, nullable=False)
-    checked_at: datetime = Column(DateTime, default=datetime.utcnow)
+    id = Column(Integer, primary_key=True, index=True)
+    recorded_at = Column(DateTime, default=datetime.utcnow)
+    model_version = Column(String(32))
+    r2_mean = Column(Float, nullable=True)
+    mae_kwh = Column(Float, nullable=True)
+    rmse_mean = Column(Float, nullable=True)
 
 
-def get_db() -> Generator[Session, None, None]:
-    """Yield a database session and ensure it is closed after use."""
-    db: Session = SessionLocal()
+def init_db() -> None:
+    """Create tables if they do not exist."""
+    Base.metadata.create_all(bind=engine)
+    logger.info("Database tables initialised")
+
+
+def get_db() -> Session:
+    """Yield a database session and close it when done."""
+    db = SessionLocal()
     try:
         yield db
     finally:
         db.close()
 
 
-def create_tables() -> None:
-    """Create all ORM tables if they do not already exist."""
-    Base.metadata.create_all(bind=engine)
-    logger.info("Database tables ensured.")
-
-
-class ModelMetrics(Base):
-    """Snapshot of model training metrics after each retrain."""
-
-    __tablename__ = "model_metrics"
-
-    id: int = Column(Integer, primary_key=True, index=True)
-    model_version: str = Column(String(32), nullable=False, index=True)
-    r2_mean: float = Column(Float)
-    r2_std: float = Column(Float)
-    mae_kwh: float = Column(Float)
-    rmse_mean: float = Column(Float)
-    n_samples: int = Column(Integer)
-    n_features: int = Column(Integer)
-    trained_at: datetime = Column(DateTime, default=datetime.utcnow, index=True)
-
-
 def get_predictions_by_building(
-    db: Session,
-    building_id: str,
-    limit: int = 100,
+    db: Session, building_id: str, limit: int = 100
 ) -> list[PredictionLog]:
-    """Return the most recent prediction log entries for a specific building.
-
-    Args:
-        db: Active SQLAlchemy session.
-        building_id: Building identifier to filter on.
-        limit: Maximum number of rows to return.
-
-    Returns:
-        List of PredictionLog ORM objects, newest first.
-    """
+    """Return prediction log entries for a given building, newest first."""
     return (
         db.query(PredictionLog)
         .filter(PredictionLog.building_id == building_id)
-        .order_by(PredictionLog.created_at.desc())
+        .order_by(PredictionLog.timestamp.desc())
         .limit(limit)
         .all()
     )
@@ -149,49 +141,35 @@ def get_predictions_by_building(
 def get_recent_anomalies(
     db: Session,
     building_id: str,
-    limit: int = 10,
+    limit: int = 50,
     severity: str | None = None,
 ) -> list[AnomalyLog]:
-    """Return the most recent anomaly log entries for a building.
-
-    Args:
-        db: Active SQLAlchemy session.
-        building_id: Building identifier to filter on.
-        limit: Maximum number of rows to return (default 10).
-        severity: Optional severity filter ('low', 'medium', 'critical').
-
-    Returns:
-        List of AnomalyLog ORM objects, newest first.
-    """
-    query = db.query(AnomalyLog).filter(AnomalyLog.building_id == building_id).filter(AnomalyLog.is_anomaly == 1)
+    """Return recent anomaly log entries, optionally filtered by severity."""
+    q = db.query(AnomalyLog).filter(AnomalyLog.building_id == building_id)
     if severity is not None:
-        query = query.filter(AnomalyLog.severity == severity)
-    return query.order_by(AnomalyLog.timestamp.desc()).limit(limit).all()
+        q = q.filter(AnomalyLog.severity == severity)
+    return q.order_by(AnomalyLog.timestamp.desc()).limit(limit).all()
 
 
 def count_anomalies_by_building(db: Session, building_id: str) -> int:
-    """Return the total number of anomaly records for *building_id*.
-
-    Args:
-        db: Active SQLAlchemy session.
-        building_id: Building identifier to count anomalies for.
-
-    Returns:
-        Integer count of rows where is_anomaly == 1.
-    """
-    return db.query(AnomalyLog).filter(AnomalyLog.building_id == building_id, AnomalyLog.is_anomaly == 1).count()
+    """Return the total number of anomaly records for a building."""
+    return db.query(AnomalyLog).filter(AnomalyLog.building_id == building_id).count()
 
 
 __all__ = [
+    "DATABASE_URL",
     "AnomalyLog",
     "Base",
     "DriftLog",
     "EnergyReading",
     "ModelMetrics",
+    "Prediction",
     "PredictionLog",
+    "SessionLocal",
     "count_anomalies_by_building",
-    "create_tables",
+    "engine",
     "get_db",
     "get_predictions_by_building",
     "get_recent_anomalies",
+    "init_db",
 ]

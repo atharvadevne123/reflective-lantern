@@ -57,6 +57,13 @@ class Experiment:
         variants: list[Variant],
         enabled: bool = True,
     ) -> None:
+        """Initialise the experiment with its name, variants, and enabled state.
+
+        Args:
+            name: Unique experiment name.
+            variants: Non-empty list of variants to assign from.
+            enabled: When False, all entities receive the first variant.
+        """
         if not variants:
             raise ValueError("At least one variant is required")
         self.name = name
@@ -102,11 +109,21 @@ class Experiment:
         """Return how many entities were assigned to each variant."""
         return dict(self._assignment_counts)
 
+    def reset_counts(self) -> None:
+        """Reset all assignment counters to zero."""
+        for k in self._assignment_counts:
+            self._assignment_counts[k] = 0
+
+    def total_assignments(self) -> int:
+        """Return total number of entities assigned so far."""
+        return sum(self._assignment_counts.values())
+
 
 class ExperimentRegistry:
     """Registry of named experiments."""
 
     def __init__(self) -> None:
+        """Initialise an empty experiment registry."""
         self._experiments: dict[str, Experiment] = {}
 
     def register(self, experiment: Experiment) -> None:
@@ -133,8 +150,25 @@ class ExperimentRegistry:
         """Return names of all registered experiments."""
         return list(self._experiments)
 
+    def deregister(self, name: str) -> bool:
+        """Remove an experiment by name. Returns True if it existed."""
+        return self._experiments.pop(name, None) is not None
+
+    def active_experiments(self) -> list[str]:
+        """Return names of all enabled experiments."""
+        return [name for name, exp in self._experiments.items() if exp.enabled]
+
+    def __len__(self) -> int:
+        """Return the number of registered experiments."""
+        return len(self._experiments)
+
+
+CONTROL: Variant = Variant(name="control", weight=0.5)
+TREATMENT: Variant = Variant(name="treatment", weight=0.5)
 
 __all__ = [
+    "CONTROL",
+    "TREATMENT",
     "Experiment",
     "ExperimentRegistry",
     "ExperimentResult",

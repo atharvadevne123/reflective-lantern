@@ -57,10 +57,13 @@ def co2_kg_to_tonnes(kg: float) -> float:
     """Convert kilograms of CO2 to metric tonnes.
 
     Args:
-        kg: CO2 equivalent in kilograms.
+        kg: CO2 equivalent in kilograms (may be negative for savings).
 
     Returns:
         CO2 equivalent in metric tonnes, rounded to 6 decimal places.
+
+    Note:
+        Uses the constant KG_TO_TONNES = 0.001 (1 tonne = 1 000 kg).
     """
     return round(kg * KG_TO_TONNES, 6)
 
@@ -72,10 +75,11 @@ def trees_equivalent(co2_kg: float) -> float:
     which equals 50 trees per metric tonne.
 
     Args:
-        co2_kg: CO2 equivalent in kilograms.
+        co2_kg: CO2 equivalent in kilograms (non-negative expected).
 
     Returns:
-        Estimated number of trees, rounded to 1 decimal place.
+        Estimated number of trees rounded to 1 decimal place.
+        Returns 0.0 when *co2_kg* is 0.
     """
     tonnes = co2_kg_to_tonnes(co2_kg)
     return round(tonnes * TREES_PER_TONNE_CO2_PER_YEAR, 1)
@@ -186,12 +190,14 @@ __all__ = [
     "carbon_intensity_category",
     "carbon_intensity_label",
     "carbon_intensity_rank",
+    "carbon_neutral_kwh",
     "carbon_offset_cost",
     "carbon_per_sqm",
     "carbon_reduction_pct",
     "carbon_saved_kwh",
     "carbon_savings",
     "carbon_savings_vs_baseline",
+    "co2_intensity_label",
     "co2_kg_to_tonnes",
     "compare_regions",
     "daily_carbon_estimate",
@@ -721,7 +727,9 @@ def annual_carbon_budget(
         raise ValueError("year_fraction_elapsed must be between 0 and 1")
     budget_kg = target_co2_tonnes * 1000.0
     remaining_kg = max(0.0, budget_kg - current_co2_kg)
-    projected = (current_co2_kg / year_fraction_elapsed) if year_fraction_elapsed > 0 else current_co2_kg
+    projected = (
+        (current_co2_kg / year_fraction_elapsed) if year_fraction_elapsed > 0 else current_co2_kg
+    )
     on_track = projected <= budget_kg
     return {
         "budget_kg": round(budget_kg, 2),
@@ -1129,3 +1137,91 @@ def annual_co2_savings(baseline_kwh: float, improved_kwh: float, region: str = "
     saved_kwh = max(0.0, baseline_kwh - improved_kwh)
     factor = grid_emission_factor(region)
     return round(saved_kwh * factor * 1000.0, 4)
+
+
+def kwh_to_grams_co2(kwh: float, region: str = "default") -> float:
+    """Convert energy consumption (kWh) to CO2 equivalent in grams.
+
+    Args:
+        kwh: Energy consumption in kilowatt-hours.
+        region: Grid region identifier.
+
+    Returns:
+        Estimated CO2 equivalent in grams, rounded to 2 decimal places.
+
+    Raises:
+        ValueError: If *kwh* is negative.
+    """
+    return round(kwh_to_co2_kg(kwh, region) * 1000.0, 2)
+
+
+def peak_emission_hour(hourly_kwh: list[float], region: str = "default") -> int:
+    """Return the hour index (0-23) with the highest CO2 emissions.
+
+    Args:
+        hourly_kwh: List of hourly energy consumption values in kWh.
+        region: Grid region identifier.
+
+    Returns:
+        Index of the peak-emission hour. Returns 0 when *hourly_kwh* is empty.
+    """
+    if not hourly_kwh:
+        return 0
+    intensities = carbon_intensity_by_hour(hourly_kwh, region)
+    return int(max(range(len(intensities)), key=lambda i: intensities[i]))
+
+
+def carbon_neutral_kwh(
+    kwh: float,
+    region: str = "default",
+    offset_factor: float = 1.0,
+) -> float:
+    """Return the net kWh that would result in zero carbon emissions after offsetting.
+
+    Args:
+        kwh: Energy consumption in kWh (must be non-negative).
+        region: Grid region for intensity lookup.
+        offset_factor: Fraction of emissions actually offset (0-1, default 1.0 = fully offset).
+
+    Returns:
+        kWh that remain carbon-positive after offsetting (0.0 when fully offset).
+
+    Raises:
+        ValueError: If *kwh* is negative or *offset_factor* is outside [0, 1].
+    """
+    if kwh < 0:
+        raise ValueError("kwh must be non-negative")
+    if not 0.0 <= offset_factor <= 1.0:
+        raise ValueError("offset_factor must be in [0, 1]")
+    co2_kg = kwh_to_co2_kg(kwh, region)
+    offset_kg = co2_kg * offset_factor
+    remaining_co2 = co2_kg - offset_kg
+    if remaining_co2 <= 0.0:
+        return 0.0
+    intensity = _grid_intensity(region.lower())
+    if intensity == 0.0:
+        return 0.0
+    return round(remaining_co2 / intensity, 4)
+
+
+def co2_intensity_label(co2_kg_per_kwh: float) -> str:
+    """Classify a grid carbon intensity into a human-readable label.
+
+    Args:
+        co2_kg_per_kwh: Carbon dioxide emissions in kg per kWh.
+
+    Returns:
+        "low" if < 0.2, "medium" if < 0.4, "high" if < 0.6, "very high" otherwise.
+
+    Raises:
+        ValueError: If *co2_kg_per_kwh* is negative.
+    """
+    if co2_kg_per_kwh < 0:
+        raise ValueError("co2_kg_per_kwh must be non-negative")
+    if co2_kg_per_kwh < 0.2:
+        return "low"
+    if co2_kg_per_kwh < 0.4:
+        return "medium"
+    if co2_kg_per_kwh < 0.6:
+        return "high"
+    return "very high"

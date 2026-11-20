@@ -1,4 +1,23 @@
-"""Threshold-based alerting engine for metric monitoring."""
+"""Threshold-based alerting engine for metric monitoring.
+
+This module provides:
+
+- :class:`AlertRule` — configurable rule evaluated against a named metric with
+  support for six comparison operators and a per-rule cooldown period.
+- :class:`AlertManager` — registry of rules that evaluates them against a
+  metrics snapshot, dispatches fired alerts to registered handlers, and
+  maintains a firing history.
+- :class:`Alert` — immutable record of a single triggered alert.
+- :func:`count_by_severity` — convenience aggregation helper.
+
+Typical usage::
+
+    from app.alerting import AlertManager, AlertRule, Severity
+
+    manager = AlertManager(handlers=[print])
+    manager.add_rule(AlertRule("cpu_high", metric="cpu_pct", threshold=90.0))
+    alerts = manager.evaluate_all({"cpu_pct": 95.0})
+"""
 
 from __future__ import annotations
 
@@ -72,6 +91,11 @@ class AlertRule:
         compare=False,
     )
 
+    def __post_init__(self) -> None:
+        """Validate alert rule configuration after dataclass initialisation."""
+        if self.cooldown_s < 0:
+            raise ValueError(f"cooldown_s must be non-negative, got {self.cooldown_s}")
+
     def evaluate(self, value: float, now: float) -> Alert | None:
         """Evaluate the rule against a metric value.
 
@@ -112,17 +136,34 @@ class AlertManager:
     """
 
     def __init__(self, handlers: list[Callable[[Alert], None]] | None = None) -> None:
+        """Initialise the alerting engine with optional alert handlers.
+
+        Args:
+            handlers: Callables invoked for every fired alert.
+        """
         self._rules: dict[str, AlertRule] = {}
         self._handlers: list[Callable[[Alert], None]] = handlers or []
         self._fired: list[Alert] = []
 
     def add_rule(self, rule: AlertRule) -> None:
-        """Register an alerting rule."""
+        """Register an alerting rule.
+
+        Args:
+            rule: The :class:`AlertRule` to register. Any existing rule with the
+                same :attr:`~AlertRule.name` is replaced.
+        """
         self._rules[rule.name] = rule
         logger.debug("Registered alert rule '%s'", rule.name)
 
     def remove_rule(self, name: str) -> bool:
-        """Remove a rule by name. Returns True if found."""
+        """Remove a rule by name.
+
+        Args:
+            name: The :attr:`~AlertRule.name` of the rule to remove.
+
+        Returns:
+            ``True`` if the rule existed and was removed; ``False`` otherwise.
+        """
         return self._rules.pop(name, None) is not None
 
     def evaluate_all(self, metrics: dict[str, float], now: float | None = None) -> list[Alert]:
@@ -156,8 +197,78 @@ class AlertManager:
 
     @property
     def history(self) -> list[Alert]:
-        """Return all alerts fired since creation."""
+        """Return all alerts fired since creation.
+
+        Returns:
+            A new list snapshot of every :class:`Alert` that was returned by
+            :meth:`evaluate_all` since this manager was created.
+        """
         return list(self._fired)
 
+    def clear_history(self) -> None:
+        """Remove all previously fired alerts from the history list.
 
-__all__ = ["Alert", "AlertManager", "AlertRule", "Severity"]
+        Returns:
+            None. Mutates the internal fired-alerts buffer in place.
+        """
+        self._fired.clear()
+
+    def rule_names(self) -> list[str]:
+        """Return sorted list of registered rule names.
+
+        Returns:
+            Alphabetically sorted list of every rule name currently registered.
+        """
+        return sorted(self._rules)
+
+    def history_for_metric(self, metric: str) -> list[Alert]:
+        """Return all historical alerts for a specific metric name.
+
+        Args:
+            metric: The metric name to filter on.
+
+        Returns:
+            Ordered list of alerts whose metric field equals *metric*.
+        """
+        return [a for a in self._fired if a.metric == metric]
+
+    def add_handler(self, handler: Callable[[Alert], None]) -> None:
+        """Register an additional alert handler.
+
+        Args:
+            handler: Callable that accepts a single :class:`Alert` and performs
+                a side-effect such as sending a notification or writing to a log.
+        """
+        self._handlers.append(handler)
+
+    def __len__(self) -> int:
+        """Return the number of registered alert rules."""
+        return len(self._rules)
+
+    def __contains__(self, name: str) -> bool:
+        """Return True if a rule with *name* is registered."""
+        return name in self._rules
+
+    def critical_count(self) -> int:
+        """Return number of CRITICAL alerts in history."""
+        return sum(1 for a in self._fired if a.severity == Severity.CRITICAL)
+
+
+def count_by_severity(alerts: list[Alert]) -> dict[str, int]:
+    """Count alerts grouped by severity level.
+
+    Args:
+        alerts: List of Alert objects to summarise.
+
+    Returns:
+        Dict mapping each severity value string to its count.
+        Only severities present in *alerts* are included.
+    """
+    counts: dict[str, int] = {}
+    for alert in alerts:
+        key = alert.severity.value
+        counts[key] = counts.get(key, 0) + 1
+    return counts
+
+
+__all__ = ["Alert", "AlertManager", "AlertRule", "Severity", "count_by_severity"]

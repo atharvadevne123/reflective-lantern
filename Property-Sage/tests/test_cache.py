@@ -1,5 +1,4 @@
 """Tests for PredictionCache."""
-
 from app.cache import PredictionCache
 
 

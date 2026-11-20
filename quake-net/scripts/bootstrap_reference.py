@@ -17,8 +17,8 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from app.features import make_synthetic_dataset  # noqa: E402
-from app.monitoring import REFERENCE_PATH, save_reference_distribution  # noqa: E402
+from app.features import make_synthetic_dataset
+from app.monitoring import REFERENCE_PATH, save_reference_distribution
 
 NUMERIC_COLUMNS = (
     "latitude",

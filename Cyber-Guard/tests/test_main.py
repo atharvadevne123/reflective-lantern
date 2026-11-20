@@ -25,38 +25,38 @@ def client():
 
 class TestHealthEndpoint:
     def test_health_returns_200(self, client: TestClient) -> None:
-        resp = client.get("/api/v1/health")
+        resp = client.get("/health")
         assert resp.status_code == 200
 
     def test_health_has_status_field(self, client: TestClient) -> None:
-        resp = client.get("/api/v1/health")
+        resp = client.get("/health")
         data = resp.json()
         assert "status" in data
 
     def test_health_status_is_ok(self, client: TestClient) -> None:
-        resp = client.get("/api/v1/health")
+        resp = client.get("/health")
         data = resp.json()
         assert data["status"] in ("ok", "healthy", "degraded")
 
 
 class TestMetricsEndpoint:
     def test_metrics_returns_200(self, client: TestClient) -> None:
-        resp = client.get("/api/v1/metrics")
+        resp = client.get("/metrics")
         assert resp.status_code == 200
 
     def test_metrics_returns_dict(self, client: TestClient) -> None:
-        resp = client.get("/api/v1/metrics")
+        resp = client.get("/metrics")
         assert isinstance(resp.json(), dict)
 
 
 class TestPredictEndpoint:
     def test_predict_missing_body_returns_422(self, client: TestClient) -> None:
-        resp = client.post("/api/v1/predict", json={})
+        resp = client.post("/predict", json={})
         assert resp.status_code in (200, 422, 400, 500)
 
     def test_predict_returns_json(self, client: TestClient) -> None:
         resp = client.post(
-            "/api/v1/predict",
+            "/predict",
             json={
                 "duration": 1,
                 "protocol_type": "tcp",

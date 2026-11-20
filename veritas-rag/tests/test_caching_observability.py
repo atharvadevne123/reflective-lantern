@@ -4,31 +4,32 @@ from __future__ import annotations
 
 import time
 
+import pytest
 from app.caching import RetrievalCache, cache_key, normalize_query
 from app.observability import TraceRecorder, TraceStore
 
 
 class TestCache:
-    def test_hit_after_put(self):
+    def test_hit_after_put(self) -> None:
         cache = RetrievalCache()
         cache.put("What is X?", ["result"])
         assert cache.get("What is X?") == ["result"]
         assert cache.stats()["hits"] == 1
 
-    def test_normalized_variants_share_entry(self):
+    def test_normalized_variants_share_entry(self) -> None:
         cache = RetrievalCache()
         cache.put("What is the Rebate?", "value")
         assert cache.get("what is the rebate") == "value"
         assert normalize_query("What IS   the rebate??") == "what is the rebate"
 
-    def test_ttl_expiry(self):
+    def test_ttl_expiry(self) -> None:
         cache = RetrievalCache(ttl_seconds=0.01)
         cache.put("q", "v")
         time.sleep(0.02)
         assert cache.get("q") is None
         assert cache.stats()["misses"] == 1
 
-    def test_lru_eviction(self):
+    def test_lru_eviction(self) -> None:
         cache = RetrievalCache(max_size=2)
         cache.put("a", 1)
         cache.put("b", 2)
@@ -38,18 +39,18 @@ class TestCache:
         assert cache.get("a") == 1
         assert cache.get("c") == 3
 
-    def test_invalidate_all(self):
+    def test_invalidate_all(self) -> None:
         cache = RetrievalCache()
         cache.put("a", 1)
         cache.invalidate_all()
         assert cache.get("a") is None
 
-    def test_key_stability(self):
+    def test_key_stability(self) -> None:
         assert cache_key("Query!") == cache_key("query")
 
 
 class TestTraceRecorder:
-    def test_stages_and_timings_recorded(self):
+    def test_stages_and_timings_recorded(self) -> None:
         rec = TraceRecorder("test query")
         rec.start_stage("bm25")
         rec.end_stage("bm25", top=["c1"])
@@ -59,13 +60,13 @@ class TestTraceRecorder:
         assert trace.outcome["answered"] is True
         assert "total_ms" in trace.outcome
 
-    def test_request_ids_unique(self):
+    def test_request_ids_unique(self) -> None:
         ids = {TraceRecorder("q").trace.request_id for _ in range(50)}
         assert len(ids) == 50
 
 
 class TestTraceStore:
-    def test_ring_buffer_eviction(self):
+    def test_ring_buffer_eviction(self) -> None:
         store = TraceStore(max_size=2)
         traces = [TraceRecorder(f"q{i}").finish() for i in range(3)]
         for t in traces:
@@ -74,7 +75,7 @@ class TestTraceStore:
         assert store.get(traces[2].request_id) is not None
         assert len(store) == 2
 
-    def test_recent_order(self):
+    def test_recent_order(self) -> None:
         store = TraceStore()
         traces = [TraceRecorder(f"q{i}").finish() for i in range(3)]
         for t in traces:
@@ -84,7 +85,7 @@ class TestTraceStore:
 
 
 class TestPipelineTracing:
-    def test_query_produces_full_trace(self, pipeline):
+    def test_query_produces_full_trace(self, pipeline) -> None:
         answer = pipeline.query("What is the maximum rebate per household?")
         trace = pipeline.traces.get(answer.request_id)
         assert trace is not None
@@ -99,13 +100,13 @@ class TestPipelineTracing:
             "evidence_gate",
         } <= stage_names
 
-    def test_trace_explains_fallback(self, pipeline):
+    def test_trace_explains_fallback(self, pipeline) -> None:
         answer = pipeline.query("What is the melting point of osmium?")
         trace = pipeline.traces.get(answer.request_id)
         assert trace.outcome["answered"] is False
         assert trace.outcome["reason"]
 
-    def test_cache_hit_recorded_in_trace(self, pipeline):
+    def test_cache_hit_recorded_in_trace(self, pipeline) -> None:
         q = "How much is the rooftop solar rebate per kilowatt?"
         pipeline.query(q)
         answer2 = pipeline.query(q)
@@ -113,14 +114,14 @@ class TestPipelineTracing:
         cache_stage = next(s for s in trace.stages if s["stage"] == "cache")
         assert cache_stage["hit"] is True
 
-    def test_attribution_present_for_answers(self, pipeline):
+    def test_attribution_present_for_answers(self, pipeline) -> None:
         answer = pipeline.query("What is the maximum rebate per household?")
         trace = pipeline.traces.get(answer.request_id)
         gen_stage = next(s for s in trace.stages if s["stage"] == "generation")
         assert gen_stage["attribution"]
         assert all("chunk_id" in a for a in gen_stage["attribution"])
 
-    def test_cached_second_query_faster_path(self, pipeline):
+    def test_cached_second_query_faster_path(self, pipeline) -> None:
         q = "What are the grid export limits for single phase connections?"
         pipeline.query(q)
         answer = pipeline.query(q)
@@ -202,3 +203,123 @@ class TestTraceErrorRate:
 
         result = trace_error_rate(TraceStore())
         assert isinstance(result, float)
+
+
+class TestCacheWarmAndEvict:
+    def test_warm_populates_cache(self) -> None:
+        """warm() inserts the supplied (query, value) pairs."""
+        c = RetrievalCache(max_size=100)
+        n = c.warm([("query one", "v1"), ("query two", "v2")])
+        assert n == 2
+        assert c.get("query one") == "v1"
+        assert c.get("query two") == "v2"
+
+    def test_warm_returns_insert_count(self) -> None:
+        c = RetrievalCache(max_size=100)
+        assert c.warm([]) == 0
+        assert c.warm([("q", "v")] * 5) == 5
+
+    def test_evict_expired_removes_stale(self) -> None:
+        """evict_expired() removes entries whose TTL has passed."""
+        import time
+
+        c = RetrievalCache(max_size=100, ttl_seconds=0.01)
+        c.put("expiring", "v")
+        time.sleep(0.05)
+        evicted = c.evict_expired()
+        assert evicted >= 1
+        assert c.get("expiring") is None
+
+    def test_evict_expired_keeps_fresh_entries(self) -> None:
+        """evict_expired() leaves entries whose TTL has not passed."""
+        c = RetrievalCache(max_size=100, ttl_seconds=300.0)
+        c.put("fresh", "value")
+        evicted = c.evict_expired()
+        assert evicted == 0
+        assert c.get("fresh") == "value"
+
+
+class TestCacheFillRatioEdge:
+    def test_zero_max_size_returns_zero(self) -> None:
+        """cache_fill_ratio does not divide by zero for max_size=0."""
+        from app.caching import cache_fill_ratio
+
+        c = RetrievalCache(max_size=0)
+        assert cache_fill_ratio(c) == 0.0
+
+    def test_ratio_reaches_one_when_full(self) -> None:
+        from app.caching import cache_fill_ratio
+
+        c = RetrievalCache(max_size=3)
+        for i in range(3):
+            c.put(f"query {i}", f"v{i}")
+        assert cache_fill_ratio(c) == pytest.approx(1.0)
+
+
+class TestCacheHitMissAccounting:
+    def test_stats_sum_to_total(self) -> None:
+        """hits + misses == total requests."""
+        c = RetrievalCache()
+        c.put("q1", "v1")
+        c.get("q1")  # hit
+        c.get("q1")  # hit
+        c.get("missing")  # miss
+        stats = c.stats()
+        assert stats["hits"] + stats["misses"] == 3
+
+    def test_hit_rate_zero_on_all_misses(self) -> None:
+        c = RetrievalCache()
+        c.get("never stored")
+        stats = c.stats()
+        assert stats["hit_rate"] == 0.0
+
+
+class TestCacheAgeSeconds:
+    def test_none_for_missing_key(self) -> None:
+        from app.caching import RetrievalCache, cache_age_seconds
+
+        cache = RetrievalCache(ttl_seconds=60)
+        assert cache_age_seconds(cache, "not cached query") is None
+
+    def test_returns_non_negative_age(self) -> None:
+        from app.caching import RetrievalCache, cache_age_seconds
+
+        cache = RetrievalCache(ttl_seconds=60)
+        cache.put("my query", [])
+        age = cache_age_seconds(cache, "my query")
+        assert age is not None
+        assert age >= 0.0
+
+    def test_none_after_eviction(self) -> None:
+        from app.caching import RetrievalCache, cache_age_seconds
+
+        cache = RetrievalCache(max_size=1, ttl_seconds=60)
+        cache.put("first query", [])
+        cache.put("second query", [])  # evicts first
+        assert cache_age_seconds(cache, "first query") is None
+
+    def test_none_when_expired(self) -> None:
+        from app.caching import RetrievalCache, cache_age_seconds
+
+        cache = RetrievalCache(ttl_seconds=0.0)
+        cache.put("expiring query", [])
+        import time
+
+        time.sleep(0.01)
+        assert cache_age_seconds(cache, "expiring query") is None
+
+
+class TestPipelineSources:
+    def test_sources_empty_pipeline(self, empty_pipeline) -> None:
+        assert empty_pipeline.sources() == []
+
+    def test_sources_after_ingest(self, empty_pipeline) -> None:
+        empty_pipeline.ingest(b"Content for sources test.", "source-a.txt")
+        assert "source-a.txt" in empty_pipeline.sources()
+
+    def test_sources_multiple_docs(self, empty_pipeline) -> None:
+        for name in ("doc1.txt", "doc2.txt", "doc3.txt"):
+            empty_pipeline.ingest(f"Content for {name}.".encode(), name)
+        sources = empty_pipeline.sources()
+        for name in ("doc1.txt", "doc2.txt", "doc3.txt"):
+            assert name in sources

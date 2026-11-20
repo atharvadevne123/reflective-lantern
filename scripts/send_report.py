@@ -41,8 +41,9 @@ REPORTS_DIR = Path(__file__).resolve().parent.parent / "reports"
 SMTP_PORTS: tuple[tuple[int, bool], ...] = ((587, False), (465, True))
 
 
-def _build_message(subject: str, body: str, sender: str, recipient: str,
-                   attachment: Path | None) -> MIMEMultipart:
+def _build_message(
+    subject: str, body: str, sender: str, recipient: str, attachment: Path | None
+) -> MIMEMultipart:
     """Assemble the MIME message.
 
     Args:
@@ -64,9 +65,7 @@ def _build_message(subject: str, body: str, sender: str, recipient: str,
     if attachment and attachment.exists():
         subtype = attachment.suffix.lstrip(".") or "octet-stream"
         part = MIMEApplication(attachment.read_bytes(), _subtype=subtype)
-        part.add_header(
-            "Content-Disposition", "attachment", filename=attachment.name
-        )
+        part.add_header("Content-Disposition", "attachment", filename=attachment.name)
         msg.attach(part)
 
     return msg
@@ -89,9 +88,7 @@ def send_email(subject: str, body: str, attachment: Path | None = None) -> bool:
     host = os.environ.get("LANTERN_SMTP_HOST", "smtp.gmail.com")
 
     if not password or not recipient:
-        logger.info(
-            "LANTERN_SMTP_PASSWORD/LANTERN_REPORT_TO not set — skipping email"
-        )
+        logger.info("LANTERN_SMTP_PASSWORD/LANTERN_REPORT_TO not set — skipping email")
         return False
 
     msg = _build_message(subject, body, sender, recipient, attachment)
@@ -111,7 +108,7 @@ def send_email(subject: str, body: str, attachment: Path | None = None) -> bool:
                     server.send_message(msg)
             logger.info("Report emailed via %s:%s", host, port)
             return True
-        except Exception as exc:  # noqa: BLE001 - any failure means try next port
+        except Exception as exc:
             logger.warning("SMTP %s:%s failed: %s", host, port, exc)
 
     return False
@@ -162,7 +159,7 @@ def deliver(subject: str, body: str, attachment: Path | None = None) -> str:
     try:
         if send_email(subject, body, attachment):
             return "emailed"
-    except Exception:  # noqa: BLE001
+    except Exception:
         logger.exception("Unexpected error while emailing — falling back to file")
 
     path = file_to_repo(subject, body, attachment)
@@ -191,6 +188,8 @@ def main(argv: list[str] | None = None) -> int:
     print(f"Delivery: {status}")
     return 0
 
+
+__all__ = ["deliver", "file_to_repo", "main", "send_email"]
 
 if __name__ == "__main__":
     sys.exit(main())

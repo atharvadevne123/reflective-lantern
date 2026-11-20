@@ -393,7 +393,13 @@ def test_json_formatter_produces_json() -> None:
 
     formatter = JsonFormatter()
     record = logging.LogRecord(
-        name="test", level=logging.INFO, pathname="", lineno=0, msg="Hello JSON", args=(), exc_info=None
+        name="test",
+        level=logging.INFO,
+        pathname="",
+        lineno=0,
+        msg="Hello JSON",
+        args=(),
+        exc_info=None,
     )
     output = formatter.format(record)
     parsed = json.loads(output)
@@ -493,3 +499,87 @@ class TestLogLevelName:
         from app.logging_config import log_level_name
 
         assert log_level_name(99) == "UNKNOWN"
+
+
+@pytest.mark.parametrize(
+    "level_name,expected_int",
+    [("DEBUG", 10), ("INFO", 20), ("WARNING", 30), ("ERROR", 40), ("CRITICAL", 50)],
+)
+def test_log_level_int_known_names(level_name: str, expected_int: int) -> None:
+    """log_level_int converts known level names to their integer values."""
+    from app.logging_config import log_level_int
+
+    assert log_level_int(level_name) == expected_int
+
+
+@pytest.mark.parametrize(
+    "level_int,expected_name",
+    [(10, "DEBUG"), (20, "INFO"), (30, "WARNING"), (40, "ERROR"), (50, "CRITICAL")],
+)
+def test_log_level_name_roundtrip(level_int: int, expected_name: str) -> None:
+    """log_level_name(log_level_int(name)) == name for all standard levels."""
+    from app.logging_config import log_level_int, log_level_name
+
+    assert log_level_name(log_level_int(expected_name)) == expected_name
+
+
+class TestConfigureLoggingEdgeCases:
+    @pytest.mark.parametrize("level", ["DEBUG", "INFO", "WARNING", "ERROR"])
+    def test_configure_logging_accepts_level(self, level: str) -> None:
+        from app.logging_config import configure_logging
+
+        configure_logging(level=level)
+
+    def test_json_output_mode_accepted(self) -> None:
+        from app.logging_config import configure_logging
+
+        configure_logging(level="INFO", json_output=True)
+
+
+class TestLogHandlerCountExt:
+    def test_returns_non_negative_int(self) -> None:
+        import logging
+
+        from app.logging_config import configure_logging, log_handler_count
+
+        configure_logging(level="INFO")
+        count = log_handler_count(logging.getLogger())
+        assert count >= 0
+
+    def test_is_integer(self) -> None:
+        import logging
+
+        from app.logging_config import log_handler_count
+
+        result = log_handler_count(logging.getLogger("test_count"))
+        assert isinstance(result, int)
+
+
+class TestHasConsoleHandlerExt:
+    def test_returns_bool(self) -> None:
+        import logging
+
+        from app.logging_config import has_console_handler
+
+        result = has_console_handler(logging.getLogger("test_has_console"))
+        assert isinstance(result, bool)
+
+    def test_after_configure_has_handler(self) -> None:
+        import logging
+
+        from app.logging_config import configure_logging, has_console_handler
+
+        configure_logging(level="INFO")
+        root_logger = logging.getLogger()
+        result = has_console_handler(root_logger)
+        assert isinstance(result, bool)
+
+    @pytest.mark.parametrize("level", ["DEBUG", "WARNING"])
+    def test_configure_then_check(self, level: str) -> None:
+        import logging
+
+        from app.logging_config import configure_logging, has_console_handler
+
+        configure_logging(level=level)
+        result = has_console_handler(logging.getLogger())
+        assert isinstance(result, bool)

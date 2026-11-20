@@ -81,7 +81,7 @@ def find_similar_anomalies(
         indices = indices_arr[0]
 
     results = []
-    for dist, idx in zip(distances, indices):
+    for dist, idx in zip(distances, indices, strict=False):
         if idx < 0 or idx >= len(_INDEX_LABELS):
             continue
         label = _INDEX_LABELS[idx].copy()

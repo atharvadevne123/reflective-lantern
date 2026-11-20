@@ -20,14 +20,15 @@ _reference_distributions: dict[str, list[float]] = {}
 _isolation_forest: IsolationForest | None = None
 
 
-# Set reference feature distributions for KS-test drift comparisons.
 def set_reference_distributions(data: dict[str, list[float]]) -> None:
+    """Store reference feature distributions for KS-test drift comparisons."""
     global _reference_distributions
     _reference_distributions = {k: list(v) for k, v in data.items()}
     logger.info("Reference distributions set for %d features", len(data))
 
 
 def compute_drift(reference: list[float], current: list[float]) -> dict:
+    """Run a KS two-sample test between reference and current distributions."""
     if len(reference) < 5 or len(current) < 5:
         return {
             "ks_statistic": 0.0,
@@ -44,6 +45,7 @@ def compute_drift(reference: list[float], current: list[float]) -> dict:
 
 
 def check_all_features(current_window: dict[str, list[float]]) -> dict[str, dict]:
+    """Check drift for every feature in *current_window* against stored references."""
     results: dict[str, dict] = {}
     for feature, current in current_window.items():
         ref = _reference_distributions.get(feature, [])
@@ -172,6 +174,34 @@ def log_drift(db: Session, feature_results: dict[str, dict]) -> None:
         )
         db.add(record)
     db.commit()
+
+
+def summarise_anomalies(anomaly_results: list[dict]) -> dict[str, object]:
+    """Aggregate a batch of anomaly detection results into summary statistics.
+
+    Args:
+        anomaly_results: List of dicts as returned by :func:`detect_anomaly`.
+
+    Returns:
+        Dict with 'total', 'anomaly_count', 'anomaly_rate', 'severity_counts',
+        and 'type_counts'.
+    """
+    total = len(anomaly_results)
+    anomaly_count = sum(1 for r in anomaly_results if r.get("is_anomaly"))
+    severity_counts: dict[str, int] = {}
+    type_counts: dict[str, int] = {}
+    for r in anomaly_results:
+        sev = str(r.get("severity", "none"))
+        atype = str(r.get("anomaly_type", "none"))
+        severity_counts[sev] = severity_counts.get(sev, 0) + 1
+        type_counts[atype] = type_counts.get(atype, 0) + 1
+    return {
+        "total": total,
+        "anomaly_count": anomaly_count,
+        "anomaly_rate": round(anomaly_count / max(total, 1), 4),
+        "severity_counts": severity_counts,
+        "type_counts": type_counts,
+    }
 
 
 def compute_prediction_stats(db: Session) -> dict:

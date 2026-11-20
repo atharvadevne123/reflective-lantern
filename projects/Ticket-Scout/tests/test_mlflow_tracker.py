@@ -1,5 +1,4 @@
 """MLflow tracker stub tests."""
-
 from __future__ import annotations
 
 import os
@@ -15,7 +14,6 @@ def test_log_training_run_writes_local_file(tmp_path, monkeypatch):
     import importlib
 
     import app.mlflow_tracker as tracker
-
     importlib.reload(tracker)
 
     metrics = {"breach_auc_mean": 0.82, "category_accuracy_mean": 0.75}
@@ -25,6 +23,5 @@ def test_log_training_run_writes_local_file(tmp_path, monkeypatch):
 
 def test_log_training_run_no_crash():
     from app.mlflow_tracker import log_training_run
-
     metrics = {"breach_auc_mean": 0.78}
     log_training_run(metrics, params={"n_estimators": 100})

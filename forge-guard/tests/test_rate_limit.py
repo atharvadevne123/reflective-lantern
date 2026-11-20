@@ -47,3 +47,22 @@ def test_rate_limit_does_not_affect_different_paths(client: TestClient, monkeypa
     assert r1.status_code == 200
     assert r2.status_code == 200
     app_main._RATE_WINDOW.clear()
+
+
+def test_rate_limit_high_threshold_always_passes(client: TestClient, monkeypatch) -> None:
+    monkeypatch.setattr(app_main, "RATE_LIMIT", 1000)
+    app_main._RATE_WINDOW.clear()
+    for _ in range(10):
+        resp = client.get("/health")
+        assert resp.status_code == 200
+    app_main._RATE_WINDOW.clear()
+
+
+def test_rate_limit_second_request_blocked_at_limit_one(client: TestClient, monkeypatch) -> None:
+    monkeypatch.setattr(app_main, "RATE_LIMIT", 1)
+    app_main._RATE_WINDOW.clear()
+    r1 = client.get("/health")
+    r2 = client.get("/health")
+    assert r1.status_code == 200
+    assert r2.status_code == 429
+    app_main._RATE_WINDOW.clear()

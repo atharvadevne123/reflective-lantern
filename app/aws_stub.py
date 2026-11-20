@@ -15,7 +15,7 @@ DEFAULT_PREFIX = "realty-edge/models"
 ARTEFACT_FILENAMES = ("model.joblib", "metrics.json")
 
 _REGION = os.getenv("AWS_REGION", DEFAULT_REGION)
-_BUCKET = os.getenv("S3_BUCKET", "watt-guard-models")
+_BUCKET = os.getenv("S3_BUCKET", "logistics-flow-models")
 _PREFIX = os.getenv("S3_PREFIX", DEFAULT_PREFIX)
 
 

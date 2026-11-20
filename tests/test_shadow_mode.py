@@ -7,40 +7,40 @@ import pytest
 from app.shadow_mode import ShadowResult, ShadowRunner
 
 
-def _primary(x):
+def _primary(x) -> None:
     return x * 2
 
 
-def _shadow_same(x):
+def _shadow_same(x) -> None:
     return x * 2
 
 
-def _shadow_different(x):
+def _shadow_different(x) -> None:
     return x * 3
 
 
-def _shadow_error(x):
+def _shadow_error(x) -> None:
     raise ValueError("shadow failed")
 
 
 class TestShadowRunnerBasic:
-    def test_returns_primary_result(self):
+    def test_returns_primary_result(self) -> None:
         runner = ShadowRunner(_primary, _shadow_same)
         assert runner.call(5) == 10
 
-    def test_matched_when_results_equal(self):
+    def test_matched_when_results_equal(self) -> None:
         runner = ShadowRunner(_primary, _shadow_same)
         runner.call(5)
         assert runner.stats()["matched"] == 1
 
-    def test_mismatch_when_results_differ(self):
+    def test_mismatch_when_results_differ(self) -> None:
         runner = ShadowRunner(_primary, _shadow_different)
         runner.call(5)
         stats = runner.stats()
         assert stats["matched"] == 0
         assert stats["mismatched"] == 1
 
-    def test_shadow_error_captured(self):
+    def test_shadow_error_captured(self) -> None:
         runner = ShadowRunner(_primary, _shadow_error)
         result = runner.call(5)
         assert result == 10
@@ -48,25 +48,25 @@ class TestShadowRunnerBasic:
         assert stats["errors"] == 1
         assert stats["matched"] == 0
 
-    def test_multiple_calls_accumulate(self):
+    def test_multiple_calls_accumulate(self) -> None:
         runner = ShadowRunner(_primary, _shadow_same)
         for i in range(5):
             runner.call(i)
         assert runner.stats()["total"] == 5
 
-    def test_match_rate_all_matched(self):
+    def test_match_rate_all_matched(self) -> None:
         runner = ShadowRunner(_primary, _shadow_same)
         for i in range(4):
             runner.call(i)
         assert runner.stats()["match_rate"] == pytest.approx(1.0)
 
-    def test_match_rate_none_matched(self):
+    def test_match_rate_none_matched(self) -> None:
         runner = ShadowRunner(_primary, _shadow_different)
         for i in range(1, 5):  # start at 1 to avoid 0*2==0*3 edge case
             runner.call(i)
         assert runner.stats()["match_rate"] == pytest.approx(0.0)
 
-    def test_clear_resets_stats(self):
+    def test_clear_resets_stats(self) -> None:
         runner = ShadowRunner(_primary, _shadow_same)
         runner.call(1)
         runner.clear()
@@ -74,8 +74,8 @@ class TestShadowRunnerBasic:
 
 
 class TestCustomComparer:
-    def test_custom_comparer_used(self):
-        def approx_equal(a, b):
+    def test_custom_comparer_used(self) -> None:
+        def approx_equal(a, b) -> None:
             return abs(a - b) < 5
 
         runner = ShadowRunner(
@@ -86,8 +86,8 @@ class TestCustomComparer:
         runner.call(10)
         assert runner.stats()["matched"] == 1
 
-    def test_comparer_exception_treated_as_mismatch(self):
-        def bad_comparer(a, b):
+    def test_comparer_exception_treated_as_mismatch(self) -> None:
+        def bad_comparer(a, b) -> None:
             raise RuntimeError("comparer broken")
 
         runner = ShadowRunner(_primary, _shadow_same, comparer=bad_comparer)
@@ -96,7 +96,7 @@ class TestCustomComparer:
 
 
 class TestShadowResultFields:
-    def test_latencies_recorded(self):
+    def test_latencies_recorded(self) -> None:
         runner = ShadowRunner(_primary, _shadow_same)
         runner.call(3)
         result = runner._results[0]
@@ -104,14 +104,205 @@ class TestShadowResultFields:
         assert result.primary_latency_ms >= 0
         assert result.shadow_latency_ms >= 0
 
-    def test_shadow_error_is_exception(self):
+    def test_shadow_error_is_exception(self) -> None:
         runner = ShadowRunner(_primary, _shadow_error)
         runner.call(1)
         result = runner._results[0]
         assert isinstance(result.shadow_error, ValueError)
 
     @pytest.mark.parametrize("x", [0, -1, 100, 3.14])
-    def test_various_inputs(self, x):
+    def test_various_inputs(self, x) -> None:
         runner = ShadowRunner(_primary, _shadow_same)
         ret = runner.call(x)
         assert ret == x * 2
+
+
+class TestShadowRunnerStatsCompleteness:
+    def test_stats_keys_present(self) -> None:
+        runner = ShadowRunner(_primary, _shadow_same)
+        stats = runner.stats()
+        for key in ("total", "matched", "mismatched", "errors", "match_rate"):
+            assert key in stats
+
+    def test_stats_on_zero_calls(self) -> None:
+        runner = ShadowRunner(_primary, _shadow_same)
+        stats = runner.stats()
+        assert stats["total"] == 0
+        assert stats["match_rate"] == pytest.approx(0.0) or stats["match_rate"] == pytest.approx(
+            1.0
+        )
+
+    def test_mixed_match_mismatch_error(self) -> None:
+        runner = ShadowRunner(_primary, lambda x: x * 2 if x % 2 == 0 else x * 3)
+        for i in range(1, 5):
+            runner.call(i)
+        stats = runner.stats()
+        assert stats["total"] == 4
+        assert stats["matched"] + stats["mismatched"] + stats["errors"] == 4
+
+    def test_match_rate_0_5_for_half_matched(self) -> None:
+        runner = ShadowRunner(_primary, lambda x: x * 2 if x < 5 else x * 99)
+        for i in range(1, 11):
+            runner.call(i)
+        stats = runner.stats()
+        assert stats["match_rate"] == pytest.approx(0.4)
+
+    def test_clear_then_rerun_gives_fresh_stats(self) -> None:
+        runner = ShadowRunner(_primary, _shadow_same)
+        for _ in range(3):
+            runner.call(1)
+        runner.clear()
+        runner.call(2)
+        assert runner.stats()["total"] == 1
+
+    def test_primary_always_returns_regardless_of_shadow(self) -> None:
+        def slow_shadow(x) -> None:
+            import time
+
+            time.sleep(0.001)
+            return x * 2
+
+        runner = ShadowRunner(_primary, slow_shadow)
+        for i in range(5):
+            assert runner.call(i) == i * 2
+
+
+@pytest.mark.parametrize("n_calls", [1, 5, 10])
+def test_shadow_runner_total_stats_match_calls(n_calls: int) -> None:
+    """stats()['total'] equals the number of times call() was invoked."""
+    from app.shadow_mode import ShadowRunner
+
+    runner = ShadowRunner(lambda x: x, lambda x: x + 1)
+    for i in range(n_calls):
+        runner.call(i)
+    assert runner.stats()["total"] == n_calls
+
+
+@pytest.mark.parametrize("n_calls", [1, 5, 10])
+def test_shadow_runner_primary_result_always_returned(n_calls: int) -> None:
+    """call() always returns the primary function's result, ignoring shadow."""
+    from app.shadow_mode import ShadowRunner
+
+    primary = lambda x: x * 3
+    shadow = lambda x: x * 99
+    runner = ShadowRunner(primary, shadow)
+    for i in range(n_calls):
+        assert runner.call(i) == i * 3
+
+
+class TestShadowResultEdgeCases:
+    def test_shadow_result_match_flag_true_when_equal(self) -> None:
+        from app.shadow_mode import ShadowResult
+
+        result = ShadowResult(primary=42, shadow=42, matched=True)
+        assert result.matched is True
+
+    def test_shadow_result_match_flag_false_when_different(self) -> None:
+        from app.shadow_mode import ShadowResult
+
+        result = ShadowResult(primary=42, shadow=99, matched=False)
+        assert result.matched is False
+
+    @pytest.mark.parametrize("value", [0, -1, 100, "ok", None])
+    def test_shadow_result_primary_value_preserved(self, value: object) -> None:
+        from app.shadow_mode import ShadowResult
+
+        result = ShadowResult(primary=value, shadow=value, matched=True)
+        assert result.primary == value
+
+
+class TestShadowRunnerMismatches:
+    def test_empty_initially(self) -> None:
+        from app.shadow_mode import ShadowRunner
+
+        runner = ShadowRunner(lambda x: x, lambda x: x + 1)
+        assert runner.mismatches() == []
+
+    def test_mismatch_recorded_on_divergence(self) -> None:
+        from app.shadow_mode import ShadowRunner
+
+        runner = ShadowRunner(lambda x: x, lambda x: x + 1)
+        runner.call(5)
+        assert len(runner.mismatches()) == 1
+
+    def test_no_mismatch_when_results_equal(self) -> None:
+        from app.shadow_mode import ShadowRunner
+
+        runner = ShadowRunner(lambda x: x, lambda x: x)
+        runner.call(5)
+        assert runner.mismatches() == []
+
+
+class TestShadowRunnerLastResult:
+    def test_none_before_first_call(self) -> None:
+        from app.shadow_mode import ShadowRunner
+
+        runner = ShadowRunner(lambda: 1, lambda: 1)
+        assert runner.last_result() is None
+
+    def test_stores_last_call_result(self) -> None:
+        from app.shadow_mode import ShadowRunner
+
+        runner = ShadowRunner(lambda x: x, lambda x: x)
+        runner.call(42)
+        result = runner.last_result()
+        assert result.primary == 42
+
+    def test_updates_on_each_call(self) -> None:
+        from app.shadow_mode import ShadowRunner
+
+        runner = ShadowRunner(lambda x: x, lambda x: x)
+        runner.call(1)
+        runner.call(2)
+        assert runner.last_result().primary == 2
+
+
+class TestShadowRunnerClear:
+    def test_clear_resets_stats(self) -> None:
+        from app.shadow_mode import ShadowRunner
+
+        runner = ShadowRunner(lambda x: x, lambda x: x)
+        runner.call(5)
+        runner.clear()
+        assert runner.last_result() is None
+
+    def test_clear_resets_mismatches(self) -> None:
+        from app.shadow_mode import ShadowRunner
+
+        runner = ShadowRunner(lambda x: x, lambda x: x + 1)
+        runner.call(5)
+        runner.clear()
+        assert runner.mismatches() == []
+
+    @pytest.mark.parametrize("n", [1, 3, 5])
+    def test_stats_reset_after_clear(self, n: int) -> None:
+        from app.shadow_mode import ShadowRunner
+
+        runner = ShadowRunner(lambda x: x, lambda x: x)
+        for i in range(n):
+            runner.call(i)
+        runner.clear()
+        stats = runner.stats()
+        assert stats.get("total_calls", 0) == 0
+
+
+class TestShadowRunnerMismatchDetection:
+    @pytest.mark.parametrize("primary_val,shadow_val", [(1, 2), ("a", "b"), (True, False)])
+    def test_mismatch_recorded_on_different_results(
+        self, primary_val: object, shadow_val: object
+    ) -> None:
+        """A mismatch is recorded when primary and shadow return different values."""
+        from app.shadow_mode import ShadowRunner
+
+        runner = ShadowRunner(lambda: primary_val, lambda: shadow_val)
+        runner.call()
+        assert len(runner.mismatches()) == 1
+
+    @pytest.mark.parametrize("value", [0, "same", None, 3.14])
+    def test_no_mismatch_when_results_match(self, value: object) -> None:
+        """No mismatch recorded when primary and shadow return identical values."""
+        from app.shadow_mode import ShadowRunner
+
+        runner = ShadowRunner(lambda: value, lambda: value)
+        runner.call()
+        assert len(runner.mismatches()) == 0

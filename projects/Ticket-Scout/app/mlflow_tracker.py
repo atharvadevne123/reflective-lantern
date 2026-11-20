@@ -12,7 +12,6 @@ logger = logging.getLogger(__name__)
 _MLFLOW_AVAILABLE = False
 try:
     import mlflow  # type: ignore[import]
-
     _MLFLOW_AVAILABLE = True
 except ImportError:
     pass

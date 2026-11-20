@@ -111,15 +111,13 @@ def run_drift_check(db: Session) -> list[dict[str, Any]]:
             db.rollback()
             logger.error("Failed to save drift report: %s", exc)
 
-        reports.append(
-            {
-                "feature": feature,
-                "ks_statistic": round(ks_stat, 6),
-                "p_value": round(float(p_value), 6),
-                "drift_detected": drift_detected,
-                "sample_size": len(observed),
-            }
-        )
+        reports.append({
+            "feature": feature,
+            "ks_statistic": round(ks_stat, 6),
+            "p_value": round(float(p_value), 6),
+            "drift_detected": drift_detected,
+            "sample_size": len(observed),
+        })
         if drift_detected:
             logger.warning("Drift detected in %s: KS=%.4f p=%.6f", feature, ks_stat, p_value)
 
@@ -141,31 +139,3 @@ def maintenance_rate(db: Session, window: int = 500) -> float:
     except Exception as exc:
         logger.error("Failed to compute maintenance rate: %s", exc)
         return 0.0
-
-
-def buffer_fill_pct() -> dict[str, float]:
-    """Return how full each feature's rolling buffer is (0.0–1.0).
-
-    Returns:
-        Dict mapping feature name to fill fraction.
-    """
-    return {
-        feature: len(buf) / buf.maxlen  # type: ignore[operator]
-        for feature, buf in _feature_buffer.items()
-        if buf.maxlen
-    }
-
-
-def clear_feature_buffer(feature: str | None = None) -> None:
-    """Clear one or all feature observation buffers.
-
-    Args:
-        feature: Feature name to clear, or None to clear all.
-    """
-    if feature is not None:
-        if feature in _feature_buffer:
-            _feature_buffer[feature].clear()
-    else:
-        for buf in _feature_buffer.values():
-            buf.clear()
-    logger.info("Feature buffer cleared (feature=%s)", feature or "all")

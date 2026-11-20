@@ -6,6 +6,7 @@ from __future__ import annotations
 import logging
 import time
 import uuid
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from typing import Annotated, Any
 
@@ -16,7 +17,13 @@ from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.orm import Session
 
 from app.database import get_db, init_db
-from app.model import generate_synthetic_data, get_metrics, load_model, predict, train_model
+from app.model import (
+    generate_synthetic_data,
+    get_metrics,
+    load_model,
+    predict,
+    train_model,
+)
 from app.monitoring import (
     check_all_features,
     compute_prediction_stats,
@@ -41,11 +48,11 @@ RATE_LIMIT = 300
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     global _model_bundle
     init_db()
     _model_bundle = load_model()
-    X_raw, y = generate_synthetic_data(500)
+    _X_raw, y = generate_synthetic_data(500)
     set_reference_distributions({"consumption_kwh": y.tolist()})
     train_anomaly_detector(y.tolist())
     logger.info("Energy-Seer started — model loaded")
@@ -69,7 +76,7 @@ app.add_middleware(
 
 
 @app.middleware("http")
-async def correlation_id_middleware(request: Request, call_next):
+async def correlation_id_middleware(request: Request, call_next) -> Response:
     request_id = request.headers.get("X-Request-ID", str(uuid.uuid4())[:8])
     start = time.perf_counter()
     response: Response = await call_next(request)
@@ -80,7 +87,7 @@ async def correlation_id_middleware(request: Request, call_next):
 
 
 @app.middleware("http")
-async def rate_limit_middleware(request: Request, call_next):
+async def rate_limit_middleware(request: Request, call_next) -> Response:
     client_ip = request.client.host if request.client else "unknown"
     now = time.time()
     window_start = _rate_limit_window.get(client_ip, now)
@@ -156,7 +163,7 @@ class ForecastRequest(BaseModel):
 
 
 @app.get("/api/v1/health", tags=["System"])
-async def health() -> dict:
+async def health() -> dict[str, object]:
     """Check API and model health status."""
     return {
         "status": "ok",
@@ -166,7 +173,7 @@ async def health() -> dict:
 
 
 @app.get("/api/v1/metrics", tags=["System"])
-async def metrics(db: Annotated[Session, Depends(get_db)]) -> dict:
+async def metrics(db: Annotated[Session, Depends(get_db)]) -> dict[str, object]:
     """Return model performance metrics and recent prediction statistics."""
     model_metrics = get_metrics()
     pred_stats = compute_prediction_stats(db)
@@ -304,8 +311,18 @@ async def drift_endpoint(
     }
 
 
+@app.get("/api/v1/version", tags=["System"])
+async def version() -> dict[str, str]:
+    """Return the API version and build metadata."""
+    return {
+        "api_version": "1.0.0",
+        "app_name": "energy-seer",
+        "build": "stable",
+    }
+
+
 @app.post("/api/v1/retrain", tags=["System"], status_code=status.HTTP_202_ACCEPTED)
-async def trigger_retrain() -> dict:
+async def trigger_retrain() -> dict[str, object]:
     """Trigger synchronous model retraining on synthetic data (demo endpoint)."""
     global _model_bundle
     _, metrics = train_model()

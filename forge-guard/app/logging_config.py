@@ -17,6 +17,7 @@ class JsonFormatter(logging.Formatter):
     """Formats log records as single-line JSON objects."""
 
     def format(self, record: logging.LogRecord) -> str:
+        """Serialise *record* to a single-line JSON string."""
         payload: dict[str, Any] = {
             "ts": datetime.now(timezone.utc).isoformat(),
             "level": record.levelname,
@@ -50,3 +51,6 @@ def configure_logging(level: str = "INFO", json_output: bool = False) -> None:
     else:
         handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(name)s %(message)s"))
     root.addHandler(handler)
+
+
+__all__ = ["JsonFormatter", "configure_logging"]

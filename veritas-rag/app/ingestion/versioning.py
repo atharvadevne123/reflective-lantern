@@ -9,9 +9,12 @@ remain addressable for audit.
 from __future__ import annotations
 
 import hashlib
+import logging
 from dataclasses import dataclass, field
 
 from ..schemas import Document
+
+logger = logging.getLogger(__name__)
 
 
 def make_doc_id(source: str, version: int) -> str:
@@ -49,9 +52,20 @@ class VersionStore:
         return chain is not None and chain.latest.content_hash == new_content_hash
 
     def add(self, doc: Document) -> None:
-        """Append a document to its source's version chain."""
+        """Append a document to its source's version chain.
+
+        Args:
+            doc: The document to add; doc.source determines which chain it joins.
+        """
         chain = self._chains.setdefault(doc.source, VersionChain(source=doc.source))
         chain.versions.append(doc)
+        logger.debug(
+            "Versioned %s as %s (v%d, %d versions total in chain)",
+            doc.source,
+            doc.doc_id,
+            doc.version,
+            len(chain.versions),
+        )
 
     def latest(self, source: str) -> Document | None:
         chain = self._chains.get(source)

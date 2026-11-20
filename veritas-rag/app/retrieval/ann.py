@@ -35,7 +35,15 @@ class VectorIndex:
         self._dirty = True
 
     def add(self, chunk_ids: list[str], vectors: np.ndarray) -> None:
-        """Append vectors for the given chunk ids."""
+        """Append vectors for the given chunk ids.
+
+        Args:
+            chunk_ids: Unique identifiers for the new vectors.
+            vectors: Float32 array of shape (len(chunk_ids), dim).
+
+        Raises:
+            ValueError: If chunk_ids and vectors lengths differ.
+        """
         if len(chunk_ids) != vectors.shape[0]:
             raise ValueError("chunk_ids and vectors length mismatch")
         self._ids.extend(chunk_ids)
@@ -43,10 +51,19 @@ class VectorIndex:
         self._dirty = True
 
     def remove(self, chunk_ids: list[str]) -> None:
-        """Mark chunk ids as deleted (filtered from results, compacted on rebuild)."""
+        """Mark chunk ids as deleted (filtered from results, compacted on rebuild).
+
+        Deleted ids are excluded from search results immediately but remain
+        in the raw vector store until the next FAISS rebuild, which happens
+        automatically once the corpus crosses ivf_threshold.
+
+        Args:
+            chunk_ids: Ids to mark as deleted.
+        """
         self._deleted.update(chunk_ids)
 
     def __len__(self) -> int:
+        """Return the number of live (non-deleted) indexed vectors."""
         return len(self._ids) - len(self._deleted & set(self._ids))
 
     def _rebuild_faiss(self) -> None:

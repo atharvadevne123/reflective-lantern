@@ -7,7 +7,7 @@ from datetime import datetime
 from app.database import DriftReport, PredictionLog, RetrainingRun
 
 
-def test_prediction_log_defaults(db_session):
+def test_prediction_log_defaults(db_session) -> None:
     record = PredictionLog(
         temperature=75.0,
         pressure=50.0,
@@ -27,7 +27,7 @@ def test_prediction_log_defaults(db_session):
     assert isinstance(record.timestamp, datetime)
 
 
-def test_drift_report_persists(db_session):
+def test_drift_report_persists(db_session) -> None:
     report = DriftReport(
         feature="temperature",
         ks_statistic=0.42,
@@ -43,7 +43,7 @@ def test_drift_report_persists(db_session):
     assert report.drift_detected is True
 
 
-def test_retraining_run_status_transitions(db_session):
+def test_retraining_run_status_transitions(db_session) -> None:
     run = RetrainingRun(trigger="drift", auc_before=0.91, auc_after=0.94, status="success")
     db_session.add(run)
     db_session.commit()
@@ -52,7 +52,7 @@ def test_retraining_run_status_transitions(db_session):
     assert run.auc_after > run.auc_before
 
 
-def test_query_predictions_by_label(db_session):
+def test_query_predictions_by_label(db_session) -> None:
     marker = "test-query-by-label"
     for label in (0, 0, 1):
         db_session.add(
@@ -78,7 +78,7 @@ def test_query_predictions_by_label(db_session):
     assert defects == 1
 
 
-def test_prediction_log_correlation_id_nullable(db_session):
+def test_prediction_log_correlation_id_nullable(db_session) -> None:
     record = PredictionLog(
         temperature=75.0,
         pressure=50.0,
@@ -96,7 +96,7 @@ def test_prediction_log_correlation_id_nullable(db_session):
     assert record.correlation_id is None
 
 
-def test_drift_report_no_drift(db_session):
+def test_drift_report_no_drift(db_session) -> None:
     report = DriftReport(
         feature="humidity",
         ks_statistic=0.05,
@@ -112,7 +112,7 @@ def test_drift_report_no_drift(db_session):
     assert report.p_value == 0.60
 
 
-def test_retraining_run_defaults(db_session):
+def test_retraining_run_defaults(db_session) -> None:
     run = RetrainingRun()
     db_session.add(run)
     db_session.commit()
@@ -122,7 +122,7 @@ def test_retraining_run_defaults(db_session):
     assert run.finished_at is None
 
 
-def test_multiple_prediction_logs_queried(db_session):
+def test_multiple_prediction_logs_queried(db_session) -> None:
     for i in range(5):
         db_session.add(
             PredictionLog(
@@ -142,7 +142,7 @@ def test_multiple_prediction_logs_queried(db_session):
     assert count == 5
 
 
-def test_prediction_log_model_version_default(db_session):
+def test_prediction_log_model_version_default(db_session) -> None:
     record = PredictionLog(
         temperature=75.0,
         pressure=50.0,
@@ -160,7 +160,7 @@ def test_prediction_log_model_version_default(db_session):
     assert record.model_version is not None
 
 
-def test_drift_reports_bulk_insert(db_session):
+def test_drift_reports_bulk_insert(db_session) -> None:
     features = ["temperature", "pressure", "vibration"]
     for feat in features:
         db_session.add(
@@ -178,7 +178,7 @@ def test_drift_reports_bulk_insert(db_session):
     assert count >= len(features)
 
 
-def test_retraining_run_auc_values(db_session):
+def test_retraining_run_auc_values(db_session) -> None:
     run = RetrainingRun(auc_before=0.85, auc_after=0.89, status="success", trigger="api")
     db_session.add(run)
     db_session.commit()
@@ -188,7 +188,7 @@ def test_retraining_run_auc_values(db_session):
     assert run.trigger == "api"
 
 
-def test_prediction_log_all_fields_stored(db_session):
+def test_prediction_log_all_fields_stored(db_session) -> None:
     record = PredictionLog(
         temperature=92.0,
         pressure=61.0,

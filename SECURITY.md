@@ -1,48 +1,56 @@
 # Security Policy
 
-## Supported Versions
+## Supported versions
 
 | Version | Supported |
-|---------|-----------|
-| 1.x.x   | Yes       |
+|---|---|
+| 1.0.x | yes |
 
-## Reporting a Vulnerability
+## Reporting a vulnerability
 
-Please **do not** open a public GitHub issue for security vulnerabilities.
+Please report security issues privately rather than opening a public issue.
+Open a [security advisory](https://github.com/atharvadevne123/Logistics-Flow/security/advisories/new)
+with reproduction steps and the affected version. Expect an initial response
+within 72 hours.
 
-Report privately to **devneatharva@gmail.com** with:
+### Responsible disclosure policy
 
-1. A description of the vulnerability
-2. Steps to reproduce (minimal proof-of-concept if possible)
-3. Potential impact and affected versions
-4. Your suggested fix, if any
+We ask that you:
 
-You will receive an acknowledgement within **48 hours**. Confirmed
-vulnerabilities will be patched and released promptly. We will credit
-reporters in the release notes unless you prefer anonymity.
+1. **Do not** publicly disclose the vulnerability before a fix is available.
+2. Provide sufficient detail to reproduce the issue (steps, environment,
+   payload, and expected vs actual behaviour).
+3. Allow us a reasonable time (up to 90 days) to investigate, confirm, and
+   deploy a fix before any public disclosure.
+4. Avoid accessing or modifying data that does not belong to you while
+   researching the issue.
 
-## Security Considerations for Contributors
+In return we commit to:
 
-- **Never commit API keys, tokens, or passwords** — use environment variables
-  and reference `.env.example`
-- The `detect-private-key` pre-commit hook will block accidental secret commits
-- `GH_PAT`, `ANTHROPIC_API_KEY`, `NOTION_API_KEY`, and `GMAIL_APP_PASS` are
-  runtime secrets managed via environment variables only
-- All GitHub API calls use HTTPS with token-based authentication
-- SMTP connections use TLS (port 587 with STARTTLS or port 465 with SSL)
+- Acknowledge your report within 72 hours.
+- Keep you informed of our progress.
+- Credit you in the release notes unless you prefer to remain anonymous.
+- Not pursue legal action against researchers acting in good faith under this
+  policy.
 
-## Threat Model
+## Operational notes
 
-Reflective Lantern is a scheduled automation agent. The primary attack surfaces are:
+- The rate limiter in `app/middleware.py` is per-process and in-memory. Behind
+  multiple replicas it does not enforce a global limit; use Redis or a gateway.
+- `DATABASE_URL` and any credentials belong in the environment, never in the
+  repository. `.env` is gitignored; `.env.example` holds placeholders only.
+- CORS defaults to `allow_origins=["*"]` for local development. Restrict this
+  before deploying to production.
+- `SECRET_KEY` in `.env.example` defaults to `change-me-in-production`; override
+  it with a strong random value before any deployment.
+- SQL queries use SQLAlchemy parameterized statements throughout; do not
+  interpolate user input into raw queries.
+- All prediction inputs are validated by Pydantic models before processing;
+  unknown carriers and route types are rejected at the API boundary.
 
-| Surface | Mitigation |
-|---------|------------|
-| Leaked `GH_PAT` | Scoped to `repo` + `workflow` only; rotate immediately if exposed |
-| Injected content from repo files | Agent reads but does not execute arbitrary file content |
-| SMTP credentials | Gmail App Password (not account password); revoke in Google account settings |
-| Notion API key | Read/write scoped to specific database; revoke in Notion integrations |
+## Dependency management
 
-## Dependency Updates
-
-Dependabot is configured to open weekly PRs for npm, pip, and GitHub Actions
-dependency updates. Review and merge these promptly.
+- Pin all production dependencies to a minor version range in `requirements.txt`
+  and review updates with `pip-audit` before merging.
+- The `ruff` linter enforces `B` (bugbear) rules to catch common security-adjacent
+  mistakes at lint time.

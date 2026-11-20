@@ -24,7 +24,12 @@ def fleet_summary(db: Session, limit: int = 1000) -> dict[str, Any]:
         and avg_remaining_useful_life_km.
     """
     try:
-        rows = db.query(VehiclePrediction).order_by(VehiclePrediction.id.desc()).limit(limit).all()
+        rows = (
+            db.query(VehiclePrediction)
+            .order_by(VehiclePrediction.id.desc())
+            .limit(limit)
+            .all()
+        )
     except Exception as exc:
         logger.error("Failed to query predictions for summary: %s", exc)
         return {}
@@ -64,7 +69,12 @@ def recent_drift_reports(db: Session, limit: int = 20) -> list[dict[str, Any]]:
         List of dicts describing each DriftReport record.
     """
     try:
-        reports = db.query(DriftReport).order_by(DriftReport.id.desc()).limit(limit).all()
+        reports = (
+            db.query(DriftReport)
+            .order_by(DriftReport.id.desc())
+            .limit(limit)
+            .all()
+        )
         return [
             {
                 "feature": r.feature_name,

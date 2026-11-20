@@ -21,12 +21,14 @@ class Coordinate:
     lon: float
 
     def __post_init__(self) -> None:
+        """Validate that lat and lon are within WGS-84 bounds."""
         if not -90 <= self.lat <= 90:
             raise ValueError(f"Latitude must be in [-90, 90], got {self.lat}")
         if not -180 <= self.lon <= 180:
             raise ValueError(f"Longitude must be in [-180, 180], got {self.lon}")
 
     def __str__(self) -> str:
+        """Return a human-readable coordinate string."""
         return f"({self.lat:.6f}, {self.lon:.6f})"
 
 
@@ -48,6 +50,21 @@ def haversine(a: Coordinate, b: Coordinate) -> float:
     return 2 * _EARTH_RADIUS_KM * math.asin(math.sqrt(h))
 
 
+def haversine_distance(a: tuple[float, float], b: tuple[float, float]) -> float:
+    """Compute the haversine distance between two (lat, lon) tuples.
+
+    Convenience wrapper around :func:`haversine` that accepts plain tuples.
+
+    Args:
+        a: First point as ``(latitude, longitude)`` in decimal degrees.
+        b: Second point as ``(latitude, longitude)`` in decimal degrees.
+
+    Returns:
+        Great-circle distance in kilometres.
+    """
+    return haversine(Coordinate(a[0], a[1]), Coordinate(b[0], b[1]))
+
+
 @dataclass(frozen=True)
 class BoundingBox:
     """An axis-aligned bounding box in geographic coordinates.
@@ -66,7 +83,9 @@ class BoundingBox:
 
     def contains(self, coord: Coordinate) -> bool:
         """Return True if coord falls within this bounding box."""
-        return self.min_lat <= coord.lat <= self.max_lat and self.min_lon <= coord.lon <= self.max_lon
+        return (
+            self.min_lat <= coord.lat <= self.max_lat and self.min_lon <= coord.lon <= self.max_lon
+        )
 
     @property
     def center(self) -> Coordinate:
@@ -144,11 +163,95 @@ def midpoint(a: Coordinate, b: Coordinate) -> Coordinate:
     return Coordinate(lat=mid_lat, lon=mid_lon)
 
 
+def bearing(a: Coordinate, b: Coordinate) -> float:
+    """Compute the initial compass bearing from *a* to *b* in degrees [0, 360).
+
+    Args:
+        a: Origin coordinate.
+        b: Destination coordinate.
+
+    Returns:
+        Bearing in degrees clockwise from north.
+    """
+    lat1 = math.radians(a.lat)
+    lat2 = math.radians(b.lat)
+    dlon = math.radians(b.lon - a.lon)
+    x = math.sin(dlon) * math.cos(lat2)
+    y = math.cos(lat1) * math.sin(lat2) - math.sin(lat1) * math.cos(lat2) * math.cos(dlon)
+    return (math.degrees(math.atan2(x, y)) + 360) % 360
+
+
+def within_radius(
+    center: Coordinate, radius_km: float, candidates: list[Coordinate]
+) -> list[Coordinate]:
+    """Return all candidates within *radius_km* of *center*.
+
+    Args:
+        center: Reference coordinate.
+        radius_km: Radius in kilometres.
+        candidates: List of coordinates to filter.
+
+    Returns:
+        Subset of candidates within the radius (may be empty).
+    """
+    return [c for c in candidates if haversine(center, c) <= radius_km]
+
+
+def distance_km(a: Coordinate, b: Coordinate) -> float:
+    """Alias for :func:`haversine` — return great-circle distance in kilometres.
+
+    Args:
+        a: First coordinate.
+        b: Second coordinate.
+
+    Returns:
+        Distance in kilometres.
+    """
+    return haversine(a, b)
+
+
+def k_nearest(query: Coordinate, candidates: list[Coordinate], k: int = 5) -> list[Coordinate]:
+    """Return the *k* nearest candidates to *query*, ordered nearest first.
+
+    Args:
+        query: The reference coordinate.
+        candidates: List of coordinates to rank.
+        k: Maximum number of neighbours to return.
+
+    Returns:
+        Up to *k* closest coordinates sorted by ascending distance.
+    """
+    return sorted(candidates, key=lambda c: haversine(query, c))[:k]
+
+
 __all__ = [
     "BoundingBox",
     "Coordinate",
+    "arithmetic_midpoint",
+    "bearing",
     "bounding_box_of",
+    "distance_km",
     "haversine",
+    "haversine_distance",
+    "k_nearest",
     "midpoint",
     "nearest_neighbor",
+    "within_radius",
 ]
+
+
+def arithmetic_midpoint(lat1: float, lon1: float, lat2: float, lon2: float) -> tuple[float, float]:
+    """Return the arithmetic midpoint between two coordinate pairs.
+
+    Uses simple arithmetic averaging, suitable for short distances.
+
+    Args:
+        lat1: Latitude of the first point in decimal degrees.
+        lon1: Longitude of the first point in decimal degrees.
+        lat2: Latitude of the second point in decimal degrees.
+        lon2: Longitude of the second point in decimal degrees.
+
+    Returns:
+        Tuple of (latitude, longitude) for the midpoint, each rounded to 6 dp.
+    """
+    return (round((lat1 + lat2) / 2, 6), round((lon1 + lon2) / 2, 6))

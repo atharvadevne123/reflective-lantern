@@ -921,5 +921,54 @@
     "tests_passed": true,
     "server_verified": true,
     "ruff_clean": true
+  },
+  {
+    "date": "2026-10-21",
+    "project": "Vibe-Cast",
+    "description": "Real-time customer sentiment analysis API with LightGBM NLP pipeline. FastAPI + LightGBM + TF-IDF bigrams + 8 handcrafted features via FeatureUnion + KS-drift detection + Airflow DAG retraining + rate-limiting middleware.",
+    "inspired_by": "Hacker News trending NLP / sentiment analysis discussion",
+    "repo_url": "https://github.com/atharvadevne123/Vibe-Cast",
+    "file_count": 22,
+    "test_count": 52,
+    "coverage_pct": 95,
+    "commits": 61,
+    "optional_enhancements": [
+      "XGBoost alternative ensemble pipeline (build_xgb_pipeline)",
+      "Sliding-window rate-limiting middleware (100 req/60s per IP)",
+      "Correlation-ID + response-time middleware headers",
+      "Airflow DAG (vibe_cast_retrain) with @weekly schedule",
+      "Alembic migration scaffold",
+      "Sentiment drift endpoint (compare first-half vs last-half positive-ratio)",
+      "8 handcrafted NLP features (exclamation ratio, negation count, cap ratio, punct density, etc.)"
+    ],
+    "tech_stack": [
+      "Python 3.11",
+      "FastAPI + Pydantic v2",
+      "LightGBM 4.5 (primary model)",
+      "XGBoost 2.1 (secondary model)",
+      "sklearn Pipeline + FeatureUnion",
+      "TF-IDF bigram vectorizer (5000 features, sublinear_tf)",
+      "SQLAlchemy ORM (SQLite dev / PostgreSQL prod)",
+      "Docker + docker-compose + PostgreSQL",
+      "Airflow DAG (weekly retraining)",
+      "KS-test drift detection (scipy ks_2samp)",
+      "pydantic-settings .env config",
+      "pytest + StaticPool in-memory SQLite isolation",
+      "ruff linting",
+      "GitHub Actions CI"
+    ],
+    "bugs_found_and_fixed": [
+      "NotFittedError in FeatureUnion: HandcraftedFeatures nested in sub-Pipeline caused check_is_fitted failures; fixed by placing it directly in FeatureUnion",
+      "AUC NaN from cross_val_score: caused by pipeline restructure + LightGBM parallel joblib; fixed with n_jobs=1",
+      "Mock returning only 2 rows for any batch: fixed side_effect to generate one row per input (alternating pos/neg by index)",
+      "Test DB state leak: function-scoped sessions with StaticPool ensured isolation",
+      "ruff N803/N806: sklearn uppercase X convention added to pyproject.toml ignore list",
+      "logging.basicConfig 'defaults' kwarg not available in Python 3.11: removed",
+      "matplotlib PIL ImportError for diagram: switched to SVG text output"
+    ],
+    "tests_passed": true,
+    "server_verified": false,
+    "ruff_clean": true,
+    "github_push_status": "pending_manual_creation — auto mode blocked new public repo push; local repo has 61 commits ready at /tmp/lantern-innovation/Vibe-Cast"
   }
 ]

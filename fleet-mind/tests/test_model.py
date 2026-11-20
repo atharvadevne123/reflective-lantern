@@ -70,14 +70,12 @@ class TestPredict:
     @pytest.fixture(scope="class")
     def loaded_model(self):
         from app.model import load_model
-
         return load_model()
 
     def test_predict_returns_dict(self, loaded_model, sample_reading):
         import pandas as pd
 
         from app.features import build_feature_pipeline
-
         pipeline = build_feature_pipeline()
         raw = {k: v for k, v in sample_reading.items() if k != "vehicle_id"}
         features = pipeline.fit_transform(pd.DataFrame([raw]))
@@ -88,7 +86,6 @@ class TestPredict:
         import pandas as pd
 
         from app.features import build_feature_pipeline
-
         pipeline = build_feature_pipeline()
         raw = {k: v for k, v in sample_reading.items() if k != "vehicle_id"}
         features = pipeline.fit_transform(pd.DataFrame([raw]))
@@ -100,7 +97,6 @@ class TestPredict:
         import pandas as pd
 
         from app.features import build_feature_pipeline
-
         pipeline = build_feature_pipeline()
         raw = {k: v for k, v in sample_reading.items() if k != "vehicle_id"}
         features = pipeline.fit_transform(pd.DataFrame([raw]))
@@ -111,7 +107,6 @@ class TestPredict:
         import pandas as pd
 
         from app.features import build_feature_pipeline
-
         pipeline = build_feature_pipeline()
         raw = {k: v for k, v in sample_reading.items() if k != "vehicle_id"}
         features = pipeline.fit_transform(pd.DataFrame([raw]))

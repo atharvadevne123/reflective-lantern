@@ -7,23 +7,14 @@ from unittest.mock import MagicMock, patch
 import pytest
 from fastapi.testclient import TestClient
 
-API_PREFIX = "/api/v1"
-
 
 @pytest.fixture()
 def client():
-    import os
-
-    import numpy as np
-
     mock_model = MagicMock()
     mock_model.predict.return_value = [0.75]
-    mock_model.predict_proba.return_value = np.array([[0.25, 0.75]] * 500)
-    x_ref = np.zeros((500, 10))
-    y_ref = np.zeros(500)
-    os.environ.setdefault("DATABASE_URL", "sqlite:///./test_suite_cast_main.db")
     with (
-        patch("app.model.generate_sample_data", return_value=(x_ref, y_ref)),
+        patch("app.database.create_tables"),
+        patch("app.model.generate_sample_data", return_value=MagicMock()),
         patch("app.model.load_models", return_value=(mock_model, mock_model, {})),
         patch("app.monitoring.log_prediction"),
     ):
@@ -35,28 +26,28 @@ def client():
 
 class TestHealthEndpoint:
     def test_health_returns_200(self, client: TestClient) -> None:
-        resp = client.get(f"{API_PREFIX}/health")
+        resp = client.get("/health")
         assert resp.status_code == 200
 
     def test_health_has_status(self, client: TestClient) -> None:
-        data = client.get(f"{API_PREFIX}/health").json()
+        data = client.get("/health").json()
         assert "status" in data
 
 
 class TestMetricsEndpoint:
     def test_metrics_returns_200(self, client: TestClient) -> None:
-        resp = client.get(f"{API_PREFIX}/metrics")
+        resp = client.get("/metrics")
         assert resp.status_code == 200
 
     def test_metrics_is_dict(self, client: TestClient) -> None:
-        data = client.get(f"{API_PREFIX}/metrics").json()
+        data = client.get("/metrics").json()
         assert isinstance(data, dict)
 
 
 class TestPredictEndpoint:
     def test_predict_returns_json(self, client: TestClient) -> None:
         resp = client.post(
-            f"{API_PREFIX}/predict",
+            "/predict",
             json={
                 "booking_lead_days": 30,
                 "length_of_stay": 2,
@@ -72,5 +63,5 @@ class TestPredictEndpoint:
         assert isinstance(resp.json(), dict)
 
     def test_predict_empty_body_returns_error(self, client: TestClient) -> None:
-        resp = client.post(f"{API_PREFIX}/predict", json={})
+        resp = client.post("/predict", json={})
         assert resp.status_code in (200, 400, 422, 500)

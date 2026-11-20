@@ -116,7 +116,7 @@ def train_model(X: pd.DataFrame, y: pd.Series) -> tuple[Pipeline, dict[str, Any]
         "auc_min": round(float(scores.min()), 4),
         "auc_max": round(float(scores.max()), 4),
         "n_features": X.shape[1],
-        "n_samples": int(len(y)),
+        "n_samples": len(y),
         "positive_rate": round(float(y.mean()), 4),
         "model_version": model_version,
     }
@@ -298,3 +298,40 @@ class _BruteForceIndex:
 
     def add(self, vectors: np.ndarray) -> None:
         self._vecs = np.vstack([self._vecs, vectors.astype(np.float32)])
+
+
+def model_fingerprint(pipeline: Pipeline) -> dict[str, Any]:
+    """Return a lightweight fingerprint of a fitted pipeline for version tracking.
+
+    The fingerprint captures the estimator class names, hyperparameter hashes,
+    and feature count so that two pipelines can be compared for identity without
+    pickling them.
+
+    Args:
+        pipeline: Fitted sklearn Pipeline to fingerprint.
+
+    Returns:
+        Dict with ``steps`` (list of step names), ``n_steps``, and ``param_hash``
+        (a hex digest of the string representation of all get_params()).
+    """
+    import hashlib
+
+    step_names = [name for name, _ in pipeline.steps]
+    params_str = str(pipeline.get_params(deep=True))
+    param_hash = hashlib.sha256(params_str.encode()).hexdigest()[:16]
+    return {
+        "steps": step_names,
+        "n_steps": len(step_names),
+        "param_hash": param_hash,
+    }
+
+
+__all__ = [
+    "build_faiss_index",
+    "load_faiss_index",
+    "load_model",
+    "model_fingerprint",
+    "predict_intent",
+    "search_similar_items",
+    "train_model",
+]

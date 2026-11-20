@@ -3,10 +3,9 @@
 from __future__ import annotations
 
 
-def test_health_endpoint():
-    from fastapi.testclient import TestClient
-
+def test_health_endpoint() -> None:
     from app.api.main import app
+    from fastapi.testclient import TestClient
 
     client = TestClient(app)
     response = client.get("/api/v1/health")
@@ -15,10 +14,9 @@ def test_health_endpoint():
     assert data.get("status") == "ok"
 
 
-def test_price_endpoint_valid():
-    from fastapi.testclient import TestClient
-
+def test_price_endpoint_valid() -> None:
     from app.api.main import app
+    from fastapi.testclient import TestClient
 
     client = TestClient(app)
     payload = {
@@ -33,14 +31,14 @@ def test_price_endpoint_valid():
     assert data["optimal_price"] > 0
 
 
-def test_price_schema_product_id():
+def test_price_schema_product_id() -> None:
     from app.api.schemas import PriceRequest
 
     req = PriceRequest(product_id="X1", base_price=50.0, demand=100.0)
     assert req.product_id == "X1"
 
 
-def test_price_response_schema():
+def test_price_response_schema() -> None:
     from app.api.schemas import PriceResponse
 
     resp = PriceResponse(
@@ -54,9 +52,8 @@ def test_price_response_schema():
 
 
 def test_version_endpoint() -> None:
-    from fastapi.testclient import TestClient
-
     from app.api.main import app
+    from fastapi.testclient import TestClient
 
     client = TestClient(app)
     response = client.get("/api/v1/version")
@@ -66,9 +63,8 @@ def test_version_endpoint() -> None:
 
 
 def test_metrics_endpoint() -> None:
-    from fastapi.testclient import TestClient
-
     from app.api.main import app
+    from fastapi.testclient import TestClient
 
     client = TestClient(app)
     response = client.get("/api/v1/metrics")
@@ -78,9 +74,8 @@ def test_metrics_endpoint() -> None:
 
 
 def test_price_endpoint_negative_price_rejected() -> None:
-    from fastapi.testclient import TestClient
-
     from app.api.main import app
+    from fastapi.testclient import TestClient
 
     client = TestClient(app)
     response = client.post(
@@ -90,9 +85,8 @@ def test_price_endpoint_negative_price_rejected() -> None:
 
 
 def test_price_endpoint_zero_demand() -> None:
-    from fastapi.testclient import TestClient
-
     from app.api.main import app
+    from fastapi.testclient import TestClient
 
     client = TestClient(app)
     response = client.post(
@@ -104,9 +98,8 @@ def test_price_endpoint_zero_demand() -> None:
 
 
 def test_batch_price_endpoint() -> None:
-    from fastapi.testclient import TestClient
-
     from app.api.main import app
+    from fastapi.testclient import TestClient
 
     client = TestClient(app)
     payload = {
@@ -123,9 +116,8 @@ def test_batch_price_endpoint() -> None:
 
 
 def test_batch_price_endpoint_empty_items_rejected() -> None:
-    from fastapi.testclient import TestClient
-
     from app.api.main import app
+    from fastapi.testclient import TestClient
 
     client = TestClient(app)
     response = client.post("/api/v1/price/batch", json={"items": []})

@@ -32,7 +32,9 @@ def _get_engine():
     if _engine is None:
         settings = get_settings()
         connect_args = (
-            {"check_same_thread": False} if settings.database_url.startswith("sqlite") else {}
+            {"check_same_thread": False}
+            if settings.database_url.startswith("sqlite")
+            else {}
         )
         _engine = create_engine(
             settings.database_url,

@@ -1,275 +1,615 @@
-"""Feature engineering pipeline for energy consumption forecasting."""
+"""Feature engineering pipeline for delivery-time and energy prediction."""
 
 from __future__ import annotations
 
 import logging
+import math
+import statistics
+from typing import Any
 
 import numpy as np
 import pandas as pd
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import LabelEncoder
 
 logger = logging.getLogger(__name__)
 
+CARRIERS = ["DHL", "FedEx", "UPS", "USPS", "Amazon"]
+ROUTE_TYPES = ["urban", "suburban", "rural", "highway"]
+
+# Amenity composite weights (sum to 1.0)
+_SCHOOL_WEIGHT: float = 0.40
+_TRANSIT_WEIGHT: float = 0.35
+_WALK_WEIGHT: float = 0.25
+_AMENITY_SCALE: float = 10.0
+
+
+# ---------------------------------------------------------------------------
+# Logistics-domain transformers
+# ---------------------------------------------------------------------------
+
 
 class TemporalFeatureExtractor(BaseEstimator, TransformerMixin):
-    """Extract hour-of-day, day-of-week, month, and cyclic encodings."""
+    """Adds cyclical and categorical time features.
 
-    def fit(self, X: pd.DataFrame, y: object = None) -> TemporalFeatureExtractor:
-        """No-op fit (stateless transformer)."""
+    Accepts DataFrames with ``hour`` or ``hour_of_day`` (energy/logistics) and
+    ``day_of_week``.  All other columns are passed through unchanged.
+    """
+
+    def fit(self, X: pd.DataFrame, y: Any = None) -> TemporalFeatureExtractor:
+        self.fitted_ = True
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
-        """Add cyclic temporal encodings and binary calendar flags to *X*."""
         df = X.copy()
-        if "hour" not in df.columns:
-            df["hour"] = 0
-        if "day_of_week" not in df.columns:
-            df["day_of_week"] = 0
-        if "month" not in df.columns:
-            df["month"] = 1
+        # Support both energy (hour) and logistics (hour_of_day) column names
+        if "hour" in df.columns:
+            h_col = "hour"
+        elif "hour_of_day" in df.columns:
+            h_col = "hour_of_day"
+        else:
+            return df
 
-        df["hour_sin"] = np.sin(2 * np.pi * df["hour"] / 24)
-        df["hour_cos"] = np.cos(2 * np.pi * df["hour"] / 24)
-        df["dow_sin"] = np.sin(2 * np.pi * df["day_of_week"] / 7)
-        df["dow_cos"] = np.cos(2 * np.pi * df["day_of_week"] / 7)
-        df["month_sin"] = np.sin(2 * np.pi * df["month"] / 12)
-        df["month_cos"] = np.cos(2 * np.pi * df["month"] / 12)
-        df["is_weekend"] = (df["day_of_week"] >= 5).astype(int)
-        df["is_business_hour"] = ((df["hour"] >= 8) & (df["hour"] <= 18) & (df["day_of_week"] < 5)).astype(int)
+        hour = df[h_col]
+        dow = df.get("day_of_week", pd.Series([0] * len(df), index=df.index))
+
+        df["hour_sin"] = np.sin(2 * np.pi * hour / 24)
+        df["hour_cos"] = np.cos(2 * np.pi * hour / 24)
+        df["dow_sin"] = np.sin(2 * np.pi * dow / 7)
+        df["dow_cos"] = np.cos(2 * np.pi * dow / 7)
+        df["is_weekend"] = (dow >= 5).astype(int)
+        df["is_business_hour"] = ((hour >= 9) & (hour < 17) & (dow < 5)).astype(int)
+        df["is_peak"] = hour.apply(lambda h: 1 if (7 <= h <= 9 or 16 <= h <= 19) else 0)
+        logger.debug("Temporal features added: %s", list(df.columns))
         return df
 
 
-class LagFeatureExtractor(BaseEstimator, TransformerMixin):
-    """Add lag features for consumption (1h, 2h, 3h, 6h, 12h, 24h, 168h)."""
+class RouteFeatureEngineer(BaseEstimator, TransformerMixin):
+    """Engineers distance buckets, weight ratios, and carrier risk scores."""
 
-    LAG_COLS = [1, 2, 3, 6, 12, 24, 168]
+    _CARRIER_RISK: dict[str, float] = {
+        "DHL": 0.12,
+        "FedEx": 0.10,
+        "UPS": 0.11,
+        "USPS": 0.18,
+        "Amazon": 0.08,
+    }
 
-    def fit(self, X: pd.DataFrame, y: object = None) -> LagFeatureExtractor:
-        """No-op fit (stateless transformer)."""
+    def fit(self, X: pd.DataFrame, y: Any = None) -> RouteFeatureEngineer:
+        self.fitted_ = True
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
-        """Append lag columns (lag_1h … lag_168h) for consumption_kwh."""
+        if "distance_km" not in X.columns:
+            return X.copy()
         df = X.copy()
-        base = df.get("consumption_kwh", pd.Series(np.zeros(len(df))))
-        for lag in self.LAG_COLS:
-            col = f"lag_{lag}h"
-            if col not in df.columns:
-                df[col] = base.shift(lag).fillna(base.mean() if len(base) > 0 else 0.0)
+        df["distance_bucket"] = pd.cut(
+            df["distance_km"],
+            bins=[0, 30, 150, 800, float("inf")],
+            labels=[0, 1, 2, 3],
+        ).astype(int)
+        df["weight_per_km"] = df["weight_kg"] / (df["distance_km"] + 1e-6)
+        if "carrier" in df.columns:
+            df["carrier_risk"] = df["carrier"].map(self._CARRIER_RISK).fillna(0.15)
+        if "route_type" in df.columns:
+            route_map = {r: i for i, r in enumerate(ROUTE_TYPES)}
+            df["route_code"] = df["route_type"].map(route_map).fillna(0).astype(int)
+        return df
+
+
+class CategoricalEncoder(BaseEstimator, TransformerMixin):
+    """Ordinal-encodes carrier column."""
+
+    def fit(self, X: pd.DataFrame, y: Any = None) -> CategoricalEncoder:
+        if "carrier" not in X.columns:
+            self.le_ = None
+            return self
+        self.le_ = LabelEncoder()
+        self.le_.fit(pd.concat([X["carrier"].fillna("Unknown"), pd.Series(CARRIERS)]))
+        return self
+
+    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        if "carrier" not in X.columns or self.le_ is None:
+            return X.copy()
+        df = X.copy()
+        known = set(self.le_.classes_)
+        carriers = (
+            df["carrier"]
+            .fillna("Unknown")
+            .apply(lambda c: c if c in known else self.le_.classes_[0])
+        )
+        df["carrier_enc"] = self.le_.transform(carriers)
+        return df
+
+
+# ---------------------------------------------------------------------------
+# Energy-domain transformers
+# ---------------------------------------------------------------------------
+
+
+class LagFeatureExtractor(BaseEstimator, TransformerMixin):
+    """Adds lag features for energy consumption (fills missing with median)."""
+
+    LAGS: list[int] = [1, 2, 3, 6, 12, 24, 168]
+
+    def fit(self, X: pd.DataFrame, y: Any = None) -> LagFeatureExtractor:
+        self.fitted_ = True
+        return self
+
+    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        df = X.copy()
+        col = "consumption_kwh" if "consumption_kwh" in df.columns else None
+        if col is None:
+            return df
+        series = df[col]
+        median_val = float(series.median())
+        for lag in self.LAGS:
+            shifted = series.shift(lag)
+            df[f"lag_{lag}h"] = shifted.fillna(median_val)
         return df
 
 
 class RollingStatsExtractor(BaseEstimator, TransformerMixin):
-    """Rolling mean, std, min, max over 3h, 6h, 24h windows."""
+    """Adds rolling window statistics for energy consumption."""
 
-    WINDOWS = [3, 6, 24]
+    WINDOWS: list[int] = [3, 6, 24]
 
-    def fit(self, X: pd.DataFrame, y: object = None) -> RollingStatsExtractor:
-        """No-op fit (stateless transformer)."""
+    def fit(self, X: pd.DataFrame, y: Any = None) -> RollingStatsExtractor:
+        self.fitted_ = True
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
-        """Append rolling mean/std/min/max columns over 3h, 6h, and 24h windows."""
         df = X.copy()
-        base = df.get("consumption_kwh", pd.Series(np.zeros(len(df))))
+        col = "consumption_kwh" if "consumption_kwh" in df.columns else None
+        if col is None:
+            return df
+        series = df[col]
         for w in self.WINDOWS:
-            rolled = base.rolling(window=w, min_periods=1)
-            df[f"roll_mean_{w}h"] = rolled.mean().fillna(base.mean() if len(base) > 0 else 0.0)
+            rolled = series.rolling(window=w, min_periods=1)
+            df[f"roll_mean_{w}h"] = rolled.mean()
             df[f"roll_std_{w}h"] = rolled.std().fillna(0.0)
-            df[f"roll_min_{w}h"] = rolled.min().fillna(base.min() if len(base) > 0 else 0.0)
-            df[f"roll_max_{w}h"] = rolled.max().fillna(base.max() if len(base) > 0 else 0.0)
+            df[f"roll_min_{w}h"] = rolled.min()
+            df[f"roll_max_{w}h"] = rolled.max()
         return df
 
 
 class WeatherFeatureExtractor(BaseEstimator, TransformerMixin):
-    """Derive composite weather features: heat index, cooling degree hours."""
+    """Derives weather-based features from temperature and humidity."""
 
-    def fit(self, X: pd.DataFrame, y: object = None) -> WeatherFeatureExtractor:
-        """No-op fit (stateless transformer)."""
+    BASE_TEMP_COOLING: float = 18.0
+    BASE_TEMP_HEATING: float = 15.0
+
+    def fit(self, X: pd.DataFrame, y: Any = None) -> WeatherFeatureExtractor:
+        self.fitted_ = True
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
-        """Add heat_index, cooling/heating degree-hours, and temp-humidity ratio."""
         df = X.copy()
-        temp = df.get("temperature_c", pd.Series(np.full(len(df), 20.0)))
-        hum = df.get("humidity_pct", pd.Series(np.full(len(df), 50.0)))
-
-        df["temperature_c"] = temp.fillna(20.0)
-        df["humidity_pct"] = hum.fillna(50.0)
-        df["heat_index"] = df["temperature_c"] + 0.33 * (df["humidity_pct"] / 100 * 6.105) - 4.0
-        df["cooling_deg_hours"] = np.maximum(df["temperature_c"] - 18.0, 0.0)
-        df["heating_deg_hours"] = np.maximum(18.0 - df["temperature_c"], 0.0)
-        df["temp_humidity_ratio"] = df["temperature_c"] / (df["humidity_pct"] + 1e-6)
+        temp = df.get("temperature_c", pd.Series([20.0] * len(df), index=df.index))
+        hum = df.get("humidity_pct", pd.Series([50.0] * len(df), index=df.index))
+        df["heat_index"] = (
+            temp + 0.33 * (hum / 100 * 6.105 * np.exp(17.27 * temp / (237.3 + temp))) - 4.0
+        )
+        df["cooling_deg_hours"] = (temp - self.BASE_TEMP_COOLING).clip(lower=0.0)
+        df["heating_deg_hours"] = (self.BASE_TEMP_HEATING - temp).clip(lower=0.0)
+        df["temp_humidity_ratio"] = temp / (hum + 1e-6)
         return df
 
 
 class OccupancyFeatureExtractor(BaseEstimator, TransformerMixin):
-    """Encode occupancy and HVAC state into energy-load proxies."""
+    """Derives occupancy-based load features."""
 
-    def fit(self, X: pd.DataFrame, y: object = None) -> OccupancyFeatureExtractor:
-        """No-op fit (stateless transformer)."""
+    def fit(self, X: pd.DataFrame, y: Any = None) -> OccupancyFeatureExtractor:
+        self.fitted_ = True
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
-        """Add occ_hvac_load proxy and log-occupancy density features."""
         df = X.copy()
-        occ = df.get("occupancy", pd.Series(np.zeros(len(df))))
-        hvac = df.get("hvac_state", pd.Series(np.zeros(len(df))))
-        df["occupancy"] = occ.fillna(0).clip(lower=0)
-        df["hvac_state"] = hvac.fillna(0).astype(int)
-        df["occ_hvac_load"] = df["occupancy"] * df["hvac_state"]
-        df["occupancy_density"] = np.log1p(df["occupancy"])
+        if "occupancy" not in df.columns:
+            return df
+        occ = df["occupancy"]
+        hvac = df.get("hvac_state", pd.Series([1] * len(df), index=df.index))
+        df["occ_hvac_load"] = occ * hvac
+        df["occ_normalized"] = occ / (occ.max() + 1e-6)
         return df
 
 
-class DropNonNumeric(BaseEstimator, TransformerMixin):
-    """Drop string/datetime columns before scaling."""
+class RatioFeatureTransformer(BaseEstimator, TransformerMixin):
+    """Computes real-estate ratio features (beds-per-bath, etc.)."""
 
-    def fit(self, X: pd.DataFrame, y: object = None) -> DropNonNumeric:
-        """Record which columns are numeric at fit time."""
-        self.numeric_cols_ = X.select_dtypes(include=[np.number]).columns.tolist()
+    def fit(self, X: pd.DataFrame, y: Any = None) -> RatioFeatureTransformer:
+        self.fitted_ = True
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
-        """Return only the numeric columns as a DataFrame."""
-        return X[self.numeric_cols_]
+        df = X.copy()
+        if "bedrooms" in df.columns and "bathrooms" in df.columns:
+            df["beds_per_bath"] = df["bedrooms"] / (df["bathrooms"].replace(0, np.nan) + 1e-9)
+        if "price" in df.columns and "sqft" in df.columns:
+            df["price_per_sqft"] = df["price"] / (df["sqft"] + 1e-6)
+        return df
 
-    def get_feature_names_out(self, input_features: list[str] | None = None) -> np.ndarray:
-        """Return the names of numeric columns selected by this transformer."""
-        return np.array(self.numeric_cols_)
 
+class PropertyAgeTransformer(BaseEstimator, TransformerMixin):
+    """Computes property age from year_built."""
 
-class DataFrameWrapper(BaseEstimator, TransformerMixin):
-    """Wrap numpy/array output back to a DataFrame, preserving column names."""
+    def __init__(self, reference_year: int = 2026) -> None:
+        """Set the reference year used to compute property age (default 2026)."""
+        self.reference_year = reference_year
 
-    def fit(self, X: pd.DataFrame, y: object = None) -> DataFrameWrapper:
-        """Record column names from X for use in transform."""
-        if hasattr(X, "columns"):
-            self.columns_: list[str] = list(X.columns)
-        else:
-            self.columns_ = [f"f{i}" for i in range(np.array(X).shape[1])]
+    def fit(self, X: pd.DataFrame, y: Any = None) -> PropertyAgeTransformer:
+        self.fitted_ = True
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
-        """Wrap a numpy array back into a DataFrame with the fitted column names."""
-        if isinstance(X, pd.DataFrame):
-            return X
-        arr = np.array(X)
-        return pd.DataFrame(arr, columns=self.columns_)
+        df = X.copy()
+        if "year_built" in df.columns:
+            df["property_age"] = self.reference_year - df["year_built"].fillna(self.reference_year)
+        return df
 
 
-class DropColumnsTransformer(BaseEstimator, TransformerMixin):
-    """Drops non-numeric or helper columns before model training."""
+class AmenityCompositeTransformer(BaseEstimator, TransformerMixin):
+    """Computes a composite amenity score from school, transit, and walk scores."""
 
-    DROP_COLS = ["historical_loads", "region", "timestamp"]
-
-    def fit(self, X: pd.DataFrame, y: object = None) -> DropColumnsTransformer:
-        """Identify which DROP_COLS are present in X."""
-        self.cols_to_drop_ = [c for c in self.DROP_COLS if c in X.columns]
+    def fit(self, X: pd.DataFrame, y: Any = None) -> AmenityCompositeTransformer:
+        self.fitted_ = True
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
-        """Drop the pre-identified helper columns from X."""
-        return X.drop(columns=self.cols_to_drop_, errors="ignore")
+        df = X.copy()
+        school = df.get("school_score", pd.Series([5.0] * len(df), index=df.index))
+        transit = df.get("transit_score", pd.Series([5.0] * len(df), index=df.index))
+        walk = df.get("walkability_score", pd.Series([5.0] * len(df), index=df.index))
+        df["amenity_composite"] = (
+            school * _SCHOOL_WEIGHT + transit * _TRANSIT_WEIGHT + walk * _WALK_WEIGHT
+        ) / _AMENITY_SCALE
+        return df
+
+
+class InteractionFeatureExtractor(BaseEstimator, TransformerMixin):
+    """Creates pairwise interaction features for numeric column pairs."""
+
+    PAIRS: list[tuple[str, str]] = [("temperature_c", "occupancy")]
+
+    def fit(self, X: pd.DataFrame, y: Any = None) -> InteractionFeatureExtractor:
+        self.available_pairs_ = [(a, b) for a, b in self.PAIRS if a in X.columns and b in X.columns]
+        return self
+
+    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Add element-wise product columns for each available feature pair."""
+        df = X.copy()
+        for a, b in self.available_pairs_:
+            df[f"{a}_x_{b}"] = df[a] * df[b]
+        return df
+
+
+# ---------------------------------------------------------------------------
+# Pipeline constructors
+# ---------------------------------------------------------------------------
+
+FEATURE_COLS = [
+    "distance_km",
+    "weight_kg",
+    "hour_sin",
+    "hour_cos",
+    "dow_sin",
+    "dow_cos",
+    "is_weekend",
+    "is_peak",
+    "distance_bucket",
+    "weight_per_km",
+    "carrier_risk",
+    "route_code",
+    "carrier_enc",
+]
 
 
 def build_feature_pipeline() -> Pipeline:
-    """Build the full sklearn feature engineering pipeline."""
+    """Return a fitted-ready sklearn Pipeline for feature engineering.
+
+    Works for both logistics (carrier, distance_km, hour_of_day) and energy
+    (consumption_kwh, temperature_c, occupancy, hour) domain DataFrames.
+    """
     return Pipeline(
         [
             ("temporal", TemporalFeatureExtractor()),
-            ("lag", LagFeatureExtractor()),
-            ("rolling", RollingStatsExtractor()),
             ("weather", WeatherFeatureExtractor()),
             ("occupancy", OccupancyFeatureExtractor()),
-            ("drop_non_numeric", DropNonNumeric()),
-            ("scaler", StandardScaler()),
-            ("to_df", DataFrameWrapper()),
+            ("lag", LagFeatureExtractor()),
+            ("rolling", RollingStatsExtractor()),
+            ("amenity", AmenityCompositeTransformer()),
+            ("interaction", InteractionFeatureExtractor()),
+            ("route", RouteFeatureEngineer()),
+            ("categorical", CategoricalEncoder()),
         ]
     )
 
 
-_SCHOOL_WEIGHT: float = 0.5
-_TRANSIT_WEIGHT: float = 0.3
-_WALK_WEIGHT: float = 0.2
-_AMENITY_SCALE: float = 10.0
+def prepare_X(df: pd.DataFrame, pipeline: Pipeline, fit: bool = False) -> np.ndarray:
+    """Apply the feature pipeline and return the numeric feature matrix."""
+    transformed = pipeline.fit_transform(df) if fit else pipeline.transform(df)
+    cols = [c for c in FEATURE_COLS if c in transformed.columns]
+    return transformed[cols].values.astype(float)
 
 
-class RatioFeatureTransformer(BaseEstimator, TransformerMixin):
-    """Compute ratio features such as beds-per-bath."""
-
-    def fit(self, X: pd.DataFrame, y: object = None) -> RatioFeatureTransformer:
-        """No fitting required; returns self."""
-        return self
-
-    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
-        """Add beds_per_bath column to X."""
-        out = X.copy()
-        baths = out["bathrooms"] if "bathrooms" in out.columns else pd.Series([1.0] * len(out))
-        baths = baths.where(baths != 0, other=1.0)
-        beds = out["bedrooms"] if "bedrooms" in out.columns else pd.Series([1.0] * len(out))
-        out["beds_per_bath"] = beds / baths
-        return out
+def extract_feature_array(df: pd.DataFrame, pipeline: Pipeline, fit: bool = True) -> np.ndarray:
+    """Apply *pipeline* to *df* and return all numeric columns as a 2-D array."""
+    transformed = pipeline.fit_transform(df) if fit else pipeline.transform(df)
+    if isinstance(transformed, np.ndarray):
+        return np.nan_to_num(transformed.astype(float))
+    numeric_cols = transformed.select_dtypes(include=[np.number]).columns.tolist()
+    return transformed[numeric_cols].fillna(0.0).values.astype(float)
 
 
-class PropertyAgeTransformer(BaseEstimator, TransformerMixin):
-    """Compute property age from year_built relative to a reference year."""
-
-    def __init__(self, reference_year: int = 2026) -> None:
-        self.reference_year = reference_year
-
-    def fit(self, X: pd.DataFrame, y: object = None) -> PropertyAgeTransformer:
-        """No fitting required; returns self."""
-        return self
-
-    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
-        """Add property_age column to X."""
-        out = X.copy()
-        out["property_age"] = self.reference_year - out["year_built"]
-        return out
-
-
-class AmenityCompositeTransformer(BaseEstimator, TransformerMixin):
-    """Compute a composite amenity score from school, transit, walkability and crime."""
-
-    def fit(self, X: pd.DataFrame, y: object = None) -> AmenityCompositeTransformer:
-        """No fitting required; returns self."""
-        return self
-
-    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
-        """Add amenity_composite column to X."""
-        out = X.copy()
-        school = out["school_score"] if "school_score" in out.columns else pd.Series([5.0] * len(out), index=out.index)
-        transit = (
-            out["transit_score"] if "transit_score" in out.columns else pd.Series([5.0] * len(out), index=out.index)
-        )
-        walkability = (
-            out["walkability_score"]
-            if "walkability_score" in out.columns
-            else pd.Series([5.0] * len(out), index=out.index)
-        )
-        out["amenity_composite"] = (
-            _SCHOOL_WEIGHT * school + _TRANSIT_WEIGHT * transit + _WALK_WEIGHT * walkability
-        ) / _AMENITY_SCALE
-        return out
+def generate_synthetic_data(n: int = 2000, seed: int = 42) -> pd.DataFrame:
+    """Generate synthetic delivery records for training and testing."""
+    rng = np.random.default_rng(seed)
+    carriers = rng.choice(CARRIERS, size=n)
+    route_types = rng.choice(ROUTE_TYPES, size=n)
+    distance_km = rng.uniform(1, 800, size=n)
+    weight_kg = rng.exponential(5, size=n).clip(0.1, 70)
+    hour_of_day = rng.integers(0, 24, size=n)
+    day_of_week = rng.integers(0, 7, size=n)
+    carrier_delay = np.where(np.isin(carriers, ["USPS"]), 1.3, 1.0)
+    route_factor = np.where(np.isin(route_types, ["rural"]), 1.4, 1.0)
+    target = (
+        (distance_km * 1.5 + weight_kg * 2 + rng.normal(0, 20, size=n))
+        * carrier_delay
+        * route_factor
+    )
+    target = np.clip(target, 10, 2000)
+    return pd.DataFrame(
+        {
+            "carrier": carriers,
+            "distance_km": distance_km,
+            "weight_kg": weight_kg,
+            "route_type": route_types,
+            "hour_of_day": hour_of_day.astype(int),
+            "day_of_week": day_of_week.astype(int),
+            "delivery_minutes": target,
+        }
+    )
 
 
-def extract_feature_array(X: pd.DataFrame, pipeline: Pipeline) -> np.ndarray:
-    """Apply *pipeline* to *X* and return a 2-D float array.
+# ---------------------------------------------------------------------------
+# Numeric utility functions
+# ---------------------------------------------------------------------------
+
+
+def normalize_consumption(values: list[float], method: str = "minmax") -> list[float]:
+    """Normalise a list of consumption values.
 
     Args:
-        X: Input DataFrame with raw feature columns.
-        pipeline: A fitted or unfitted sklearn Pipeline.
+        values: Input values (must not be empty).
+        method: ``"minmax"`` scales to [0, 1]; ``"zscore"`` standardises to mean 0.
+
+    Raises:
+        ValueError: If *values* is empty or *method* is unrecognised.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    if method == "minmax":
+        mn, mx = min(values), max(values)
+        rng = mx - mn
+        if rng < 1e-12:
+            return [0.0] * len(values)
+        return [(v - mn) / rng for v in values]
+    if method == "zscore":
+        mean = sum(values) / len(values)
+        std = statistics.pstdev(values)
+        if std < 1e-12:
+            return [0.0] * len(values)
+        return [(v - mean) / std for v in values]
+    raise ValueError(f"method must be 'minmax' or 'zscore', got {method!r}")
+
+
+def demand_response_potential(
+    loads: list[float],
+    peak_threshold_pct: float = 0.85,
+) -> dict[str, float]:
+    """Calculate demand-response potential from hourly load data.
+
+    Args:
+        loads: Hourly energy loads in kWh.
+        peak_threshold_pct: Fraction of the peak load used as the threshold.
 
     Returns:
-        2-D numpy float array suitable for model input.
+        Dict with ``peak_hours_count``, ``sheddable_kwh``, ``potential_pct``,
+        and ``peak_threshold_kwh``.
     """
-    result = pipeline.fit_transform(X)
-    if isinstance(result, np.ndarray):
-        return result.astype(float)
-    return np.array(result, dtype=float)
+    if not loads:
+        raise ValueError("loads must not be empty")
+    if peak_threshold_pct <= 0.0:
+        raise ValueError("peak_threshold_pct must be in (0, 1]")
+    peak = max(loads)
+    threshold = peak * peak_threshold_pct
+    peak_hours = [load for load in loads if load >= threshold]
+    sheddable = sum(load - threshold for load in peak_hours)
+    total = sum(loads)
+    potential_pct = sheddable / total if total > 0 else 0.0
+    return {
+        "peak_hours_count": len(peak_hours),
+        "sheddable_kwh": sheddable,
+        "potential_pct": min(potential_pct, 1.0),
+        "peak_threshold_kwh": threshold,
+    }
+
+
+def encode_cyclical(value: float, max_value: float) -> tuple[float, float]:
+    """Return (sin, cos) encoding of *value* on a cycle of *max_value*."""
+    angle = 2 * math.pi * value / max_value
+    return math.sin(angle), math.cos(angle)
+
+
+def zscore_feature(values: list[float]) -> list[float]:
+    """Return z-score normalised copy of *values*.  Constant series returns all zeros."""
+    if not values:
+        return []
+    mean = sum(values) / len(values)
+    std = statistics.pstdev(values)
+    if std < 1e-12:
+        return [0.0] * len(values)
+    return [(v - mean) / std for v in values]
+
+
+def minmax_normalize(values: list[float]) -> list[float]:
+    """Scale *values* to [0, 1].  Constant series returns all zeros."""
+    if not values:
+        return []
+    mn, mx = min(values), max(values)
+    rng = mx - mn
+    if rng < 1e-12:
+        return [0.0] * len(values)
+    return [(v - mn) / rng for v in values]
+
+
+def percentile_feature(
+    values: list[float],
+    reference: list[float],
+    percentile: float = 50.0,
+) -> list[float]:
+    """Compute percentile rank of each value against a reference distribution.
+
+    Returns 1.0 if *value* >= the *percentile*-th value of *reference*, 0.0 otherwise.
+    """
+    if not 0.0 <= percentile <= 100.0:
+        raise ValueError(f"percentile must be in [0, 100], got {percentile}")
+    if not reference:
+        raise ValueError("reference must not be empty")
+    sorted_ref = sorted(reference)
+    idx = int(len(sorted_ref) * percentile / 100.0)
+    idx = min(idx, len(sorted_ref) - 1)
+    threshold = sorted_ref[idx]
+    return [1.0 if v >= threshold else 0.0 for v in values]
+
+
+def cumulative_sum_feature(values: list[float]) -> list[float]:
+    """Return the cumulative sum of *values*."""
+    result: list[float] = []
+    running = 0.0
+    for v in values:
+        running += v
+        result.append(running)
+    return result
+
+
+def clip_feature_values(values: list[float], low: float, high: float) -> list[float]:
+    """Clip each value in *values* to the range [*low*, *high*].
+
+    Raises:
+        ValueError: If *low* > *high*.
+    """
+    if low > high:
+        raise ValueError(f"low ({low}) must be <= high ({high})")
+    return [max(low, min(high, v)) for v in values]
+
+
+def lag_features(values: list[float], lags: list[int]) -> dict[str, list[float | None]]:
+    """Compute lag features for a univariate series.
+
+    Args:
+        values: Input series.
+        lags: List of positive lag integers.
+
+    Returns:
+        Dict mapping ``"lag_{k}"`` to a list with *k* leading ``None`` values.
+
+    Raises:
+        ValueError: If any lag is not positive.
+    """
+    for lag in lags:
+        if lag < 1:
+            raise ValueError(f"All lags must be >= 1, got {lag}")
+    result: dict[str, list[float | None]] = {}
+    for lag in lags:
+        lagged: list[float | None] = [None] * lag + list(values[:-lag] if lag < len(values) else [])
+        # Pad to match length
+        while len(lagged) < len(values):
+            lagged.append(None)
+        result[f"lag_{lag}"] = lagged[: len(values)]
+    return result
+
+
+def ratio_feature(numerators: list[float], denominators: list[float]) -> list[float]:
+    """Element-wise ratio of two equal-length lists.
+
+    Returns 0.0 when the denominator is zero.
+
+    Raises:
+        ValueError: If *numerators* is empty or lengths differ.
+    """
+    if not numerators:
+        raise ValueError("numerators must not be empty")
+    if len(numerators) != len(denominators):
+        raise ValueError("numerators and denominators must have the same length")
+    return [
+        n / d if abs(d) > 1e-12 else 0.0 for n, d in zip(numerators, denominators, strict=False)
+    ]
+
+
+def bin_feature(values: list[float], bins: list[float]) -> list[int]:
+    """Assign each value to a bin index.
+
+    Bin boundaries are right-exclusive: bin 0 is [−∞, bins[0]), bin 1 is
+    [bins[0], bins[1]), …, bin n is [bins[n−1], +∞).
+
+    Raises:
+        ValueError: If *bins* is not strictly monotonically increasing.
+    """
+    for i in range(len(bins) - 1):
+        if bins[i] >= bins[i + 1]:
+            raise ValueError("bins must be strictly increasing")
+    result: list[int] = []
+    for v in values:
+        idx = 0
+        for b in bins:
+            if v >= b:
+                idx += 1
+            else:
+                break
+        result.append(idx)
+    return result
+
+
+def rolling_max_feature(values: list[float], window: int = 3) -> list[float]:
+    """Compute rolling maximum with *window* size (min_periods=1).
+
+    Raises:
+        ValueError: If *window* is less than 1.
+    """
+    if window < 1:
+        raise ValueError("window must be >= 1")
+    result: list[float] = []
+    for i in range(len(values)):
+        start = max(0, i - window + 1)
+        result.append(max(values[start : i + 1]))
+    return result
+
+
+def difference_feature(values: list[float], order: int = 1) -> list[float]:
+    """Return the *order*-th order differences of *values*.
+
+    Raises:
+        ValueError: If *order* is less than 1.
+    """
+    if order < 1:
+        raise ValueError(f"order must be >= 1, got {order}")
+    result = list(values)
+    for _ in range(order):
+        result = [result[i + 1] - result[i] for i in range(len(result) - 1)]
+    return result
+
+
+def rank_features(importances: dict[str, float]) -> list[tuple[str, float]]:
+    """Return feature names sorted by importance score descending."""
+    return sorted(importances.items(), key=lambda x: x[1], reverse=True)
+
+
+def top_k_features(importances: dict[str, float], k: int) -> list[str]:
+    """Return the names of the top-*k* most important features."""
+    ranked = rank_features(importances)
+    return [name for name, _ in ranked[:k]]
 
 
 def make_feature_row(
@@ -280,164 +620,48 @@ def make_feature_row(
     humidity_pct: float,
     occupancy: int,
     hvac_state: int,
-    consumption_kwh: float = 0.0,
-) -> pd.DataFrame:
-    """Build a single-row DataFrame for inference."""
-    return pd.DataFrame(
+    consumption_kwh: float,
+) -> np.ndarray:
+    """Build a single-row feature array for energy-domain predictions.
+
+    Column order must match the feature columns produced by train_model when
+    called with the energy DataFrame schema (all 8 raw features).
+    """
+    import numpy as np
+
+    return np.array(
         [
-            {
-                "hour": hour,
-                "day_of_week": day_of_week,
-                "month": month,
-                "temperature_c": temperature_c,
-                "humidity_pct": humidity_pct,
-                "occupancy": occupancy,
-                "hvac_state": hvac_state,
-                "consumption_kwh": consumption_kwh,
-            }
-        ]
+            [
+                hour,
+                day_of_week,
+                month,
+                temperature_c,
+                humidity_pct,
+                occupancy,
+                hvac_state,
+                consumption_kwh,
+            ]
+        ],
+        dtype=float,
     )
 
 
-class InteractionFeatureExtractor(BaseEstimator, TransformerMixin):
-    """Create pairwise interaction terms between key numeric features."""
+class DropNonNumeric(BaseEstimator, TransformerMixin):
+    """Drop all non-numeric columns from a DataFrame."""
 
-    PAIRS: list[tuple[str, str]] = [
-        ("temperature_c", "occupancy"),
-        ("temperature_c", "hvac_state"),
-        ("humidity_pct", "temperature_c"),
-        ("hour", "occupancy"),
-    ]
-
-    def fit(self, X: pd.DataFrame, y: object = None) -> InteractionFeatureExtractor:
-        self.available_pairs_ = [(a, b) for a, b in self.PAIRS if a in X.columns and b in X.columns]
+    def fit(self, X: pd.DataFrame, y: Any = None) -> DropNonNumeric:
+        self.fitted_ = True
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
-        df = X.copy()
-        for a, b in self.available_pairs_:
-            df[f"{a}_x_{b}"] = df[a] * df[b]
-        return df
-
-
-def normalize_consumption(
-    values: list[float],
-    method: str = "minmax",
-) -> list[float]:
-    """Normalize a consumption series to [0, 1] or zero-mean unit variance.
-
-    Args:
-        values: List of consumption readings (kWh).
-        method: 'minmax' (default) scales to [0, 1]; 'zscore' standardizes.
-
-    Returns:
-        Normalized series of the same length.
-
-    Raises:
-        ValueError: If *method* is not 'minmax' or 'zscore'.
-        ValueError: If *values* is empty.
-    """
-    if not values:
-        raise ValueError("values must not be empty")
-    if method not in ("minmax", "zscore"):
-        logger.debug("normalize_consumption: invalid method=%r", method)
-        raise ValueError(f"method must be 'minmax' or 'zscore', got {method!r}")
-    arr = np.array(values, dtype=float)
-    if method == "minmax":
-        lo, hi = arr.min(), arr.max()
-        if hi - lo < 1e-9:
-            return [0.0] * len(values)
-        return ((arr - lo) / (hi - lo)).tolist()
-    mean, std = arr.mean(), arr.std()
-    if std < 1e-9:
-        return [0.0] * len(values)
-    return ((arr - mean) / std).tolist()
-
-
-def demand_response_potential(
-    hourly_loads: list[float],
-    peak_threshold_pct: float = 0.85,
-) -> dict[str, object]:
-    """Estimate a building's demand-response potential from its hourly load profile.
-
-    Demand response potential is measured as the fraction of hours where load
-    exceeds *peak_threshold_pct* x peak load ("peak hours") and the total kWh
-    that could be shed if those hours were capped at the threshold.
-
-    Args:
-        hourly_loads: Hourly kWh readings (at least one value).
-        peak_threshold_pct: Fraction of peak load used as the shedding ceiling
-            (default 0.85, i.e. 85 % of peak).
-
-    Returns:
-        Dict with:
-            - ``peak_hours_count``: Number of hours above threshold.
-            - ``sheddable_kwh``: Total kWh that exceeds the threshold.
-            - ``potential_pct``: Sheddable kWh as a fraction of total consumption.
-            - ``peak_threshold_kwh``: Absolute kWh threshold applied.
-
-    Raises:
-        ValueError: If *hourly_loads* is empty or *peak_threshold_pct* is not in (0, 1].
-    """
-    if not hourly_loads:
-        raise ValueError("hourly_loads must not be empty")
-    if not (0 < peak_threshold_pct <= 1.0):
-        raise ValueError(f"peak_threshold_pct must be in (0, 1], got {peak_threshold_pct}")
-    peak = max(hourly_loads)
-    threshold = peak * peak_threshold_pct
-    peak_hours = [v for v in hourly_loads if v > threshold]
-    sheddable = sum(v - threshold for v in peak_hours)
-    total = sum(hourly_loads)
-    potential_pct = sheddable / total if total > 0 else 0.0
-    return {
-        "peak_hours_count": len(peak_hours),
-        "sheddable_kwh": round(sheddable, 4),
-        "potential_pct": round(potential_pct, 4),
-        "peak_threshold_kwh": round(threshold, 4),
-    }
-
-
-def encode_cyclical(value: float, max_value: float) -> tuple[float, float]:
-    """Encode a cyclical feature as (sin, cos) pair.
-
-    Useful for encoding hour-of-day (max_value=24), day-of-week (7), or month (12)
-    without discontinuities at the period boundary.
-
-    Args:
-        value: The raw cyclical value.
-        max_value: The period length (e.g. 24 for hours).
-
-    Returns:
-        (sin_encoded, cos_encoded) tuple.
-    """
-    sin_val = float(np.sin(2 * np.pi * value / max_value))
-    cos_val = float(np.cos(2 * np.pi * value / max_value))
-    return round(sin_val, 6), round(cos_val, 6)
-
-
-def feature_names_for_bundle(bundle: dict) -> list[str]:
-    """Return the feature column names expected by the model in *bundle*.
-
-    Extracts column names from the pipeline's feature step if available,
-    otherwise returns an empty list.
-    """
-    model = bundle.get("model")
-    if model is None:
-        return []
-    try:
-        return list(model.feature_names_in_)
-    except AttributeError:
-        pass  # fall through to pipeline alternative
-    try:
-        return list(model[:-1].get_feature_names_out())
-    except Exception:
-        return []
+        return X.select_dtypes(include=[float, int, "number"]).copy()
 
 
 __all__ = [
+    "CARRIERS",
+    "ROUTE_TYPES",
     "AmenityCompositeTransformer",
-    "DataFrameWrapper",
-    "DropColumnsTransformer",
+    "CategoricalEncoder",
     "DropNonNumeric",
     "InteractionFeatureExtractor",
     "LagFeatureExtractor",
@@ -445,6 +669,7 @@ __all__ = [
     "PropertyAgeTransformer",
     "RatioFeatureTransformer",
     "RollingStatsExtractor",
+    "RouteFeatureEngineer",
     "TemporalFeatureExtractor",
     "WeatherFeatureExtractor",
     "bin_feature",
@@ -455,264 +680,16 @@ __all__ = [
     "difference_feature",
     "encode_cyclical",
     "extract_feature_array",
-    "feature_names_for_bundle",
+    "generate_synthetic_data",
     "lag_features",
     "make_feature_row",
     "minmax_normalize",
     "normalize_consumption",
     "percentile_feature",
+    "prepare_X",
+    "rank_features",
     "ratio_feature",
     "rolling_max_feature",
+    "top_k_features",
     "zscore_feature",
 ]
-
-
-def lag_features(values: list[float], lags: list[int]) -> dict[str, list[float]]:
-    """Create lagged feature columns from a time series.
-
-    Args:
-        values: Input time series.
-        lags: List of lag offsets (positive integers).
-
-    Returns:
-        Dict mapping "lag_{n}" -> list of lagged values (NaN as None for missing).
-
-    Raises:
-        ValueError: If any lag is non-positive.
-    """
-    if any(lag <= 0 for lag in lags):
-        raise ValueError("All lags must be positive")
-    result = {}
-    for lag in lags:
-        lagged = [None] * lag + list(values[:-lag] if lag < len(values) else [])
-        result[f"lag_{lag}"] = lagged[: len(values)]
-    return result
-
-
-def difference_feature(values: list[float], order: int = 1) -> list[float]:
-    """Compute nth-order difference of a series.
-
-    Args:
-        values: Input numeric series.
-        order: Order of differencing. Default 1.
-
-    Returns:
-        Differenced series of length max(0, len(values) - order).
-
-    Raises:
-        ValueError: If order < 1.
-    """
-    if order < 1:
-        raise ValueError("order must be at least 1")
-    result = list(values)
-    for _ in range(order):
-        result = [result[i] - result[i - 1] for i in range(1, len(result))]
-    return result
-
-
-def ratio_feature(numerator: list[float], denominator: list[float]) -> list[float]:
-    """Element-wise ratio of two series; divides numerator by denominator.
-
-    Args:
-        numerator: Numerator series.
-        denominator: Denominator series.
-
-    Returns:
-        List of ratios. Entries where denominator is 0 return 0.0.
-
-    Raises:
-        ValueError: If series have different lengths or are empty.
-    """
-    if not numerator or not denominator:
-        raise ValueError("Series must be non-empty")
-    if len(numerator) != len(denominator):
-        raise ValueError("Series must have the same length")
-    return [round(n / d, 6) if d != 0 else 0.0 for n, d in zip(numerator, denominator, strict=False)]
-
-
-def clip_feature_values(values: list[float], low: float, high: float) -> list[float]:
-    """Clip feature values to [low, high] range.
-
-    Args:
-        values: Input feature series.
-        low: Lower bound.
-        high: Upper bound.
-
-    Returns:
-        Clipped list of floats.
-
-    Raises:
-        ValueError: If low > high.
-    """
-    if low > high:
-        raise ValueError("low must be <= high")
-    return [round(max(low, min(high, v)), 6) for v in values]
-
-
-def bin_feature(values: list[float], bins: list[float]) -> list[int]:
-    """Assign each value to a bin index based on sorted bin edges.
-
-    Equivalent to numpy digitize with ``right=False``: bin index 0 means the
-    value is below bins[0], index len(bins) means above all edges.
-
-    Args:
-        values: Input numeric series.
-        bins: Monotonically increasing bin edges.
-
-    Returns:
-        List of integer bin indices (0 to len(bins)).
-
-    Raises:
-        ValueError: If *bins* is not monotonically increasing.
-    """
-    if any(bins[i] >= bins[i + 1] for i in range(len(bins) - 1)):
-        raise ValueError("bins must be monotonically increasing")
-    result: list[int] = []
-    for v in values:
-        idx = 0
-        for edge in bins:
-            if v >= edge:
-                idx += 1
-            else:
-                break
-        result.append(idx)
-    return result
-
-
-def cumulative_sum_feature(values: list[float]) -> list[float]:
-    """Return the cumulative sum of *values* as a feature series.
-
-    Args:
-        values: Input numeric series.
-
-    Returns:
-        List where each element is the sum of all previous elements including
-        the current one.
-    """
-    result: list[float] = []
-    total = 0.0
-    for v in values:
-        total += v
-        result.append(round(total, 6))
-    return result
-
-
-def rolling_max_feature(values: list[float], window: int = 7) -> list[float]:
-    """Compute rolling maximum over *window* consecutive values.
-
-    Args:
-        values: Input numeric series.
-        window: Number of values to include in each rolling window.
-
-    Returns:
-        List of rolling maximum values (same length as *values*; earlier
-        positions use the available history).
-
-    Raises:
-        ValueError: If *window* < 1.
-    """
-    if window < 1:
-        raise ValueError("window must be at least 1")
-    result = []
-    for i in range(len(values)):
-        start = max(0, i - window + 1)
-        result.append(max(values[start : i + 1]))
-    return result
-
-
-def percentile_feature(
-    values: list[float],
-    reference: list[float],
-    percentile: float = 50.0,
-) -> list[float]:
-    """Encode each value as its percentile rank within *reference*.
-
-    Args:
-        values: Values to encode.
-        reference: Reference distribution used to compute the threshold.
-        percentile: Target percentile (0-100).
-
-    Returns:
-        List of 1.0 (value is at or above the reference percentile) or 0.0.
-
-    Raises:
-        ValueError: If *percentile* is outside [0, 100] or *reference* is empty.
-    """
-    if not reference:
-        raise ValueError("reference must not be empty")
-    if not 0.0 <= percentile <= 100.0:
-        raise ValueError(f"percentile must be in [0, 100], got {percentile}")
-    sorted_ref = sorted(reference)
-    idx = int(len(sorted_ref) * percentile / 100.0)
-    threshold = sorted_ref[min(idx, len(sorted_ref) - 1)]
-    return [1.0 if v >= threshold else 0.0 for v in values]
-
-
-def zscore_feature(values: list[float]) -> list[float]:
-    """Convert *values* to per-element z-scores using the series mean and std.
-
-    Args:
-        values: Numeric series with at least 2 elements.
-
-    Returns:
-        Z-scores of the same length; all zeros when standard deviation is 0.
-
-    Raises:
-        ValueError: If *values* has fewer than 2 elements.
-    """
-    if len(values) < 2:
-        raise ValueError(f"values must have at least 2 elements, got {len(values)}")
-    mean = sum(values) / len(values)
-    variance = sum((v - mean) ** 2 for v in values) / len(values)
-    std = variance**0.5
-    if std == 0:
-        return [0.0] * len(values)
-    return [round((v - mean) / std, 6) for v in values]
-
-
-def minmax_normalize(values: list[float]) -> list[float]:
-    """Min-max normalise *values* to the closed range [0, 1].
-
-    Args:
-        values: Numeric series with at least 1 element.
-
-    Returns:
-        List of normalised values; ``0.5`` for every position when all
-        values are identical (degenerate range).
-
-    Raises:
-        ValueError: If *values* is empty.
-    """
-    if not values:
-        raise ValueError("values must not be empty")
-    lo, hi = min(values), max(values)
-    rng = hi - lo
-    if rng == 0:
-        return [0.5] * len(values)
-    return [round((v - lo) / rng, 6) for v in values]
-
-
-def rank_features(importances: dict[str, float]) -> list[tuple[str, float]]:
-    """Sort feature importances from highest to lowest.
-
-    Args:
-        importances: Mapping of feature name to importance score.
-
-    Returns:
-        List of (feature_name, score) tuples sorted descending by score.
-    """
-    return sorted(importances.items(), key=lambda kv: kv[1], reverse=True)
-
-
-def top_k_features(importances: dict[str, float], k: int = 5) -> list[str]:
-    """Return the names of the *k* most important features.
-
-    Args:
-        importances: Mapping of feature name to importance score.
-        k: Number of top features to return.
-
-    Returns:
-        List of feature names, most important first, up to *k* entries.
-    """
-    ranked = rank_features(importances)
-    return [name for name, _ in ranked[:k]]

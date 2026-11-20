@@ -129,10 +129,7 @@ def test_seasonal_decompose_short_input() -> None:
 
 @pytest.mark.parametrize("n,expected_dir", [(5, "rising"), (0, "stable")])
 def test_linear_trend_direction_parametrize(n, expected_dir) -> None:
-    if n > 0:
-        values = list(range(1, n + 1))
-    else:
-        values = [5.0] * 5
+    values = list(range(1, n + 1)) if n > 0 else [5.0] * 5
     result = linear_trend(values)
     assert result.direction == expected_dir
 
@@ -1031,3 +1028,178 @@ class TestMedianAbsoluteDeviation:
 
         with pytest.raises(ValueError):
             median_absolute_deviation([])
+
+
+@pytest.mark.parametrize(
+    "values,expected_mad",
+    [
+        ([5.0, 5.0, 5.0], 0.0),
+        ([1.0, 2.0, 3.0, 4.0, 5.0], 1.0),
+        ([10.0], 0.0),
+    ],
+)
+def test_mad_parametrized(values, expected_mad: float) -> None:
+    """median_absolute_deviation returns the correct MAD for known sequences."""
+    from app.trend_analysis import median_absolute_deviation
+
+    assert median_absolute_deviation(values) == pytest.approx(expected_mad)
+
+
+@pytest.mark.parametrize("n", [5, 10, 20])
+def test_mad_non_negative_for_random_data(n: int) -> None:
+    """MAD is never negative for any sequence of values."""
+    import random
+
+    from app.trend_analysis import median_absolute_deviation
+
+    values = [random.gauss(0, 1) for _ in range(n)]
+    assert median_absolute_deviation(values) >= 0.0
+
+
+@pytest.mark.parametrize("n", [5, 10, 20])
+def test_linear_trend_output_is_trend_result(n: int) -> None:
+    """linear_trend returns a TrendResult for series of various lengths."""
+    values = [float(i) for i in range(n)]
+    result = linear_trend(values)
+    assert isinstance(result, TrendResult)
+
+
+@pytest.mark.parametrize("slope", [-2.0, 0.0, 2.0])
+def test_linear_trend_slope_sign_matches_data(slope: float) -> None:
+    """linear_trend slope has the same sign as the actual data slope."""
+    values = [slope * i for i in range(10)]
+    result = linear_trend(values)
+    if slope > 0:
+        assert result.slope > 0
+    elif slope < 0:
+        assert result.slope < 0
+    else:
+        assert abs(result.slope) < 1e-6
+
+
+@pytest.mark.parametrize("n", [3, 5, 10])
+def test_rate_of_change_unit_step_length(n: int) -> None:
+    """rate_of_change with default lag returns n-1 values for a unit-step series."""
+    values = [float(i + 1) for i in range(n)]
+    result = rate_of_change(values)
+    assert len(result) == n - 1
+
+
+class TestRollingMean:
+    def test_output_length_matches_input(self) -> None:
+        from app.trend_analysis import rolling_mean
+
+        values = [1.0, 2.0, 3.0, 4.0, 5.0]
+        result = rolling_mean(values, window=3)
+        assert len(result) == len(values)
+
+    def test_constant_series_unchanged(self) -> None:
+        from app.trend_analysis import rolling_mean
+
+        values = [5.0] * 10
+        result = rolling_mean(values, window=3)
+        assert all(v == pytest.approx(5.0) for v in result)
+
+    @pytest.mark.parametrize("window", [2, 3, 5])
+    def test_various_windows_return_correct_length(self, window: int) -> None:
+        from app.trend_analysis import rolling_mean
+
+        values = [float(i) for i in range(20)]
+        result = rolling_mean(values, window=window)
+        assert len(result) == len(values)
+
+
+class TestTrendStrengthExtended:
+    def test_perfect_linear_trend_near_one(self) -> None:
+        from app.trend_analysis import trend_strength
+
+        values = [float(i) for i in range(20)]
+        strength = trend_strength(values)
+        assert strength > 0.99
+
+    def test_constant_series_returns_one(self) -> None:
+        from app.trend_analysis import trend_strength
+
+        values = [3.0] * 20
+        strength = trend_strength(values)
+        assert strength == pytest.approx(1.0)
+
+    @pytest.mark.parametrize("n", [5, 10, 50])
+    def test_strength_in_valid_range(self, n: int) -> None:
+        from app.trend_analysis import trend_strength
+
+        values = [float(i) + (i % 3) for i in range(n)]
+        strength = trend_strength(values)
+        assert 0.0 <= strength <= 1.0
+
+
+class TestCumulativeSumExtended:
+    def test_zeros_stay_zero(self) -> None:
+        from app.trend_analysis import cumulative_sum
+
+        result = cumulative_sum([0.0] * 5)
+        assert all(v == pytest.approx(0.0) for v in result)
+
+    def test_unit_step_increments(self) -> None:
+        from app.trend_analysis import cumulative_sum
+
+        result = cumulative_sum([1.0] * 5)
+        assert result[-1] == pytest.approx(5.0)
+
+    def test_length_matches_input(self) -> None:
+        from app.trend_analysis import cumulative_sum
+
+        values = [1.0, 2.0, 3.0, 4.0]
+        assert len(cumulative_sum(values)) == len(values)
+
+
+class TestTrendSummary:
+    def test_raises_on_single_value(self) -> None:
+        from app.trend_analysis import trend_summary
+
+        with pytest.raises(ValueError):
+            trend_summary([1.0])
+
+    def test_direction_up_for_rising(self) -> None:
+        from app.trend_analysis import trend_summary
+
+        result = trend_summary([1.0, 2.0, 3.0, 4.0])
+        assert result["direction"] == "up"
+
+    def test_direction_down_for_falling(self) -> None:
+        from app.trend_analysis import trend_summary
+
+        result = trend_summary([4.0, 3.0, 2.0, 1.0])
+        assert result["direction"] == "down"
+
+    def test_keys_present(self) -> None:
+        from app.trend_analysis import trend_summary
+
+        result = trend_summary([1.0, 2.0, 3.0, 4.0])
+        for key in ("direction", "strength", "change_points", "pct_change_overall"):
+            assert key in result
+
+    @pytest.mark.parametrize("values", [[1.0, 2.0], [1.0, 2.0, 3.0, 4.0, 5.0]])
+    def test_returns_dict(self, values: list) -> None:
+        from app.trend_analysis import trend_summary
+
+        assert isinstance(trend_summary(values), dict)
+
+
+class TestExponentialGrowthRate:
+    def test_flat_series_returns_near_zero(self) -> None:
+        from app.trend_analysis import exponential_growth_rate
+
+        result = exponential_growth_rate([5.0, 5.0, 5.0, 5.0])
+        assert abs(result) < 0.01
+
+    def test_growing_series_positive(self) -> None:
+        from app.trend_analysis import exponential_growth_rate
+
+        result = exponential_growth_rate([1.0, 2.0, 4.0, 8.0])
+        assert result > 0.0
+
+    def test_returns_float(self) -> None:
+        from app.trend_analysis import exponential_growth_rate
+
+        assert isinstance(exponential_growth_rate([1.0, 2.0, 3.0]), float)

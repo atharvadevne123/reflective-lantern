@@ -4,7 +4,12 @@ from __future__ import annotations
 
 import pytest
 
-from app.similarity import BuildingSimilarityIndex, chebyshev_distance, manhattan_distance, pearson_similarity
+from app.similarity import (
+    BuildingSimilarityIndex,
+    chebyshev_distance,
+    manhattan_distance,
+    pearson_similarity,
+)
 
 
 def test_empty_index_returns_empty() -> None:
@@ -416,7 +421,9 @@ class TestManhattanDistance:
         with pytest.raises(ValueError, match="same length"):
             manhattan_distance([1.0, 2.0], [1.0])
 
-    @pytest.mark.parametrize("a,b,expected", [([1.0], [4.0], 3.0), ([0.0, 0.0, 0.0], [1.0, 1.0, 1.0], 3.0)])
+    @pytest.mark.parametrize(
+        "a,b,expected", [([1.0], [4.0], 3.0), ([0.0, 0.0, 0.0], [1.0, 1.0, 1.0], 3.0)]
+    )
     def test_parametrized(self, a: list, b: list, expected: float) -> None:
         from app.similarity import manhattan_distance
 
@@ -739,7 +746,6 @@ class TestEuclideanDistance:
         assert euclidean_distance([0.0, 0.0], [3.0, 4.0]) == pytest.approx(5.0, abs=0.001)
 
     def test_empty_raises(self) -> None:
-        import pytest
 
         from app.similarity import euclidean_distance
 
@@ -872,3 +878,209 @@ def test_manhattan_distance_non_negative(a: list, b: list) -> None:
     from app.similarity import manhattan_distance
 
     assert manhattan_distance(a, b) >= 0.0
+
+
+@pytest.mark.parametrize(
+    "a,b,expected",
+    [
+        ([0.0, 0.0], [0.0, 0.0], 0.0),
+        ([1.0, 0.0], [0.0, 0.0], 1.0),
+        ([1.0, 1.0], [0.0, 0.0], 2.0),
+        ([3.0, 4.0], [0.0, 0.0], 7.0),
+    ],
+)
+def test_manhattan_distance_known_values(a: list, b: list, expected: float) -> None:
+    """manhattan_distance returns the correct L1 norm for known vector pairs."""
+    from app.similarity import manhattan_distance
+
+    assert manhattan_distance(a, b) == pytest.approx(expected)
+
+
+@pytest.mark.parametrize("dim", [2, 4, 8])
+def test_manhattan_distance_symmetric(dim: int) -> None:
+    """manhattan_distance is symmetric: d(a, b) == d(b, a)."""
+    import numpy as np
+
+    from app.similarity import manhattan_distance
+
+    rng = np.random.default_rng(0)
+    a = rng.uniform(-5, 5, dim).tolist()
+    b = rng.uniform(-5, 5, dim).tolist()
+    assert manhattan_distance(a, b) == pytest.approx(manhattan_distance(b, a))
+
+
+@pytest.mark.parametrize("dim", [2, 4, 8])
+def test_chebyshev_distance_symmetric(dim: int) -> None:
+    """chebyshev_distance is symmetric."""
+    import numpy as np
+
+    from app.similarity import chebyshev_distance
+
+    rng = np.random.default_rng(42)
+    a = rng.uniform(0, 10, dim).tolist()
+    b = rng.uniform(0, 10, dim).tolist()
+    assert chebyshev_distance(a, b) == pytest.approx(chebyshev_distance(b, a))
+
+
+def test_chebyshev_distance_zero_for_equal_vectors() -> None:
+    from app.similarity import chebyshev_distance
+
+    assert chebyshev_distance([1.0, 2.0, 3.0], [1.0, 2.0, 3.0]) == pytest.approx(0.0)
+
+
+@pytest.mark.parametrize("n", [2, 5, 10])
+def test_pearson_similarity_self_is_one(n: int) -> None:
+    """pearson_similarity of a vector with itself is 1.0."""
+    v = [float(i + 1) for i in range(n)]
+    assert pearson_similarity(v, v) == pytest.approx(1.0, abs=1e-6)
+
+
+class TestManhattanDistanceExtended:
+    def test_zero_for_equal_vectors(self) -> None:
+        from app.similarity import manhattan_distance
+
+        assert manhattan_distance([1.0, 2.0, 3.0], [1.0, 2.0, 3.0]) == pytest.approx(0.0)
+
+    def test_positive_for_distinct_vectors(self) -> None:
+        from app.similarity import manhattan_distance
+
+        assert manhattan_distance([0.0, 0.0], [1.0, 1.0]) == pytest.approx(2.0)
+
+    @pytest.mark.parametrize("shift", [1.0, 2.0, 5.0])
+    def test_uniform_shift(self, shift: float) -> None:
+        from app.similarity import manhattan_distance
+
+        a = [0.0] * 4
+        b = [shift] * 4
+        assert manhattan_distance(a, b) == pytest.approx(4 * shift)
+
+
+class TestJaccardSimilarityExtended:
+    def test_identical_sets_give_one(self) -> None:
+        from app.similarity import jaccard_similarity
+
+        s = {"a", "b", "c"}
+        assert jaccard_similarity(s, s) == pytest.approx(1.0)
+
+    def test_disjoint_sets_give_zero(self) -> None:
+        from app.similarity import jaccard_similarity
+
+        assert jaccard_similarity({"a", "b"}, {"c", "d"}) == pytest.approx(0.0)
+
+    def test_partial_overlap(self) -> None:
+        from app.similarity import jaccard_similarity
+
+        result = jaccard_similarity({"a", "b", "c"}, {"b", "c", "d"})
+        assert 0.0 < result < 1.0
+
+
+class TestNormalizeDistancesExtended:
+    def test_single_value_returns_zero(self) -> None:
+        from app.similarity import normalize_distances
+
+        result = normalize_distances([5.0])
+        assert result == pytest.approx([0.0])
+
+    def test_min_is_zero_max_is_one(self) -> None:
+        from app.similarity import normalize_distances
+
+        result = normalize_distances([0.0, 5.0, 10.0])
+        assert min(result) == pytest.approx(0.0)
+        assert max(result) == pytest.approx(1.0)
+
+    @pytest.mark.parametrize("n", [3, 5, 10])
+    def test_output_length_matches_input(self, n: int) -> None:
+        from app.similarity import normalize_distances
+
+        distances = [float(i) for i in range(n)]
+        result = normalize_distances(distances)
+        assert len(result) == n
+
+
+class TestWeightedJaccardSimilarityExtended:
+    def test_identical_dicts_returns_one(self) -> None:
+        from app.similarity import weighted_jaccard_similarity
+
+        d = {"a": 1.0, "b": 2.0}
+        assert weighted_jaccard_similarity(d, d) == pytest.approx(1.0)
+
+    def test_empty_dicts_returns_zero(self) -> None:
+        from app.similarity import weighted_jaccard_similarity
+
+        assert weighted_jaccard_similarity({}, {}) == pytest.approx(0.0)
+
+    def test_disjoint_dicts_returns_zero(self) -> None:
+        from app.similarity import weighted_jaccard_similarity
+
+        a = {"x": 1.0}
+        b = {"y": 1.0}
+        assert weighted_jaccard_similarity(a, b) == pytest.approx(0.0)
+
+    def test_partial_overlap(self) -> None:
+        from app.similarity import weighted_jaccard_similarity
+
+        a = {"x": 1.0, "y": 0.0}
+        b = {"x": 1.0, "z": 0.0}
+        result = weighted_jaccard_similarity(a, b)
+        assert 0.0 <= result <= 1.0
+
+
+class TestPearsonSimilarity:
+    def test_identical_series_returns_one(self) -> None:
+        from app.similarity import pearson_similarity
+
+        series = [1.0, 2.0, 3.0, 4.0, 5.0]
+        assert pearson_similarity(series, series) == pytest.approx(1.0)
+
+    def test_opposite_series_returns_minus_one(self) -> None:
+        from app.similarity import pearson_similarity
+
+        a = [1.0, 2.0, 3.0]
+        b = [3.0, 2.0, 1.0]
+        assert pearson_similarity(a, b) == pytest.approx(-1.0)
+
+    def test_empty_raises(self) -> None:
+        from app.similarity import pearson_similarity
+
+        with pytest.raises(ValueError):
+            pearson_similarity([], [])
+
+    def test_different_lengths_raise(self) -> None:
+        from app.similarity import pearson_similarity
+
+        with pytest.raises(ValueError):
+            pearson_similarity([1.0], [1.0, 2.0])
+
+
+class TestClampSimilarity:
+    def test_value_in_range_unchanged(self) -> None:
+        from app.similarity import clamp_similarity
+
+        assert clamp_similarity(0.5) == pytest.approx(0.5)
+
+    def test_above_one_clamped_to_one(self) -> None:
+        from app.similarity import clamp_similarity
+
+        assert clamp_similarity(1.5) == pytest.approx(1.0)
+
+    def test_below_minus_one_clamped(self) -> None:
+        from app.similarity import clamp_similarity
+
+        assert clamp_similarity(-2.0) == pytest.approx(-1.0)
+
+    def test_exactly_one_unchanged(self) -> None:
+        from app.similarity import clamp_similarity
+
+        assert clamp_similarity(1.0) == pytest.approx(1.0)
+
+    def test_exactly_minus_one_unchanged(self) -> None:
+        from app.similarity import clamp_similarity
+
+        assert clamp_similarity(-1.0) == pytest.approx(-1.0)
+
+    @pytest.mark.parametrize("val", [-2.0, -1.0, 0.0, 0.7, 1.0, 1.5])
+    def test_result_always_in_range(self, val: float) -> None:
+        from app.similarity import clamp_similarity
+
+        result = clamp_similarity(val)
+        assert -1.0 <= result <= 1.0

@@ -12,8 +12,6 @@ from app.constants import (
     SEVERITY_HIGH_THRESHOLD,
     SEVERITY_LEVELS,
     SEVERITY_MEDIUM_THRESHOLD,
-    is_valid_severity,
-    severity_from_confidence,
 )
 
 
@@ -108,100 +106,3 @@ class TestOtherConstants:
     def test_health_path_is_exempt(self) -> None:
         """'/health' is in HEALTH_EXEMPT_PATHS."""
         assert "/health" in HEALTH_EXEMPT_PATHS
-
-
-class TestSeverityFromConfidence:
-    """Tests for the severity_from_confidence() helper."""
-
-    @pytest.mark.parametrize(
-        "confidence,expected",
-        [
-            (0.9, "critical"),
-            (1.0, "critical"),
-            (0.95, "critical"),
-            (0.75, "high"),
-            (0.85, "high"),
-            (0.5, "medium"),
-            (0.65, "medium"),
-            (0.0, "low"),
-            (0.1, "low"),
-            (0.49, "low"),
-        ],
-    )
-    def test_severity_mapping(self, confidence: float, expected: str) -> None:
-        """severity_from_confidence maps each confidence range to the right level."""
-        assert severity_from_confidence(confidence) == expected
-
-    def test_returns_string(self) -> None:
-        """severity_from_confidence always returns a str."""
-        assert isinstance(severity_from_confidence(0.5), str)
-
-    def test_result_is_in_severity_levels(self) -> None:
-        """Result is always a known severity level."""
-        for conf in [0.0, 0.3, 0.5, 0.75, 0.9, 1.0]:
-            assert severity_from_confidence(conf) in SEVERITY_LEVELS
-
-
-class TestIsValidSeverity:
-    """Tests for is_valid_severity() helper."""
-
-    @pytest.mark.parametrize("label", ["low", "medium", "high", "critical"])
-    def test_valid_labels_return_true(self, label: str) -> None:
-        """All members of SEVERITY_LEVELS are considered valid."""
-        assert is_valid_severity(label) is True
-
-    @pytest.mark.parametrize("label", ["", "unknown", "CRITICAL", "High", "none", "urgent"])
-    def test_invalid_labels_return_false(self, label: str) -> None:
-        """Labels not in SEVERITY_LEVELS return False."""
-        assert is_valid_severity(label) is False
-
-    def test_severity_levels_all_valid(self) -> None:
-        """Every entry in SEVERITY_LEVELS validates successfully."""
-        for level in SEVERITY_LEVELS:
-            assert is_valid_severity(level) is True
-
-
-class TestSeverityFromConfidenceExtended:
-    def test_critical_at_threshold(self) -> None:
-        from app.constants import SEVERITY_CRITICAL_THRESHOLD, severity_from_confidence
-
-        assert severity_from_confidence(SEVERITY_CRITICAL_THRESHOLD) == "critical"
-
-    def test_high_at_threshold(self) -> None:
-        from app.constants import SEVERITY_HIGH_THRESHOLD, severity_from_confidence
-
-        assert severity_from_confidence(SEVERITY_HIGH_THRESHOLD) == "high"
-
-    def test_medium_at_threshold(self) -> None:
-        from app.constants import SEVERITY_MEDIUM_THRESHOLD, severity_from_confidence
-
-        assert severity_from_confidence(SEVERITY_MEDIUM_THRESHOLD) == "medium"
-
-    def test_low_below_medium(self) -> None:
-        from app.constants import severity_from_confidence
-
-        assert severity_from_confidence(0.1) == "low"
-
-    def test_zero_confidence(self) -> None:
-        from app.constants import severity_from_confidence
-
-        assert severity_from_confidence(0.0) == "low"
-
-    def test_one_confidence(self) -> None:
-        from app.constants import severity_from_confidence
-
-        assert severity_from_confidence(1.0) == "critical"
-
-    @pytest.mark.parametrize(
-        "conf,expected",
-        [
-            (0.95, "critical"),
-            (0.80, "high"),
-            (0.60, "medium"),
-            (0.30, "low"),
-        ],
-    )
-    def test_parametrized_mappings(self, conf: float, expected: str) -> None:
-        from app.constants import severity_from_confidence
-
-        assert severity_from_confidence(conf) == expected

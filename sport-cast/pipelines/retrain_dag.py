@@ -1,5 +1,4 @@
 """Airflow DAG for automated Sport-Cast model retraining."""
-
 from __future__ import annotations
 
 from datetime import datetime, timedelta

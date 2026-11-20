@@ -9,10 +9,13 @@ contract.
 
 from __future__ import annotations
 
+import logging
 import re
 
 from ..retrieval.bm25 import tokenize
 from ..schemas import Citation, ScoredChunk
+
+logger = logging.getLogger(__name__)
 
 _SENTENCE_END = re.compile(r"(?<=[.!?])\s+")
 
@@ -20,6 +23,7 @@ _SUFFIXES = ("ment", "ing", "ed", "es", "ly", "s")
 
 
 def _sentences(text: str) -> list[str]:
+    """Split *text* into non-empty sentences using terminal punctuation."""
     return [s.strip() for s in _SENTENCE_END.split(text) if s.strip()]
 
 
@@ -100,4 +104,9 @@ class ExtractiveGenerator:
             )
             for sentence, scored in picked
         ]
+        logger.debug(
+            "ExtractiveGenerator: %d sentence(s) selected from %d candidate(s)",
+            len(picked),
+            len(candidates),
+        )
         return answer, citations

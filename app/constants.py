@@ -1,4 +1,16 @@
-"""Shared constants for the Watt-Guard application."""
+"""Shared constants for the Logistics-Flow application.
+
+Constant groups:
+- Anomaly Detection: Z-score and IQR thresholds used by the anomaly detector.
+- Drift Monitoring: Reference window size and KS-test p-value threshold.
+- Energy / Building: Physical bounds for consumption, temperature, humidity,
+  occupancy, and forecast horizon validation.
+- Carbon Emission Factors: Regional grid intensity values (kg CO2 per kWh).
+- Cache: Default TTL and maximum entry count for in-memory caches.
+- API Rate Limiting: Default per-minute request cap enforced by middleware.
+- Reporting Thresholds: Efficiency grade cut-offs (A/B/C) for reports.
+- HTTP / API Defaults: Request timeout, batch size, and pagination page sizes.
+"""
 
 from __future__ import annotations
 
@@ -54,9 +66,21 @@ DEFAULT_MAX_BATCH_SIZE: int = 100
 DEFAULT_PAGE_SIZE: int = 50
 MAX_PAGE_SIZE: int = 500
 
+# ── Input Validation ─────────────────────────────────────────────────────────
+MAX_REGION_ID_LENGTH: int = 64
+MAX_EMAIL_LENGTH: int = 254  # RFC 5321
+MAX_STRING_INPUT_LENGTH: int = 1_000
+
+# ── Circuit Breaker Defaults ──────────────────────────────────────────────────
+DEFAULT_CB_FAILURE_THRESHOLD: int = 5
+DEFAULT_CB_RECOVERY_TIMEOUT: float = 30.0
+
 __all__ = [
+    "CONFIDENCE_SCORE_DEFAULT",
     "DEFAULT_CACHE_MAX_SIZE",
     "DEFAULT_CACHE_TTL_SECONDS",
+    "DEFAULT_CB_FAILURE_THRESHOLD",
+    "DEFAULT_CB_RECOVERY_TIMEOUT",
     "DEFAULT_MAX_BATCH_SIZE",
     "DEFAULT_PAGE_SIZE",
     "DEFAULT_RATE_LIMIT_PER_MINUTE",
@@ -68,15 +92,23 @@ __all__ = [
     "GRID_INTENSITY_KG_PER_KWH",
     "IQR_MULTIPLIER",
     "MAX_CONSUMPTION_KWH",
+    "MAX_DELIVERY_MINUTES",
+    "MAX_DISTANCE_KM",
+    "MAX_EMAIL_LENGTH",
     "MAX_FORECAST_HORIZON",
     "MAX_HUMIDITY_PCT",
     "MAX_OCCUPANCY",
     "MAX_PAGE_SIZE",
+    "MAX_REGION_ID_LENGTH",
+    "MAX_STRING_INPUT_LENGTH",
     "MAX_TEMPERATURE_C",
+    "MAX_WEIGHT_KG",
     "MIN_CONSUMPTION_KWH",
+    "MIN_DELIVERY_MINUTES",
     "MIN_HUMIDITY_PCT",
     "MIN_REFERENCE_SIZE",
     "MIN_TEMPERATURE_C",
+    "MODEL_VERSION",
     "REFERENCE_WINDOW_SIZE",
     "ZSCORE_THRESHOLD",
 ]

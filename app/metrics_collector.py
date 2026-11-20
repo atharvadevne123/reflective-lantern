@@ -23,12 +23,26 @@ class Counter:
     """Monotonically increasing counter."""
 
     def __init__(self, name: str, description: str = "") -> None:
+        """Initialise a counter with a name and optional description.
+
+        Args:
+            name: Unique metric name.
+            description: Human-readable description.
+        """
         self.name = name
         self.description = description
         self._value: float = 0.0
         self._lock = threading.Lock()
 
     def inc(self, amount: float = 1.0) -> None:
+        """Increment the counter by *amount* (must be non-negative).
+
+        Args:
+            amount: Value to add; must be >= 0.
+
+        Raises:
+            ValueError: If *amount* is negative.
+        """
         if amount < 0:
             raise ValueError("Counter can only increase")
         with self._lock:
@@ -36,10 +50,12 @@ class Counter:
 
     @property
     def value(self) -> float:
+        """Current counter value (thread-safe snapshot)."""
         with self._lock:
             return self._value
 
     def reset(self) -> None:
+        """Reset the counter to zero."""
         with self._lock:
             self._value = 0.0
 
@@ -48,25 +64,47 @@ class Gauge:
     """Gauge that can go up or down."""
 
     def __init__(self, name: str, description: str = "") -> None:
+        """Initialise a gauge with a name and optional description.
+
+        Args:
+            name: Unique metric name.
+            description: Human-readable description.
+        """
         self.name = name
         self.description = description
         self._value: float = 0.0
         self._lock = threading.Lock()
 
     def set(self, value: float) -> None:
+        """Set the gauge to an absolute *value*.
+
+        Args:
+            value: New gauge reading.
+        """
         with self._lock:
             self._value = value
 
     def inc(self, amount: float = 1.0) -> None:
+        """Increment the gauge by *amount*.
+
+        Args:
+            amount: Value to add (may be negative).
+        """
         with self._lock:
             self._value += amount
 
     def dec(self, amount: float = 1.0) -> None:
+        """Decrement the gauge by *amount*.
+
+        Args:
+            amount: Value to subtract (must be positive for a meaningful decrease).
+        """
         with self._lock:
             self._value -= amount
 
     @property
     def value(self) -> float:
+        """Current gauge reading (thread-safe snapshot)."""
         with self._lock:
             return self._value
 
@@ -77,15 +115,23 @@ class Histogram:
 
     name: str
     description: str = ""
-    buckets: list[float] = field(default_factory=lambda: [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0])
+    buckets: list[float] = field(
+        default_factory=lambda: [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0]
+    )
 
     def __post_init__(self) -> None:
+        """Initialise per-bucket counters and running-sum accumulators."""
         self._lock = threading.Lock()
         self._counts: list[int] = [0] * len(self.buckets)
         self._sum: float = 0.0
         self._total: int = 0
 
     def observe(self, value: float) -> None:
+        """Record an observation, updating bucket counts and running sum.
+
+        Args:
+            value: The observed measurement (e.g. request latency in seconds).
+        """
         with self._lock:
             self._sum += value
             self._total += 1
@@ -95,11 +141,13 @@ class Histogram:
 
     @property
     def sum(self) -> float:
+        """Sum of all observed values (thread-safe snapshot)."""
         with self._lock:
             return self._sum
 
     @property
     def count(self) -> int:
+        """Total number of observations recorded (thread-safe snapshot)."""
         with self._lock:
             return self._total
 
@@ -121,19 +169,50 @@ class MetricsRegistry:
     """Central registry for named metrics."""
 
     def __init__(self) -> None:
+        """Initialise an empty metrics registry."""
         self._metrics: dict[str, object] = {}
 
     def counter(self, name: str, description: str = "") -> Counter:
+        """Return (or create) a :class:`Counter` registered under *name*.
+
+        Args:
+            name: Unique metric name.
+            description: Human-readable description (used on first creation only).
+
+        Returns:
+            The existing or newly created Counter.
+        """
         if name not in self._metrics:
             self._metrics[name] = Counter(name, description)
         return self._metrics[name]  # type: ignore[return-value]
 
     def gauge(self, name: str, description: str = "") -> Gauge:
+        """Return (or create) a :class:`Gauge` registered under *name*.
+
+        Args:
+            name: Unique metric name.
+            description: Human-readable description (used on first creation only).
+
+        Returns:
+            The existing or newly created Gauge.
+        """
         if name not in self._metrics:
             self._metrics[name] = Gauge(name, description)
         return self._metrics[name]  # type: ignore[return-value]
 
-    def histogram(self, name: str, description: str = "", buckets: list[float] | None = None) -> Histogram:
+    def histogram(
+        self, name: str, description: str = "", buckets: list[float] | None = None
+    ) -> Histogram:
+        """Return (or create) a :class:`Histogram` registered under *name*.
+
+        Args:
+            name: Unique metric name.
+            description: Human-readable description (used on first creation only).
+            buckets: Custom bucket boundaries; defaults to a standard latency set.
+
+        Returns:
+            The existing or newly created Histogram.
+        """
         if name not in self._metrics:
             kwargs = {"name": name, "description": description}
             if buckets is not None:
@@ -142,7 +221,32 @@ class MetricsRegistry:
         return self._metrics[name]  # type: ignore[return-value]
 
     def all_metrics(self) -> dict[str, object]:
+        """Return a shallow copy of all registered metrics keyed by name."""
         return dict(self._metrics)
+
+    def metric_names(self) -> list[str]:
+        """Return sorted list of all registered metric names."""
+        return sorted(self._metrics)
+
+    def remove(self, name: str) -> bool:
+        """Unregister a metric by name. Returns True if it existed."""
+        return self._metrics.pop(name, None) is not None
+
+    def get(self, name: str) -> object | None:
+        """Return a registered metric by name, or None if not found."""
+        return self._metrics.get(name)
+
+    def register(self, metric: object) -> None:
+        """Register a pre-built metric object under its .name attribute."""
+        self._metrics[metric.name] = metric  # type: ignore[attr-defined]
+
+    def names(self) -> list[str]:
+        """Return list of all registered metric names."""
+        return list(self._metrics.keys())
+
+    def __len__(self) -> int:
+        """Return the number of registered metrics."""
+        return len(self._metrics)
 
 
 _default = MetricsRegistry()

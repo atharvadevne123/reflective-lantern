@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import time
 import uuid
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from typing import Any
 
@@ -15,7 +16,11 @@ from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
-from app.anomaly import ensure_anomaly_model_exists, load_anomaly_detector, score_anomaly
+from app.anomaly import (
+    ensure_anomaly_model_exists,
+    load_anomaly_detector,
+    score_anomaly,
+)
 from app.config import get_settings
 from app.database import create_tables, get_db
 from app.features import make_sample_df
@@ -37,7 +42,7 @@ _anomaly_pipeline = None
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:  # type: ignore[type-arg]
     """Load models and create tables on startup; log on shutdown."""
     global _pipeline, _label_encoder, _anomaly_pipeline
     create_tables()
@@ -67,7 +72,7 @@ app.add_middleware(RateLimitMiddleware, limit_per_minute=settings.rate_limit_per
 
 
 @app.middleware("http")
-async def correlation_id_middleware(request: Request, call_next):
+async def correlation_id_middleware(request: Request, call_next: Any) -> Response:
     correlation_id = request.headers.get("X-Correlation-ID", str(uuid.uuid4()))
     start = time.time()
     response: Response = await call_next(request)
@@ -151,7 +156,7 @@ class MetricsResponse(BaseModel):
 
 
 @app.get("/api/v1/health", response_model=HealthResponse, tags=["system"])
-async def health(db: Session = Depends(get_db)):
+async def health(db: Session = Depends(get_db)) -> HealthResponse:
     """Report readiness of the models and the database.
 
     Reports ``degraded`` rather than ``healthy`` if any dependency is down.
@@ -182,7 +187,7 @@ async def predict_intrusion(
     request: Request,
     payload: NetworkConnectionRequest,
     db: Session = Depends(get_db),
-):
+) -> PredictionResponse:
     """Classify a network connection as normal or intrusion threat category."""
     if _pipeline is None or _label_encoder is None:
         raise HTTPException(status_code=503, detail="model not loaded")
@@ -206,7 +211,7 @@ async def predict_intrusion(
 
 
 @app.post("/api/v1/anomaly", response_model=AnomalyResponse, tags=["prediction"])
-async def anomaly_check(payload: NetworkConnectionRequest):
+async def anomaly_check(payload: NetworkConnectionRequest) -> AnomalyResponse:
     """Score a connection for outlier-ness without assigning a threat class.
 
     Useful for triaging traffic the supervised model has no class for --
@@ -220,7 +225,9 @@ async def anomaly_check(payload: NetworkConnectionRequest):
 
 
 @app.get("/api/v1/metrics", response_model=MetricsResponse, tags=["monitoring"])
-async def metrics(hours: int = 24, run_drift: bool = False, db: Session = Depends(get_db)):
+async def metrics(
+    hours: int = 24, run_drift: bool = False, db: Session = Depends(get_db)
+) -> MetricsResponse:
     """Return prediction statistics and optional drift check for the last N hours."""
     stats = get_prediction_stats(db, hours=hours)
     drift = run_drift_check(db) if run_drift else None
@@ -234,6 +241,6 @@ async def metrics(hours: int = 24, run_drift: bool = False, db: Session = Depend
 
 
 @app.get("/api/v1/drift", tags=["monitoring"])
-async def drift_check(db: Session = Depends(get_db)):
+async def drift_check(db: Session = Depends(get_db)) -> dict[str, Any]:
     """Run KS-test drift check on src_bytes distribution."""
     return run_drift_check(db)

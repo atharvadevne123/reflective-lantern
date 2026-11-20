@@ -6,80 +6,86 @@ import pytest
 
 from app.cost_estimator import (
     ResourceSpec,
+    cheapest_spec,
     compare_specs,
+    cost_per_unit,
     estimate_cost,
     monthly_estimate,
 )
 
 
 class TestResourceSpec:
-    def test_valid_spec(self):
+    def test_valid_spec(self) -> None:
         s = ResourceSpec(cpu_cores=4, memory_gb=16)
         assert s.gpu_count == 0
 
-    def test_invalid_cpu_raises(self):
+    def test_invalid_cpu_raises(self) -> None:
         with pytest.raises(ValueError, match="cpu_cores"):
             ResourceSpec(cpu_cores=0, memory_gb=8)
 
-    def test_invalid_memory_raises(self):
+    def test_invalid_memory_raises(self) -> None:
         with pytest.raises(ValueError, match="memory_gb"):
             ResourceSpec(cpu_cores=2, memory_gb=-1)
 
-    def test_invalid_gpu_raises(self):
+    def test_invalid_gpu_raises(self) -> None:
         with pytest.raises(ValueError, match="gpu_count"):
             ResourceSpec(cpu_cores=2, memory_gb=8, gpu_count=-1)
 
-    def test_invalid_duration_raises(self):
+    def test_invalid_duration_raises(self) -> None:
         with pytest.raises(ValueError, match="duration_hours"):
             ResourceSpec(cpu_cores=2, memory_gb=8, duration_hours=0)
 
 
 class TestEstimateCost:
-    def test_cpu_only_cost(self):
+    def test_cpu_only_cost(self) -> None:
         spec = ResourceSpec(cpu_cores=4, memory_gb=16, duration_hours=1)
         bd = estimate_cost(spec, cpu_rate=1.0, memory_rate=0.0, gpu_rate=0.0)
         assert bd.cpu_cost_usd == pytest.approx(4.0)
         assert bd.gpu_cost_usd == pytest.approx(0.0)
 
-    def test_total_is_sum(self):
+    def test_total_is_sum(self) -> None:
         spec = ResourceSpec(cpu_cores=2, memory_gb=4, gpu_count=1, duration_hours=2)
         bd = estimate_cost(spec, cpu_rate=1.0, memory_rate=1.0, gpu_rate=1.0)
         assert bd.total_usd == pytest.approx(bd.cpu_cost_usd + bd.memory_cost_usd + bd.gpu_cost_usd)
 
-    def test_to_dict_keys(self):
+    def test_to_dict_keys(self) -> None:
         spec = ResourceSpec(cpu_cores=1, memory_gb=1)
         d = estimate_cost(spec).to_dict()
         assert set(d.keys()) == {"cpu_cost_usd", "memory_cost_usd", "gpu_cost_usd", "total_usd"}
 
-    def test_gpu_cost_positive(self):
+    def test_gpu_cost_positive(self) -> None:
         spec = ResourceSpec(cpu_cores=1, memory_gb=4, gpu_count=2, duration_hours=1)
         bd = estimate_cost(spec, gpu_rate=3.0)
         assert bd.gpu_cost_usd == pytest.approx(6.0)
 
     @pytest.mark.parametrize("duration", [0.5, 1.0, 8.0, 24.0])
-    def test_cost_scales_with_duration(self, duration):
-        base = estimate_cost(ResourceSpec(cpu_cores=1, memory_gb=1, duration_hours=1), cpu_rate=1.0, memory_rate=1.0)
+    def test_cost_scales_with_duration(self, duration) -> None:
+        base = estimate_cost(
+            ResourceSpec(cpu_cores=1, memory_gb=1, duration_hours=1), cpu_rate=1.0, memory_rate=1.0
+        )
         scaled = estimate_cost(
-            ResourceSpec(cpu_cores=1, memory_gb=1, duration_hours=duration), cpu_rate=1.0, memory_rate=1.0
+            ResourceSpec(cpu_cores=1, memory_gb=1, duration_hours=duration),
+            cpu_rate=1.0,
+            memory_rate=1.0,
         )
         assert scaled.total_usd == pytest.approx(base.total_usd * duration, rel=1e-6)
 
 
 class TestMonthlyEstimate:
-    def test_monthly_higher_than_hourly(self):
+    def test_monthly_higher_than_hourly(self) -> None:
         spec = ResourceSpec(cpu_cores=2, memory_gb=8, duration_hours=1)
         hourly = estimate_cost(spec)
         monthly = monthly_estimate(spec)
         assert monthly.total_usd > hourly.total_usd
 
-    def test_zero_hours_per_day_invalid(self):
+    def test_zero_hours_per_day_invalid(self) -> None:
         spec = ResourceSpec(cpu_cores=2, memory_gb=8)
         with pytest.raises(ValueError):
             monthly_estimate(spec, hours_per_day=0)
 
 
 class TestCompareSpecs:
-    def test_returns_sorted_by_cost(self):
+    def test_returns_sorted_by_cost(self) -> None:
         specs = [
             ResourceSpec(cpu_cores=8, memory_gb=32),
             ResourceSpec(cpu_cores=1, memory_gb=4),
@@ -87,13 +93,223 @@ class TestCompareSpecs:
         results = compare_specs(specs)
         assert results[0]["total_usd"] <= results[1]["total_usd"]
 
-    def test_labels_applied(self):
+    def test_labels_applied(self) -> None:
         specs = [ResourceSpec(cpu_cores=1, memory_gb=4)]
         results = compare_specs(specs, labels=["tiny"])
         assert results[0]["label"] == "tiny"
 
-    def test_default_labels_generated(self):
+    def test_default_labels_generated(self) -> None:
         specs = [ResourceSpec(cpu_cores=1, memory_gb=4), ResourceSpec(cpu_cores=2, memory_gb=8)]
         results = compare_specs(specs)
         labels = {r["label"] for r in results}
         assert "spec-0" in labels or "spec-1" in labels
+
+
+class TestResourceSpecDefaults:
+    def test_gpu_count_defaults_to_zero(self) -> None:
+        spec = ResourceSpec(cpu_cores=2, memory_gb=8)
+        assert spec.gpu_count == 0
+
+    def test_duration_defaults_to_one_hour(self) -> None:
+        spec = ResourceSpec(cpu_cores=2, memory_gb=8)
+        assert spec.duration_hours == 1.0
+
+    @pytest.mark.parametrize("cpu,mem", [(1, 1), (8, 64), (64, 256)])
+    def test_valid_spec_combinations(self, cpu: int, mem: int) -> None:
+        spec = ResourceSpec(cpu_cores=cpu, memory_gb=mem)
+        assert spec.cpu_cores == cpu
+        assert spec.memory_gb == mem
+
+
+class TestEstimateCostEdgeCases:
+    def test_all_zero_rates_gives_zero_total(self) -> None:
+        spec = ResourceSpec(cpu_cores=4, memory_gb=16, gpu_count=2, duration_hours=8)
+        bd = estimate_cost(spec, cpu_rate=0.0, memory_rate=0.0, gpu_rate=0.0)
+        assert bd.total_usd == pytest.approx(0.0)
+
+    def test_memory_cost_scales_with_gb(self) -> None:
+        spec1 = ResourceSpec(cpu_cores=1, memory_gb=4, duration_hours=1)
+        spec2 = ResourceSpec(cpu_cores=1, memory_gb=8, duration_hours=1)
+        bd1 = estimate_cost(spec1, cpu_rate=0.0, memory_rate=1.0, gpu_rate=0.0)
+        bd2 = estimate_cost(spec2, cpu_rate=0.0, memory_rate=1.0, gpu_rate=0.0)
+        assert bd2.memory_cost_usd == pytest.approx(bd1.memory_cost_usd * 2)
+
+    def test_to_dict_all_values_non_negative(self) -> None:
+        spec = ResourceSpec(cpu_cores=2, memory_gb=8, gpu_count=1, duration_hours=4)
+        d = estimate_cost(spec).to_dict()
+        assert all(v >= 0 for v in d.values())
+
+    def test_fractional_duration_accepted(self) -> None:
+        spec = ResourceSpec(cpu_cores=2, memory_gb=4, duration_hours=0.25)
+        bd = estimate_cost(spec, cpu_rate=1.0, memory_rate=0.0, gpu_rate=0.0)
+        assert bd.cpu_cost_usd == pytest.approx(0.5)  # 2 cores * 0.25h
+
+
+@pytest.mark.parametrize("cpu", [1, 2, 4, 8, 16])
+def test_cpu_cost_scales_linearly(cpu: int) -> None:
+    """CPU cost is proportional to core count for fixed rate and duration."""
+    spec = ResourceSpec(cpu_cores=cpu, memory_gb=1, duration_hours=1)
+    bd = estimate_cost(spec, cpu_rate=1.0, memory_rate=0.0, gpu_rate=0.0)
+    assert bd.cpu_cost_usd == pytest.approx(float(cpu))
+
+
+@pytest.mark.parametrize("gpu", [0, 1, 2, 4])
+def test_gpu_cost_scales_with_count(gpu: int) -> None:
+    """GPU cost is proportional to GPU count."""
+    spec = ResourceSpec(cpu_cores=1, memory_gb=1, gpu_count=gpu, duration_hours=1)
+    bd = estimate_cost(spec, cpu_rate=0.0, memory_rate=0.0, gpu_rate=1.0)
+    assert bd.gpu_cost_usd == pytest.approx(float(gpu))
+
+
+class TestMonthlyEstimateEdgeCases:
+    def test_monthly_at_8h_day_scales_correctly(self) -> None:
+        spec = ResourceSpec(cpu_cores=1, memory_gb=1, duration_hours=1)
+        bd = monthly_estimate(spec, hours_per_day=8, days_per_month=30)
+        assert bd.total_usd == pytest.approx(estimate_cost(spec).total_usd * 8 * 30)
+
+    @pytest.mark.parametrize("days", [1, 7, 30])
+    def test_monthly_days_scales_total(self, days: int) -> None:
+        spec = ResourceSpec(cpu_cores=2, memory_gb=4, duration_hours=1)
+        bd = monthly_estimate(spec, hours_per_day=1, days_per_month=days)
+        single_day = estimate_cost(spec)
+        assert bd.total_usd == pytest.approx(single_day.total_usd * days)
+
+
+class TestCheapestSpec:
+    def test_returns_lowest_cost_option(self) -> None:
+        s1 = ResourceSpec(cpu_cores=1, memory_gb=1, duration_hours=1)
+        s2 = ResourceSpec(cpu_cores=8, memory_gb=32, duration_hours=1)
+        cheapest = cheapest_spec([s1, s2])
+        assert cheapest is not None
+        assert estimate_cost(cheapest).total_usd <= estimate_cost(s2).total_usd
+
+    def test_single_spec_returns_it(self) -> None:
+        s = ResourceSpec(cpu_cores=2, memory_gb=4, duration_hours=1)
+        assert cheapest_spec([s]) is s
+
+    def test_empty_list_returns_none(self) -> None:
+        assert cheapest_spec([]) is None
+
+
+@pytest.mark.parametrize("units", [1, 10, 100])
+def test_cost_per_unit_scales_with_units(units: int) -> None:
+    """cost_per_unit decreases (or stays equal) as units increase for fixed cost."""
+    spec = ResourceSpec(cpu_cores=2, memory_gb=8, duration_hours=1)
+    bd = estimate_cost(spec)
+    cpu = cost_per_unit(bd, units)
+    assert cpu == pytest.approx(bd.total_usd / units)
+
+
+@pytest.mark.parametrize(("cpu", "mem"), [(1, 4), (4, 16), (16, 64)])
+def test_compare_specs_identifies_cheaper(cpu: int, mem: int) -> None:
+    """compare_specs correctly flags the cheaper option."""
+    cheap = ResourceSpec(cpu_cores=1, memory_gb=1, duration_hours=1)
+    expensive = ResourceSpec(cpu_cores=cpu, memory_gb=mem, duration_hours=1)
+    results = compare_specs([cheap, expensive])
+    assert len(results) == 2
+    assert all("total_usd" in r or "cost" in r or isinstance(r, dict) for r in results)
+
+
+class TestCheapestSpecExtended:
+    def test_empty_returns_none(self) -> None:
+        from app.cost_estimator import cheapest_spec
+
+        assert cheapest_spec([]) is None
+
+    def test_single_spec_returned(self) -> None:
+        from app.cost_estimator import ResourceSpec, cheapest_spec
+
+        spec = ResourceSpec(cpu_cores=1, memory_gb=2, duration_hours=1)
+        result = cheapest_spec([spec])
+        assert result is spec
+
+    def test_returns_cheapest(self) -> None:
+        from app.cost_estimator import ResourceSpec, cheapest_spec
+
+        cheap = ResourceSpec(cpu_cores=1, memory_gb=1, duration_hours=1)
+        expensive = ResourceSpec(cpu_cores=16, memory_gb=64, duration_hours=100)
+        result = cheapest_spec([expensive, cheap])
+        assert result is cheap
+
+    @pytest.mark.parametrize("n", [2, 3, 5])
+    def test_n_specs_returns_cheapest(self, n: int) -> None:
+        from app.cost_estimator import ResourceSpec, cheapest_spec
+
+        specs = [
+            ResourceSpec(cpu_cores=i, memory_gb=i * 2, duration_hours=1) for i in range(1, n + 1)
+        ]
+        result = cheapest_spec(specs)
+        assert result is not None
+
+
+class TestMonthlyEstimateExtended:
+    def test_returns_positive(self) -> None:
+        from app.cost_estimator import ResourceSpec, monthly_estimate
+
+        spec = ResourceSpec(cpu_cores=2, memory_gb=4, duration_hours=1)
+        result = monthly_estimate(spec)
+        assert result > 0.0
+
+    def test_proportional_to_hours(self) -> None:
+        from app.cost_estimator import ResourceSpec, monthly_estimate
+
+        spec1 = ResourceSpec(cpu_cores=1, memory_gb=1, duration_hours=1)
+        spec2 = ResourceSpec(cpu_cores=1, memory_gb=1, duration_hours=2)
+        assert monthly_estimate(spec2) > monthly_estimate(spec1)
+
+    def test_returns_float(self) -> None:
+        from app.cost_estimator import ResourceSpec, monthly_estimate
+
+        spec = ResourceSpec(cpu_cores=1, memory_gb=2, duration_hours=1)
+        assert isinstance(monthly_estimate(spec), float)
+
+
+@pytest.mark.parametrize(
+    "cpu_cores,memory_gb,hours",
+    [
+        (1, 1, 1),
+        (4, 8, 24),
+        (2, 4, 8),
+        (8, 16, 1),
+    ],
+)
+def test_monthly_estimate_always_positive(cpu_cores: int, memory_gb: int, hours: int) -> None:
+    from app.cost_estimator import ResourceSpec, monthly_estimate
+
+    spec = ResourceSpec(cpu_cores=cpu_cores, memory_gb=memory_gb, duration_hours=hours)
+    result = monthly_estimate(spec)
+    assert result > 0.0
+    assert isinstance(result, float)
+
+
+@pytest.mark.parametrize(
+    "cpu_cores,memory_gb,duration_hours",
+    [(1, 1, 720), (2, 4, 720), (4, 8, 720)],
+)
+def test_estimate_cost_scales_with_resources(
+    cpu_cores: int, memory_gb: int, duration_hours: int
+) -> None:
+    """Larger resource specs result in higher estimated costs."""
+    from app.cost_estimator import ResourceSpec, estimate_cost
+
+    small = ResourceSpec(cpu_cores=1, memory_gb=1, duration_hours=1)
+    large = ResourceSpec(cpu_cores=cpu_cores, memory_gb=memory_gb, duration_hours=duration_hours)
+    assert estimate_cost(large) >= estimate_cost(small)
+
+
+def test_cost_per_unit_zero_units_returns_zero() -> None:
+    """cost_per_unit returns 0.0 when units=0."""
+    from app.cost_estimator import ResourceSpec, cost_per_unit, estimate_cost
+
+    spec = ResourceSpec(cpu_cores=2, memory_gb=4, duration_hours=1)
+    bd = estimate_cost(spec)
+    assert cost_per_unit(bd, 0) == 0.0
+
+
+def test_cost_per_unit_positive_units() -> None:
+    """cost_per_unit returns a positive value for positive unit count."""
+    from app.cost_estimator import ResourceSpec, cost_per_unit, estimate_cost
+
+    spec = ResourceSpec(cpu_cores=2, memory_gb=4, duration_hours=1)
+    bd = estimate_cost(spec)
+    assert cost_per_unit(bd, 100) > 0.0

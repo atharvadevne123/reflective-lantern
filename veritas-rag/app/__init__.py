@@ -13,4 +13,4 @@ Pipeline stages:
     10. Observability (full trace: rankings, retrieval path, attribution)
 """
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"

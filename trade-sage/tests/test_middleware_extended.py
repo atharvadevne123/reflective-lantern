@@ -11,7 +11,6 @@ class TestRequestTimingMiddleware:
 
     def test_middleware_inherits_base_http(self) -> None:
         from starlette.middleware.base import BaseHTTPMiddleware
-
         assert issubclass(RequestTimingMiddleware, BaseHTTPMiddleware)
 
     def test_has_dispatch_method(self) -> None:
@@ -24,12 +23,10 @@ class TestRateLimitMiddleware:
 
     def test_rate_limit_constant_positive(self) -> None:
         from app.middleware import RATE_LIMIT
-
         assert RATE_LIMIT > 0
 
     def test_rate_limit_value(self) -> None:
         from app.middleware import RATE_LIMIT
-
         assert RATE_LIMIT == 200
 
 

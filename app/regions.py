@@ -1,4 +1,4 @@
-"""Grid region registry for Watt-Guard."""
+"""Grid region registry for Logistics-Flow."""
 
 from __future__ import annotations
 
@@ -15,11 +15,31 @@ KNOWN_REGIONS: dict[str, RegionDict] = {
     "south": {"name": "Southern Grid", "peak_load_mw": 14000, "timezone": "America/Chicago"},
     "west": {"name": "Western Grid", "peak_load_mw": 8000, "timezone": "America/Los_Angeles"},
     "texas": {"name": "ERCOT (Texas)", "peak_load_mw": 11000, "timezone": "America/Chicago"},
-    "pacific_nw": {"name": "Pacific Northwest Grid", "peak_load_mw": 7200, "timezone": "America/Los_Angeles"},
-    "new_england": {"name": "New England Grid (ISO-NE)", "peak_load_mw": 5500, "timezone": "America/New_York"},
-    "mountain": {"name": "Mountain States Grid", "peak_load_mw": 6800, "timezone": "America/Denver"},
-    "southeast": {"name": "Southeast Grid (SERC)", "peak_load_mw": 10500, "timezone": "America/New_York"},
-    "florida": {"name": "Florida Grid (FRCC)", "peak_load_mw": 7000, "timezone": "America/New_York"},
+    "pacific_nw": {
+        "name": "Pacific Northwest Grid",
+        "peak_load_mw": 7200,
+        "timezone": "America/Los_Angeles",
+    },
+    "new_england": {
+        "name": "New England Grid (ISO-NE)",
+        "peak_load_mw": 5500,
+        "timezone": "America/New_York",
+    },
+    "mountain": {
+        "name": "Mountain States Grid",
+        "peak_load_mw": 6800,
+        "timezone": "America/Denver",
+    },
+    "southeast": {
+        "name": "Southeast Grid (SERC)",
+        "peak_load_mw": 10500,
+        "timezone": "America/New_York",
+    },
+    "florida": {
+        "name": "Florida Grid (FRCC)",
+        "peak_load_mw": 7000,
+        "timezone": "America/New_York",
+    },
     "default": {"name": "Default Region", "peak_load_mw": 10000, "timezone": "UTC"},
 }
 
@@ -71,7 +91,11 @@ def get_regions_by_timezone(timezone: str) -> list[str]:
     Returns:
         Sorted list of region IDs whose timezone matches (case-sensitive).
     """
-    return sorted(region_id for region_id, meta in KNOWN_REGIONS.items() if str(meta.get("timezone", "")) == timezone)
+    return sorted(
+        region_id
+        for region_id, meta in KNOWN_REGIONS.items()
+        if str(meta.get("timezone", "")) == timezone
+    )
 
 
 def get_peak_load(region_id: str) -> float | None:
@@ -236,7 +260,9 @@ def total_peak_load_mw() -> float:
     Returns:
         Total peak load in MW.
     """
-    return float(sum(r.get("peak_load_mw", 0.0) for name, r in KNOWN_REGIONS.items() if name != "default"))
+    return float(
+        sum(r.get("peak_load_mw", 0.0) for name, r in KNOWN_REGIONS.items() if name != "default")
+    )
 
 
 def regions_above_peak(threshold_mw: float) -> list[str]:
@@ -248,7 +274,9 @@ def regions_above_peak(threshold_mw: float) -> list[str]:
     Returns:
         Sorted list of region ids (includes every entry in :data:`KNOWN_REGIONS`).
     """
-    return sorted(name for name, r in KNOWN_REGIONS.items() if r.get("peak_load_mw", 0.0) > threshold_mw)
+    return sorted(
+        name for name, r in KNOWN_REGIONS.items() if r.get("peak_load_mw", 0.0) > threshold_mw
+    )
 
 
 def region_share_of_total(region_id: str) -> float:
@@ -291,16 +319,19 @@ def regions_by_grid_type(grid_type: str) -> list[str]:
 
 
 def region_names() -> list[str]:
-    """Return a sorted list of known region ids (excluding ``default``).
+    """Return a sorted list of all known region ids.
 
     Returns:
         Sorted list of region identifier strings.
     """
-    return sorted(name for name in KNOWN_REGIONS if name != "default")
+    return sorted(KNOWN_REGIONS.keys())
 
 
-def region_load_factor(region_id: str, load_mw: float) -> float:
+def region_load_factor(region_id: str, load_mw: float | None = None) -> float:
     """Return the fraction of *region_id*'s peak load used by *load_mw*.
+
+    When *load_mw* is omitted, returns a representative average load factor
+    of 0.65 for known regions.
 
     Args:
         region_id: Region key.
@@ -312,11 +343,14 @@ def region_load_factor(region_id: str, load_mw: float) -> float:
     Raises:
         ValueError: If ``load_mw`` is negative.
     """
-    if load_mw < 0:
-        raise ValueError(f"load_mw must be non-negative, got {load_mw}")
     region = KNOWN_REGIONS.get(region_id.lower())
     if region is None:
         return 0.0
+    if load_mw is None:
+        peak = float(region.get("peak_load_mw", 0.0))
+        return round(min(1.0, peak * 0.65 / peak), 6) if peak > 0 else 0.0
+    if load_mw < 0:
+        raise ValueError(f"load_mw must be non-negative, got {load_mw}")
     peak = float(region.get("peak_load_mw", 0.0))
     if peak <= 0:
         return 0.0
@@ -361,3 +395,19 @@ def peak_load_range_mw() -> dict[str, float]:
         return {"min": 0.0, "max": 0.0}
     loads = [float(r.get("peak_load_mw", 0.0)) for r in KNOWN_REGIONS.values()]
     return {"min": min(loads), "max": max(loads)}
+
+
+def region_ids_with_minimum_load(min_load_mw: float) -> list[str]:
+    """Return IDs of regions whose peak load meets or exceeds *min_load_mw*.
+
+    Args:
+        min_load_mw: Minimum peak load threshold in MW.
+
+    Returns:
+        Sorted list of region IDs.
+    """
+    return sorted(
+        rid
+        for rid, region in KNOWN_REGIONS.items()
+        if float(region.get("peak_load_mw", 0.0)) >= min_load_mw
+    )

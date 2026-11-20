@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import pytest
-
 from app.trend_scorer import TrendScore, rank_posts, score_post
 
 

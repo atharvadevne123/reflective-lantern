@@ -6,7 +6,7 @@ import pytest
 
 
 @pytest.fixture
-def sample_records():
+def sample_records() -> None:
     return [
         {
             "product_id": "A1",
@@ -57,7 +57,7 @@ def sample_records():
 
 
 @pytest.fixture
-def feature_matrix():
+def feature_matrix() -> None:
     return [
         [100.0, 80.0, 95.0, 1.0, 0.0],
         [50.0, 200.0, 52.0, 6.0, 1.0],
@@ -66,10 +66,10 @@ def feature_matrix():
 
 
 @pytest.fixture
-def price_series():
+def price_series() -> None:
     return [10.0, 12.0, 11.0, 13.0, 15.0, 14.0, 16.0, 18.0]
 
 
 @pytest.fixture
-def demand_series():
+def demand_series() -> None:
     return [200.0, 180.0, 190.0, 170.0, 150.0, 155.0, 140.0, 120.0]

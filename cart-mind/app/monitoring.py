@@ -142,7 +142,7 @@ def check_all_features(
     return results
 
 
-def log_prediction(  # noqa: PLR0913
+def log_prediction(
     db: Session,
     correlation_id: str,
     user_id: str,
@@ -326,3 +326,97 @@ def compute_psi(reference: list[float], current: list[float], bins: int = 10) ->
         "drift_detected": psi >= PSI_MODERATE_THRESHOLD,
         "n_bins": len(edges) - 1,
     }
+
+
+def alert_on_drift(
+    feature_results: dict[str, dict[str, Any]],
+    psi_threshold: float = PSI_MAJOR_THRESHOLD,
+) -> list[str]:
+    """Return a list of alert messages for features that have drifted.
+
+    Combines KS and PSI signals to produce actionable alerts. A feature is
+    flagged when its KS p-value is below the drift threshold **or** its PSI
+    meets the supplied severity threshold.
+
+    Args:
+        feature_results: Per-feature drift result dicts, as returned by
+            :func:`check_all_features`.
+        psi_threshold: Minimum PSI to include in alerts (default: major).
+
+    Returns:
+        List of human-readable alert strings; empty when no features are drifting.
+    """
+    alerts: list[str] = []
+    for feat, result in feature_results.items():
+        ks_flag = result.get("drift_detected", False)
+        psi = result.get("psi")
+        psi_flag = psi is not None and psi >= psi_threshold
+        if ks_flag or psi_flag:
+            parts = []
+            if ks_flag:
+                parts.append(f"KS p={result.get('p_value')}")
+            if psi_flag:
+                parts.append(f"PSI={psi} ({result.get('psi_severity', 'unknown')})")
+            alerts.append(f"Drift in '{feat}': {', '.join(parts)}")
+    if alerts:
+        logger.warning("Drift alerts: %s", alerts)
+    return alerts
+
+
+def drift_summary(feature_results: dict[str, dict[str, Any]]) -> dict[str, Any]:
+    """Summarise per-feature drift results into aggregate statistics.
+
+    Args:
+        feature_results: Per-feature result dicts, as returned by
+            :func:`check_all_features`.
+
+    Returns:
+        Dict with ``total_features``, ``drifted_features``, ``drift_rate``,
+        and ``features_with_major_psi`` counts.
+    """
+    total = len(feature_results)
+    drifted = sum(1 for r in feature_results.values() if r.get("drift_detected"))
+    major_psi = sum(1 for r in feature_results.values() if r.get("psi_severity") == "major")
+    return {
+        "total_features": total,
+        "drifted_features": drifted,
+        "drift_rate": round(drifted / total, 4) if total else 0.0,
+        "features_with_major_psi": major_psi,
+    }
+
+
+def rolling_mean(values: list[float], window: int) -> list[float]:
+    """Compute a trailing rolling mean over *values* with the given window size.
+
+    For positions where fewer than *window* values are available, the mean is
+    computed over however many values exist (expanding window at the start).
+
+    Args:
+        values: Sequence of numeric observations in time order.
+        window: Trailing window size.
+
+    Returns:
+        List of rolling means, same length as *values*.
+    """
+    if not values:
+        return []
+    result: list[float] = []
+    for i, _ in enumerate(values):
+        start = max(0, i - window + 1)
+        chunk = values[start : i + 1]
+        result.append(round(sum(chunk) / len(chunk), 6))
+    return result
+
+
+__all__ = [
+    "alert_on_drift",
+    "check_all_features",
+    "compute_drift",
+    "compute_psi",
+    "drift_summary",
+    "get_reference_window",
+    "log_prediction",
+    "reset_reference_window",
+    "rolling_mean",
+    "update_reference_window",
+]

@@ -1,171 +1,108 @@
-# Traffic-Pulse API Documentation
-
-Base URL: `http://localhost:8000`
-Interactive docs: `http://localhost:8000/docs` (Swagger UI)
-
-## Endpoints
-
-### `GET /health`
-
-Liveness probe.
-
-| Field | Type | Description |
-|---|---|---|
-| `status` | string | Always `ok` when the app is alive |
-| `model_version` | string | Semantic version of the loaded model |
-| `models_loaded` | string[] | Ensemble member names (`xgb`, `lgbm`) |
-
-### `GET /api/v1/model-info`
-
-Model metadata — version, ensemble members, the 26 feature names, and
-congestion label mapping.
-
-### `POST /api/v1/predict`
-
-Single-route congestion prediction.
-
-Required fields: `route_id`, `hour` (0-23), `day_of_week` (0-6),
-`vehicle_count` (0-10000), `avg_speed_kmh` (0-200).
-
-Optional fields: `month`, `road_type` (highway | arterial | collector |
-local | expressway), `incident_count`, `temperature_celsius`, `is_raining`,
-plus lag/rolling overrides (`lag_1h`, `lag_2h`, `lag_4h`, `rolling_mean_6h`,
-`rolling_std_6h`, `rolling_mean_24h`).
-
-Response: congestion level 0-3 with label, class probabilities, incident
-score, and model version. Every prediction is persisted for monitoring.
-
-### `POST /api/v1/predict/batch`
-
-Same schema as `/predict` but accepts a JSON array (max 100 items) and
-returns an array of predictions.
-
-### `POST /api/v1/drift`
-
-Two-sample Kolmogorov-Smirnov drift test.
-
-Request: `feature_name` (string), `reference` (>=10 floats), `current`
-(>=10 floats).
-
-Response: `ks_statistic`, `p_value`, `drift_detected` (p < 0.05). Results
-are persisted to `drift_logs` and gate the automated retraining pipeline.
-
-### `GET /api/v1/routes/{route_id}/history`
-
-Most recent logged predictions for one route segment. Query param `limit`
-(default 20, clamped to 1-200).
-
-### `GET /api/v1/metrics`
-
-Monitoring snapshot: prediction volume, congestion level distribution,
-active drift alerts, and training metrics (per-model CV AUC).
-
-### `POST /api/v1/tariff/compare`
-
-Prices an hourly load profile under flat, time-of-use, and tiered tariffs.
-
-Request: JSON array of hourly kWh. Query param `start_hour` (0-23, default 0)
-sets the clock hour of the first entry.
-
-Response: `flat_cost`, `time_of_use_cost`, `tiered_cost`, `cheapest_scheme`,
-`saving_vs_flat`, `hours_priced`.
-
-### `POST /api/v1/load-profile`
-
-Demand shape characterisation for one building.
-
-Request: JSON array of hourly kWh.
-
-Response: `base_load_kwh`, `peak_kwh`, `mean_kwh`, `load_factor`,
-`peak_to_average`, `max_ramp_kwh`, and `profile_class` (`flat`, `moderate`,
-or `peaky`).
-
-### `POST /api/v1/weather-normalize`
-
-Splits period-over-period consumption change into weather and efficiency
-components using degree days.
-
-Query params: `baseline_kwh`, `current_kwh`, `baseline_degree_days`,
-`current_degree_days`.
-
-Response: `raw_change_pct`, `normalized_change_pct`, `weather_effect_pct`,
-`normalized_current_kwh`. The latter two sum to `raw_change_pct`.
-
-### `POST /api/v1/demand-response/evaluate`
-
-Settles a demand-response event against a baseline.
-
-Request body: `baseline_hourly_kwh`, `actual_hourly_kwh` (equal lengths).
-Query param `committed_kwh`.
-
-Response: `curtailed_kwh`, `curtailment_pct`, `shortfall_kwh`, `incentive`,
-`penalty`, `net_payment`, `performance_score` (0-1).
-
-### `POST /api/v1/power-quality`
-
-Supply-side power quality report.
-
-Request: JSON array of phase voltages (at least 2). Query params
-`real_power_kw`, `reactive_power_kvar`.
-
-Response: `power_factor`, `power_factor_rating` (`good`/`acceptable`/`poor`),
-`apparent_power_kva`, `voltage_imbalance_pct`, `imbalance_within_limit`.
-
-### `GET /api/v1/power-quality/correction`
-
-Capacitor rating needed to reach a target power factor.
-
-Query params: `real_power_kw`, `current_power_factor`, `target_power_factor`
-(default 0.95). Response: `required_kvar` (0.0 when already at target).
-
-### `POST /api/v1/solar/economics`
-
-Values on-site PV against site demand, matched hour by hour.
-
-Request body: `generation_hourly_kwh`, `consumption_hourly_kwh` (equal
-lengths). Query params `import_rate` (default 0.15), `export_rate` (0.05).
-
-Response: `self_consumed_kwh`, `exported_kwh`, `imported_kwh`,
-`self_consumption_rate`, `self_sufficiency_rate`, `bill_saving`,
-`export_revenue`, `total_benefit`.
-
-### `GET /api/v1/solar/payback`
-
-Simple payback period for a PV system.
-
-Query params: `system_cost`, `annual_benefit`, `annual_degradation`
-(default 0.005). Response: `payback_years` (`null` when never repaid) and
-`repays_within_lifetime`.
-
-### `POST /api/v1/battery/peak-shave`
-
-Simulates battery dispatch against an hourly load and values the reduction.
-
-Request: JSON array of hourly kW. Query params `capacity_kwh`,
-`max_charge_kw`, `max_discharge_kw`, `target_peak_kw`, and
-`demand_charge_per_kw` (default 15.0).
-
-Response: `peak_before_kw`, `peak_after_kw`, `peak_reduction_kw`,
-`peak_reduction_pct`, `target_met`, `energy_discharged_kwh`,
-`energy_charged_kwh`, `equivalent_cycles`, `demand_charge_saving`.
-
-`target_met` is false when a power or capacity limit stopped the battery
-from defending the target.
-
-### `POST /api/v1/battery/sizing`
-
-Usable capacity needed to hold load under a target, sized for the largest
-single excursion.
-
-Request: JSON array of hourly kW. Query param `target_peak_kw`.
-Response: `required_usable_kwh`, `peak_load_kw`.
-
-## Headers
-
-Every response carries:
-
-- `X-Correlation-ID` — echoed from the request or generated server-side.
-- `X-Response-Time-Ms` — server-side processing time.
-
-Rate limiting: 120 requests/minute per client IP (HTTP 429 beyond that,
-with a `Retry-After: 60` header).
+# API Reference
+
+Base URL: `http://localhost:8000`  ·  All endpoints are under `/api/v1`.
+
+Interactive documentation is served at `/docs` (Swagger) and `/redoc`.
+
+## Common headers
+
+Every response includes:
+
+| Header | Meaning |
+|---|---|
+| `X-Request-ID` | Correlation id; echoed from the request if supplied |
+| `X-Response-Time-Ms` | Server-side handling time |
+| `X-RateLimit-Limit` | Requests allowed per rolling minute |
+| `X-RateLimit-Remaining` | Requests left in the current window |
+
+## POST /api/v1/predict
+
+Predicts delivery duration for one shipment.
+
+```bash
+curl -X POST http://localhost:8000/api/v1/predict \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "carrier": "DHL",
+    "distance_km": 42.5,
+    "weight_kg": 3.2,
+    "route_type": "urban",
+    "hour_of_day": 14,
+    "day_of_week": 2
+  }'
+```
+
+```json
+{
+  "predicted_minutes": 87.34,
+  "predicted_hours": 1.456,
+  "confidence": 0.9127,
+  "model_version": "1.0.0",
+  "request_id": "a3f9c1e2"
+}
+```
+
+`confidence` is derived from the standard deviation across the ensemble's
+sub-estimators, normalised against the prediction magnitude. Values near 1.0
+mean XGBoost, LightGBM, and RandomForest closely agree.
+
+### Errors
+
+| Status | Cause |
+|---|---|
+| `422` | Unknown carrier or route type, or a numeric out of range |
+| `429` | Rate limit exceeded; see `Retry-After` |
+| `503` | Model not loaded yet |
+
+## POST /api/v1/predict/batch
+
+Scores 1-100 shipments in one round trip.
+
+```json
+{ "shipments": [ { "carrier": "DHL", "distance_km": 42.5, "weight_kg": 3.2,
+                   "route_type": "urban", "hour_of_day": 14, "day_of_week": 2 } ] }
+```
+
+Returns `{ "predictions": [...], "count": 1 }`. Each element has the same
+shape as a single `/predict` response. An invalid member rejects the whole
+batch with `422`.
+
+## GET /api/v1/health
+
+```json
+{ "status": "healthy", "model_version": "1.0.0", "model_loaded": true }
+```
+
+Returns `degraded` when the model failed to load. Suitable as a Kubernetes
+readiness probe.
+
+## GET /api/v1/metrics
+
+Last computed 5-fold cross-validation metrics.
+
+```json
+{
+  "rmse_mean": 30.1,
+  "r2_mean": 0.995,
+  "n_features": 13,
+  "n_samples": 2000,
+  "model_version": "1.0.0"
+}
+```
+
+## GET /api/v1/drift
+
+Runs a two-sample Kolmogorov–Smirnov test comparing the most recent
+predictions against the reference window, per feature.
+
+```json
+{
+  "status": "ok",
+  "features": {
+    "distance_km": { "ks_statistic": 0.081, "p_value": 0.412, "drift_detected": false },
+    "weight_kg": { "ks_statistic": 0.203, "p_value": 0.008, "drift_detected": true }
+  }
+}
+```
+
+Drift is flagged at `p < 0.05` and written to the `drift_logs` table.

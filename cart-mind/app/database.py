@@ -9,6 +9,7 @@ loop instead of a synthetic one.
 
 import logging
 import os
+from collections.abc import Generator
 from datetime import UTC, datetime
 
 from sqlalchemy import (
@@ -121,7 +122,7 @@ def init_db() -> None:
     logger.info("Database tables initialised")
 
 
-def get_db():
+def get_db() -> Generator[Session, None, None]:
     """Yield a request-scoped database session, closing it on completion.
 
     Yields:
@@ -132,3 +133,11 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
+__all__ = [
+    "Base",
+    "SessionLocal",
+    "engine",
+    "get_db",
+]

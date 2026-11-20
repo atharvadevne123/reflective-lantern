@@ -1,5 +1,4 @@
 """Standalone training and evaluation script for Ticket-Scout."""
-
 from __future__ import annotations
 
 import argparse
@@ -20,7 +19,6 @@ def main() -> int:
     args = parser.parse_args()
 
     import os
-
     os.environ["MODEL_DIR"] = args.model_dir
 
     from app.model import generate_synthetic_data, train_models

@@ -4,7 +4,12 @@ from __future__ import annotations
 
 import pytest
 
-from app.reporting import estimate_savings, peak_demand_report, rolling_savings_summary, top_consumption_hours
+from app.reporting import (
+    estimate_savings,
+    peak_demand_report,
+    rolling_savings_summary,
+    top_consumption_hours,
+)
 
 
 def test_savings_positive() -> None:
@@ -521,7 +526,9 @@ def test_daily_average_consumption_empty_result() -> None:
         (100.0, 130.0, "D"),
     ],
 )
-def test_energy_efficiency_grade_simple_cases(baseline: float, actual: float, expected_grade: str) -> None:
+def test_energy_efficiency_grade_simple_cases(
+    baseline: float, actual: float, expected_grade: str
+) -> None:
     from app.reporting import energy_efficiency_grade
 
     grade = energy_efficiency_grade(actual, baseline)
@@ -1017,10 +1024,7 @@ class TestSavingsSummary:
         assert result["reduction_pct"] == 0.0
 
 
-import pytest as _pytest
-
-
-@_pytest.mark.parametrize(
+@pytest.mark.parametrize(
     "before,after,expected_grade",
     [
         (100.0, 50.0, "A+"),
@@ -1028,13 +1032,15 @@ import pytest as _pytest
         (100.0, 100.0, "B"),
     ],
 )
-def test_energy_efficiency_grade_boundary_values(before: float, after: float, expected_grade: str) -> None:
+def test_energy_efficiency_grade_boundary_values(
+    before: float, after: float, expected_grade: str
+) -> None:
     from app.reporting import energy_efficiency_grade
 
     assert energy_efficiency_grade(after, before) == expected_grade
 
 
-@_pytest.mark.parametrize("hourly_count", [24, 48, 168])
+@pytest.mark.parametrize("hourly_count", [24, 48, 168])
 def test_aggregate_daily_report_length(hourly_count: int) -> None:
     from app.reporting import aggregate_daily_report
 
@@ -1043,11 +1049,11 @@ def test_aggregate_daily_report_length(hourly_count: int) -> None:
     assert len(result) == hourly_count // 24
 
 
-@_pytest.mark.parametrize("tariff", [0.05, 0.10, 0.15, 0.20])
+@pytest.mark.parametrize("tariff", [0.05, 0.10, 0.15, 0.20])
 def test_tariff_cost_scales_linearly(tariff: float) -> None:
     from app.reporting import tariff_cost
 
-    assert tariff_cost(100.0, tariff) == _pytest.approx(100.0 * tariff, abs=1e-6)
+    assert tariff_cost(100.0, tariff) == pytest.approx(100.0 * tariff, abs=1e-6)
 
 
 def test_report_anomaly_summary_all_normal() -> None:
@@ -1055,7 +1061,7 @@ def test_report_anomaly_summary_all_normal() -> None:
 
     result = report_anomaly_summary([False] * 10)
     assert result["anomaly_count"] == 0
-    assert result["anomaly_rate"] == _pytest.approx(0.0)
+    assert result["anomaly_rate"] == pytest.approx(0.0)
 
 
 def test_report_anomaly_summary_all_anomalous() -> None:
@@ -1063,10 +1069,10 @@ def test_report_anomaly_summary_all_anomalous() -> None:
 
     result = report_anomaly_summary([True] * 5)
     assert result["anomaly_count"] == 5
-    assert result["anomaly_rate"] == _pytest.approx(1.0)
+    assert result["anomaly_rate"] == pytest.approx(1.0)
 
 
-@_pytest.mark.parametrize("n", [24, 48, 96])
+@pytest.mark.parametrize("n", [24, 48, 96])
 def test_peak_usage_window_output_keys(n: int) -> None:
     from app.reporting import peak_usage_window
 
@@ -1076,7 +1082,7 @@ def test_peak_usage_window_output_keys(n: int) -> None:
     assert "total_kwh" in result
 
 
-@_pytest.mark.parametrize("kwh,intensity", [(100.0, 0.3), (500.0, 0.4), (1000.0, 0.5)])
+@pytest.mark.parametrize("kwh,intensity", [(100.0, 0.3), (500.0, 0.4), (1000.0, 0.5)])
 def test_emission_report_positive_total(kwh: float, intensity: float) -> None:
     from app.reporting import emission_report
 
@@ -1085,7 +1091,7 @@ def test_emission_report_positive_total(kwh: float, intensity: float) -> None:
     assert result["total_co2_kg"] > 0.0
 
 
-@_pytest.mark.parametrize("n_hours", [24, 48])
+@pytest.mark.parametrize("n_hours", [24, 48])
 def test_demand_variance_report_has_keys(n_hours: int) -> None:
     from app.reporting import demand_variance_report
 
@@ -1093,3 +1099,104 @@ def test_demand_variance_report_has_keys(n_hours: int) -> None:
     result = demand_variance_report(readings)
     assert "mean" in result
     assert "variance" in result
+
+
+@pytest.mark.parametrize("n", [1, 5, 10, 24])
+def test_top_consumption_hours_count(n: int) -> None:
+    """top_consumption_hours returns at most n hours."""
+    hourly = [float(i) for i in range(24)]
+    result = top_consumption_hours(hourly, top_n=n)
+    assert len(result) <= n
+
+
+@pytest.mark.parametrize("savings_pct", [10.0, 25.0, 50.0])
+def test_estimate_savings_pct_field(savings_pct: float) -> None:
+    """estimate_savings.savings_pct equals expected reduction percentage."""
+    factor = 1 - savings_pct / 100.0
+    baseline = [10.0] * 10
+    optimised = [10.0 * factor] * 10
+    result = estimate_savings(optimised, baseline)
+    assert result["savings_pct"] == pytest.approx(savings_pct, rel=1e-3)
+
+
+class TestRollingSavingsSummaryEdgeCases:
+    def test_equal_series_has_zero_savings(self) -> None:
+        series = [5.0] * 12
+        result = rolling_savings_summary(series, series, window=4)
+        assert all(s["saved_kwh"] == pytest.approx(0.0) for s in result)
+
+    def test_output_length_matches_input(self) -> None:
+        baseline = [10.0] * 20
+        optimised = [8.0] * 20
+        window = 5
+        result = rolling_savings_summary(optimised, baseline, window=window)
+        assert len(result) == len(baseline) - window + 1
+
+
+class TestDailyAverageConsumption:
+    def test_simple_average(self) -> None:
+        from app.reporting import daily_average_consumption
+
+        result = daily_average_consumption([10.0, 20.0, 30.0])
+        assert result == pytest.approx(20.0)
+
+    def test_single_day(self) -> None:
+        from app.reporting import daily_average_consumption
+
+        result = daily_average_consumption([42.0])
+        assert result == pytest.approx(42.0)
+
+    @pytest.mark.parametrize("n", [1, 7, 30])
+    def test_uniform_returns_same(self, n: int) -> None:
+        from app.reporting import daily_average_consumption
+
+        result = daily_average_consumption([5.0] * n)
+        assert result == pytest.approx(5.0)
+
+
+class TestKwhConversions:
+    def test_kwh_to_wh(self) -> None:
+        from app.reporting import kwh_to_wh
+
+        assert kwh_to_wh(1.0) == pytest.approx(1000.0)
+
+    def test_wh_to_kwh(self) -> None:
+        from app.reporting import wh_to_kwh
+
+        assert wh_to_kwh(1000.0) == pytest.approx(1.0)
+
+    @pytest.mark.parametrize("kwh", [0.5, 1.0, 10.0])
+    def test_roundtrip(self, kwh: float) -> None:
+        from app.reporting import kwh_to_wh, wh_to_kwh
+
+        assert wh_to_kwh(kwh_to_wh(kwh)) == pytest.approx(kwh)
+
+
+class TestConsumptionDelta:
+    def test_positive_increase(self) -> None:
+        from app.reporting import consumption_delta
+
+        assert consumption_delta(100.0, 150.0) == pytest.approx(50.0)
+
+    def test_negative_decrease(self) -> None:
+        from app.reporting import consumption_delta
+
+        assert consumption_delta(150.0, 100.0) == pytest.approx(-50.0)
+
+    def test_no_change_returns_zero(self) -> None:
+        from app.reporting import consumption_delta
+
+        assert consumption_delta(100.0, 100.0) == pytest.approx(0.0)
+
+    @pytest.mark.parametrize(
+        "before,after,expected",
+        [
+            (0.0, 100.0, 100.0),
+            (200.0, 100.0, -100.0),
+            (50.0, 75.0, 25.0),
+        ],
+    )
+    def test_parametrized_delta(self, before: float, after: float, expected: float) -> None:
+        from app.reporting import consumption_delta
+
+        assert consumption_delta(before, after) == pytest.approx(expected)

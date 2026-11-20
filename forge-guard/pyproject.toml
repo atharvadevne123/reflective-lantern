@@ -57,6 +57,7 @@ known-first-party = ["app", "pipelines"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+addopts = "-v --tb=short"
 filterwarnings = ["ignore::DeprecationWarning"]
 
 [tool.mypy]
@@ -66,6 +67,8 @@ strict = false
 warn_return_any = true
 warn_unused_ignores = true
 disallow_untyped_defs = true
+strict_equality = true
+no_implicit_optional = true
 
 [tool.setuptools.packages.find]
 where = ["."]

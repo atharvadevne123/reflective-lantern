@@ -1,93 +1,78 @@
-"""Centralised application settings read from environment variables.
-
-All runtime configuration flows through :class:`Settings` so that the API,
-the retraining pipeline, and the tests share a single source of truth.
-"""
+"""Centralised application settings loaded from the environment."""
 
 from __future__ import annotations
 
+import functools
 import os
 from dataclasses import dataclass, field
 
 
 @dataclass(frozen=True)
 class Settings:
-    """Immutable application settings resolved at import time.
+    """Runtime configuration resolved from environment variables."""
 
-    Attributes:
-        database_url: SQLAlchemy connection string (SQLite dev, PostgreSQL prod).
-        model_path: Filesystem path of the persisted ensemble.
-        metrics_path: Filesystem path of the training metrics JSON.
-        log_level: Root logging level name.
-        rate_limit_per_minute: Maximum requests per client per minute.
-        db_pool_size: Number of persistent database connections in the pool.
-        db_max_overflow: Extra connections allowed beyond pool_size.
-        db_pool_recycle: Seconds before a connection is recycled to avoid timeouts.
-        cors_origins: Comma-separated list of allowed CORS origins.
-    """
-
-    database_url: str = field(default_factory=lambda: os.getenv("DATABASE_URL", "sqlite:///./watt_guard.db"))
+    database_url: str = field(
+        default_factory=lambda: os.getenv("DATABASE_URL", "sqlite:///./logistics_flow.db")
+    )
     model_path: str = field(default_factory=lambda: os.getenv("MODEL_PATH", "model.joblib"))
+    feature_pipeline_path: str = field(
+        default_factory=lambda: os.getenv("FEATURE_PIPELINE_PATH", "feature_pipeline.joblib")
+    )
     metrics_path: str = field(default_factory=lambda: os.getenv("METRICS_PATH", "metrics.json"))
     log_level: str = field(default_factory=lambda: os.getenv("LOG_LEVEL", "INFO"))
-    rate_limit_per_minute: int = field(default_factory=lambda: int(os.getenv("RATE_LIMIT_PER_MINUTE", "120")))
-    db_pool_size: int = field(default_factory=lambda: int(os.getenv("DB_POOL_SIZE", "5")))
-    db_max_overflow: int = field(default_factory=lambda: int(os.getenv("DB_MAX_OVERFLOW", "10")))
-    db_pool_recycle: int = field(default_factory=lambda: int(os.getenv("DB_POOL_RECYCLE", "1800")))
-    cors_origins: str = field(default_factory=lambda: os.getenv("CORS_ORIGINS", "*"))
+    model_version: str = field(default_factory=lambda: os.getenv("MODEL_VERSION", "1.0.0"))
+    rate_limit_per_minute: int = field(
+        default_factory=lambda: int(os.getenv("RATE_LIMIT_PER_MINUTE", "120"))
+    )
+    drift_window: int = field(default_factory=lambda: int(os.getenv("DRIFT_WINDOW", "100")))
+    secret_key: str = field(
+        default_factory=lambda: os.getenv("SECRET_KEY", "change-me-in-production")
+    )
+    max_workers: int = field(default_factory=lambda: int(os.getenv("MAX_WORKERS", "4")))
+    request_timeout_s: int = field(
+        default_factory=lambda: int(os.getenv("REQUEST_TIMEOUT_S", "30"))
+    )
+    rate_limit_requests: int = field(
+        default_factory=lambda: int(os.getenv("RATE_LIMIT_REQUESTS", "100"))
+    )
+    rate_limit_window_s: int = field(
+        default_factory=lambda: int(os.getenv("RATE_LIMIT_WINDOW_S", "60"))
+    )
+    drift_ks_threshold: float = field(
+        default_factory=lambda: float(os.getenv("DRIFT_KS_THRESHOLD", "0.05"))
+    )
+    reference_buffer_size: int = field(
+        default_factory=lambda: int(os.getenv("REFERENCE_BUFFER_SIZE", "500"))
+    )
+
+    @property
+    def is_postgres(self) -> bool:
+        """True when the configured database is PostgreSQL."""
+        return self.database_url.startswith("postgresql")
+
+    @property
+    def is_debug(self) -> bool:
+        """True when LOG_LEVEL is set to DEBUG."""
+        return self.log_level.upper() == "DEBUG"
+
+    @property
+    def cors_origins_list(self) -> list[str]:
+        """Return CORS origins as a list split on commas."""
+        return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
 
 
-settings = Settings()
-
-__all__ = [
-    "Settings",
-    "cors_origins_list",
-    "effective_log_level",
-    "get_settings",
-    "is_production",
-    "settings",
-]
-
-
+@functools.lru_cache(maxsize=1)
 def get_settings() -> Settings:
-    """Return the module-level :class:`Settings` singleton.
+    """Return a cached Settings instance resolved from environment variables.
+
+    The result is cached after the first call so that repeated calls do not
+    re-read environment variables.  Call ``get_settings.cache_clear()`` in
+    tests to reset between test cases.
 
     Returns:
-        The application-wide Settings instance.
+        The singleton :class:`Settings` instance for this process.
     """
-    return settings
+    return Settings()
 
 
-def is_production() -> bool:
-    """Return True when DATABASE_URL points to a non-SQLite database.
-
-    Useful for guarding prod-only code paths such as Prometheus export
-    or strict rate-limiting.
-
-    Returns:
-        True when the database URL does not start with 'sqlite'.
-    """
-    return not settings.database_url.startswith("sqlite")
-
-
-def effective_log_level() -> str:
-    """Return the configured log level in upper-case form.
-
-    Returns:
-        Log level string such as 'INFO', 'DEBUG', 'WARNING'.
-    """
-    return settings.log_level.upper()
-
-
-def cors_origins_list() -> list[str]:
-    """Return the CORS origins config as a list of stripped strings.
-
-    Splits :attr:`Settings.cors_origins` on commas and drops empty entries.
-
-    Returns:
-        List of origin strings; ``["*"]`` when the config is exactly ``"*"``.
-    """
-    raw = settings.cors_origins.strip()
-    if raw == "*":
-        return ["*"]
-    return [origin.strip() for origin in raw.split(",") if origin.strip()]
+__all__ = ["Settings", "get_settings"]

@@ -34,7 +34,6 @@ class TestJsonFormatterExtended:
             raise ValueError("test error")
         except ValueError:
             import sys
-
             exc_info = sys.exc_info()
         record = logging.LogRecord("l", logging.ERROR, "", 0, "err", (), exc_info)
         data = json.loads(formatter.format(record))

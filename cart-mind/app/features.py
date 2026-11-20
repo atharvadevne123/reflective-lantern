@@ -54,9 +54,11 @@ class RatioFeatures(BaseEstimator, TransformerMixin):
     """
 
     def fit(self, X: pd.DataFrame, y: Any = None) -> RatioFeatures:
+        """No fitting required; returns self."""
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Add cross-column ratio features to X."""
         X = X.copy()
         eps = 1e-6
         X["price_per_rating"] = X["item_price"] / (X["item_avg_rating"] + eps)
@@ -75,9 +77,11 @@ class InteractionFeatures(BaseEstimator, TransformerMixin):
     """
 
     def fit(self, X: pd.DataFrame, y: Any = None) -> InteractionFeatures:
+        """No fitting required; returns self."""
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Add affinity, recency-decay, and price-sensitivity features to X."""
         X = X.copy()
         X["affinity_score"] = (
             X["same_category_purchases"] * 2.0 + X["wishlist_flag"] * 3.0 + X["click_count"] * 0.5
@@ -99,11 +103,13 @@ class LagRollingFeatures(BaseEstimator, TransformerMixin):
     """
 
     def fit(self, X: pd.DataFrame, y: Any = None) -> LagRollingFeatures:
+        """Learn per-column means from training data for normalisation."""
         self.session_mean_ = float(X["session_count_7d"].mean())
         self.order_mean_ = float(X["avg_order_value"].mean())
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Apply learned means to produce normalised velocity features."""
         X = X.copy()
         X["session_norm"] = X["session_count_7d"] / (self.session_mean_ + 1e-6)
         X["order_value_norm"] = X["avg_order_value"] / (self.order_mean_ + 1e-6)
@@ -125,9 +131,11 @@ class DiscountEncoder(BaseEstimator, TransformerMixin):
     DISCOUNT_LABELS = [0, 1, 2, 3, 4]
 
     def fit(self, X: pd.DataFrame, y: Any = None) -> DiscountEncoder:
+        """No fitting required; returns self."""
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Bucket discount percentage and add inventory pressure flag."""
         X = X.copy()
         X["discount_bucket"] = pd.cut(
             X["item_discount_pct"],
@@ -240,6 +248,7 @@ def make_purchase_labels(df: pd.DataFrame, seed: int = 42, noise: float = 0.35) 
     rng = np.random.default_rng(seed)
 
     def _z(col: str) -> np.ndarray:
+        """Return the z-score of *col* in *df*, epsilon-guarded against zero std."""
         v = df[col].to_numpy(dtype=float)
         return (v - v.mean()) / (v.std() + 1e-6)
 
@@ -296,3 +305,92 @@ def drop_low_variance_features(df: pd.DataFrame, threshold: float = 0.01) -> pd.
     if low_var:
         logger.debug("drop_low_variance_features: dropping %d columns: %s", len(low_var), low_var)
     return df.drop(columns=low_var)
+
+
+def summarise_feature_stats(df: pd.DataFrame) -> pd.DataFrame:
+    """Return a descriptive stats table for numeric columns in *df*.
+
+    Supplements ``pd.DataFrame.describe`` with skewness and the fraction of
+    zeros, which together flag features likely to need transformation or
+    special handling before model training.
+
+    Args:
+        df: Feature frame to summarise.
+
+    Returns:
+        DataFrame indexed by column name with ``mean``, ``std``, ``min``,
+        ``max``, ``skew``, and ``zero_frac`` columns.
+    """
+    numeric = df.select_dtypes(include="number")
+    if numeric.empty:
+        return pd.DataFrame()
+    rows = {}
+    for col in numeric.columns:
+        s = numeric[col]
+        rows[col] = {
+            "mean": round(float(s.mean()), 4),
+            "std": round(float(s.std()), 4),
+            "min": round(float(s.min()), 4),
+            "max": round(float(s.max()), 4),
+            "skew": round(float(s.skew()), 4),
+            "zero_frac": round(float((s == 0).mean()), 4),
+        }
+    return pd.DataFrame(rows).T
+
+
+def feature_importance_report(feature_names: list[str], importances: list[float]) -> pd.DataFrame:
+    """Return a tidy importance table sorted by descending importance.
+
+    Args:
+        feature_names: Names of the features in the same order as *importances*.
+        importances: Importance scores (e.g. from ``feature_importances_``).
+
+    Returns:
+        DataFrame with ``feature`` and ``importance`` columns, sorted descending.
+    """
+    if len(feature_names) != len(importances):
+        raise ValueError("feature_names and importances must have the same length")
+    df = pd.DataFrame({"feature": feature_names, "importance": importances})
+    return df.sort_values("importance", ascending=False).reset_index(drop=True)
+
+
+def clip_outlier_features(df: pd.DataFrame, z_threshold: float = 4.0) -> pd.DataFrame:
+    """Return a copy of *df* with extreme numeric values clamped to z-score bounds.
+
+    Values beyond *z_threshold* standard deviations from the column mean are
+    clipped to the nearest boundary. This is applied before feature engineering
+    to prevent a single pathological request from dominating normalised features.
+
+    Args:
+        df: Input feature frame.
+        z_threshold: Number of standard deviations beyond which a value is clipped.
+
+    Returns:
+        Clipped DataFrame (copy).
+    """
+    out = df.copy()
+    for col in out.select_dtypes(include="number").columns:
+        mean = out[col].mean()
+        std = out[col].std()
+        if std > 0:
+            lo = mean - z_threshold * std
+            hi = mean + z_threshold * std
+            out[col] = out[col].clip(lower=lo, upper=hi)
+    return out
+
+
+__all__ = [
+    "DiscountEncoder",
+    "InteractionFeatures",
+    "LagRollingFeatures",
+    "RatioFeatures",
+    "build_feature_pipeline",
+    "clip_outlier_features",
+    "drop_low_variance_features",
+    "feature_correlation_matrix",
+    "feature_importance_report",
+    "get_feature_names",
+    "make_purchase_labels",
+    "make_sample_dataframe",
+    "summarise_feature_stats",
+]

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
-
 from app.forecaster import (
     fit_channel_forecaster,
     forecast_with_confidence,

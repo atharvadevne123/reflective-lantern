@@ -32,6 +32,12 @@ class RetrievalCache:
     """LRU cache with per-entry TTL and hit/miss accounting."""
 
     def __init__(self, max_size: int = 2048, ttl_seconds: float = 300.0) -> None:
+        """Initialise the LRU-TTL cache with capacity and entry lifetime.
+
+        Args:
+            max_size: Maximum number of entries before LRU eviction.
+            ttl_seconds: Entry lifetime in seconds from insertion time.
+        """
         self.max_size = max_size
         self.ttl_seconds = ttl_seconds
         self._store: OrderedDict[str, tuple[float, Any]] = OrderedDict()
@@ -67,6 +73,42 @@ class RetrievalCache:
         never reflect superseded document versions)."""
         self._store.clear()
 
+    def warm(self, queries: list[tuple[str, Any]]) -> int:
+        """Pre-populate the cache with (query, value) pairs.
+
+        Useful after a service restart to restore a hot cache from a
+        persisted snapshot or from a list of frequent queries.
+
+        Args:
+            queries: Iterable of (query_text, cached_value) pairs.
+
+        Returns:
+            Number of entries successfully inserted.
+        """
+        inserted = 0
+        for query, value in queries:
+            self.put(query, value)
+            inserted += 1
+        return inserted
+
+    def evict_expired(self) -> int:
+        """Remove all expired entries and return the count evicted.
+
+        The cache evicts on access, but calling this periodically keeps
+        memory usage from creeping up on read-light workloads.
+        """
+        import time
+
+        now = time.monotonic()
+        expired_keys = [
+            key
+            for key, (stored_at, _) in list(self._store.items())
+            if now - stored_at > self.ttl_seconds
+        ]
+        for key in expired_keys:
+            self._store.pop(key, None)
+        return len(expired_keys)
+
     def stats(self) -> dict[str, float | int]:
         """Hit/miss counters and current size for the /metrics endpoint."""
         total = self.hits + self.misses
@@ -78,6 +120,7 @@ class RetrievalCache:
         }
 
     def __len__(self) -> int:
+        """Return the number of currently cached entries."""
         return len(self._store)
 
 
@@ -107,3 +150,24 @@ def top_cached_queries(cache: RetrievalCache, n: int = 5) -> list[str]:
     """
     keys = list(cache._store.keys())
     return list(reversed(keys[-n:]))
+
+
+def cache_age_seconds(cache: RetrievalCache, query: str) -> float | None:
+    """Return how many seconds ago the query was cached, or None if not cached.
+
+    Args:
+        cache: The cache to inspect.
+        query: The query string to look up.
+
+    Returns:
+        Age in seconds since the entry was stored, or None if absent/expired.
+    """
+    key = cache_key(query)
+    entry = cache._store.get(key)
+    if entry is None:
+        return None
+    stored_at, _ = entry
+    age = time.monotonic() - stored_at
+    if age > cache.ttl_seconds:
+        return None
+    return round(age, 4)

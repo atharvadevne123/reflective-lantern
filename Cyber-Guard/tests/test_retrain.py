@@ -15,19 +15,19 @@ from pipelines import retrain_dag
 
 
 @pytest.fixture
-def in_tmp_cwd(tmp_path, monkeypatch):
+def in_tmp_cwd(tmp_path, monkeypatch) -> None:
     """Run inside a temp directory so retrain_metrics.json is isolated."""
     monkeypatch.chdir(tmp_path)
     return tmp_path
 
 
-def test_evaluate_passes_above_floor(in_tmp_cwd, monkeypatch):
+def test_evaluate_passes_above_floor(in_tmp_cwd, monkeypatch) -> None:
     monkeypatch.setenv("RETRAIN_ACCURACY_FLOOR", "0.70")
     (in_tmp_cwd / "retrain_metrics.json").write_text(json.dumps({"accuracy_mean": 0.95}))
     retrain_dag._evaluate_model()  # must not raise
 
 
-def test_evaluate_rejects_below_floor(in_tmp_cwd, monkeypatch):
+def test_evaluate_rejects_below_floor(in_tmp_cwd, monkeypatch) -> None:
     """A degraded model must abort the DAG rather than be promoted."""
     monkeypatch.setenv("RETRAIN_ACCURACY_FLOOR", "0.70")
     (in_tmp_cwd / "retrain_metrics.json").write_text(json.dumps({"accuracy_mean": 0.42}))
@@ -35,7 +35,7 @@ def test_evaluate_rejects_below_floor(in_tmp_cwd, monkeypatch):
         retrain_dag._evaluate_model()
 
 
-def test_evaluate_respects_configured_floor(in_tmp_cwd, monkeypatch):
+def test_evaluate_respects_configured_floor(in_tmp_cwd, monkeypatch) -> None:
     """The floor is configurable, not hard-coded at 0.70."""
     monkeypatch.setenv("RETRAIN_ACCURACY_FLOOR", "0.99")
     (in_tmp_cwd / "retrain_metrics.json").write_text(json.dumps({"accuracy_mean": 0.95}))
@@ -43,12 +43,12 @@ def test_evaluate_respects_configured_floor(in_tmp_cwd, monkeypatch):
         retrain_dag._evaluate_model()
 
 
-def test_evaluate_raises_when_metrics_missing(in_tmp_cwd):
+def test_evaluate_raises_when_metrics_missing(in_tmp_cwd) -> None:
     with pytest.raises(FileNotFoundError):
         retrain_dag._evaluate_model()
 
 
-def test_evaluate_treats_absent_accuracy_as_zero(in_tmp_cwd, monkeypatch):
+def test_evaluate_treats_absent_accuracy_as_zero(in_tmp_cwd, monkeypatch) -> None:
     """A metrics file without accuracy must fail closed, not pass."""
     monkeypatch.setenv("RETRAIN_ACCURACY_FLOOR", "0.70")
     (in_tmp_cwd / "retrain_metrics.json").write_text(json.dumps({}))
@@ -56,7 +56,7 @@ def test_evaluate_treats_absent_accuracy_as_zero(in_tmp_cwd, monkeypatch):
         retrain_dag._evaluate_model()
 
 
-def test_full_pipeline_runs(in_tmp_cwd, monkeypatch):
+def test_full_pipeline_runs(in_tmp_cwd, monkeypatch) -> None:
     """The non-Airflow entry point must complete end to end."""
     monkeypatch.setenv("DATABASE_URL", f"sqlite:///{in_tmp_cwd}/rt.db")
     monkeypatch.setenv("MODEL_PATH", str(in_tmp_cwd / "m.joblib"))

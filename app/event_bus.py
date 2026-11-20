@@ -1,4 +1,26 @@
-"""Lightweight synchronous event bus for decoupled internal messaging."""
+"""Lightweight synchronous event bus for decoupled internal messaging.
+
+Provides a simple publish/subscribe mechanism for in-process communication
+without introducing external message-broker dependencies.
+
+Key features:
+
+- **Named events** — subscribe to specific event strings.
+- **Wildcard subscriptions** — use ``"*"`` to receive every published event.
+- **Error isolation** — a handler exception is logged but does not prevent
+  subsequent handlers from running.
+- **Process-global default bus** — :func:`get_bus` returns a singleton
+  :class:`EventBus`; :func:`reset_bus` replaces it with a fresh instance
+  (useful in test teardown).
+
+Example::
+
+    from app.event_bus import get_bus
+
+    bus = get_bus()
+    bus.subscribe("order.shipped", lambda e, p: print(f"Shipped: {p}"))
+    bus.publish("order.shipped", {"order_id": "ORD-001"})
+"""
 
 from __future__ import annotations
 
@@ -20,6 +42,7 @@ class EventBus:
     """
 
     def __init__(self) -> None:
+        """Initialise with empty handler registries."""
         self._handlers: dict[str, list[Handler]] = defaultdict(list)
         self._wildcard_handlers: list[Handler] = []
 
@@ -104,6 +127,22 @@ class EventBus:
         """
         return len(self._handlers.get(event, []))
 
+    def event_names(self) -> list[str]:
+        """Return sorted list of event names that have at least one handler."""
+        return sorted(k for k, v in self._handlers.items() if v)
+
+    def total_listeners(self) -> int:
+        """Return the total number of specific and wildcard handlers registered."""
+        return sum(len(v) for v in self._handlers.values()) + len(self._wildcard_handlers)
+
+    def has_listeners(self, event: str) -> bool:
+        """Return True if any handlers are registered for *event*."""
+        return bool(self._handlers.get(event)) or bool(self._wildcard_handlers)
+
+    def __len__(self) -> int:
+        """Return the total number of registered handlers (specific + wildcard)."""
+        return self.total_listeners()
+
 
 _default_bus: EventBus = EventBus()
 
@@ -113,4 +152,13 @@ def get_bus() -> EventBus:
     return _default_bus
 
 
-__all__ = ["EventBus", "Handler", "get_bus"]
+def reset_bus() -> None:
+    """Reset the process-wide default bus, clearing all subscriptions.
+
+    Useful in test teardown to prevent handler state from leaking between tests.
+    """
+    global _default_bus
+    _default_bus = EventBus()
+
+
+__all__ = ["EventBus", "Handler", "get_bus", "reset_bus"]

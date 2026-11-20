@@ -1,5 +1,4 @@
 """Thread-safe TTL/LRU prediction cache for Sport-Cast."""
-
 from __future__ import annotations
 
 import hashlib

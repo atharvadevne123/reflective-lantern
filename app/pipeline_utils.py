@@ -56,7 +56,9 @@ def describe_pipeline(pipeline: Any) -> dict[str, Any]:
                 {
                     "name": name,
                     "class": type(estimator).__name__,
-                    "n_params": len(estimator.get_params()) if hasattr(estimator, "get_params") else 0,
+                    "n_params": len(estimator.get_params())
+                    if hasattr(estimator, "get_params")
+                    else 0,
                 }
             )
         return {
@@ -126,6 +128,7 @@ __all__ = [
     "bundle_pipeline_info",
     "clone_params",
     "count_fitted_steps",
+    "count_pipeline_params",
     "count_pipeline_steps",
     "describe_pipeline",
     "extract_step_classes",
@@ -134,11 +137,19 @@ __all__ = [
     "get_step_names",
     "has_step",
     "is_fitted",
+    "is_pipeline_fitted",
     "last_step",
+    "pipeline_estimator_classes",
+    "pipeline_feature_count",
     "pipeline_has_preprocessor",
     "pipeline_input_features",
     "pipeline_memory_usage_kb",
     "pipeline_param_count",
+    "pipeline_step_after",
+    "pipeline_step_at",
+    "pipeline_step_before",
+    "pipeline_step_index",
+    "pipeline_step_name_at",
     "pipeline_step_types",
     "step_is_fitted",
     "step_names_to_set",
@@ -407,9 +418,18 @@ def is_pipeline_fitted(pipeline: Any) -> bool:
     Returns:
         True if fitted, False otherwise.
     """
-    fitted_attrs = ("classes_", "n_features_in_", "feature_importances_", "coef_", "numeric_cols_")
+    fitted_attrs = (
+        "classes_",
+        "n_features_in_",
+        "feature_importances_",
+        "coef_",
+        "numeric_cols_",
+        "fitted_",
+    )
     try:
-        steps = list(pipeline.named_steps.values()) if hasattr(pipeline, "named_steps") else [pipeline]
+        steps = (
+            list(pipeline.named_steps.values()) if hasattr(pipeline, "named_steps") else [pipeline]
+        )
     except Exception:
         steps = [pipeline]
     return any(hasattr(step, attr) for step in steps for attr in fitted_attrs)
@@ -468,3 +488,18 @@ def pipeline_estimator_classes(pipeline: Any) -> list[type]:
         AttributeError: If *pipeline* has no ``steps`` attribute.
     """
     return [type(step) for _, step in pipeline.steps]
+
+
+def pipeline_step_count(pipeline: Any) -> int:
+    """Return the number of steps in a scikit-learn Pipeline.
+
+    Args:
+        pipeline: A scikit-learn Pipeline object.
+
+    Returns:
+        Integer count of steps.
+
+    Raises:
+        AttributeError: If *pipeline* has no ``steps`` attribute.
+    """
+    return len(pipeline.steps)

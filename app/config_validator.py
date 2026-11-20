@@ -14,6 +14,8 @@ __all__ = [
     "ConfigSchema",
     "FieldSpec",
     "ValidationError",
+    "has_required_fields",
+    "schema_field_names",
     "validate",
 ]
 
@@ -38,6 +40,14 @@ class ConfigSchema:
     fields: list[FieldSpec] = field(default_factory=list)
 
     def add(self, spec: FieldSpec) -> ConfigSchema:
+        """Append a field spec and return self for builder-style chaining.
+
+        Args:
+            spec: The field specification to append.
+
+        Returns:
+            This schema instance.
+        """
         self.fields.append(spec)
         return self
 
@@ -46,6 +56,11 @@ class ValidationError(Exception):
     """Raised when configuration validation fails."""
 
     def __init__(self, violations: list[str]) -> None:
+        """Store violation messages and format the exception string.
+
+        Args:
+            violations: Human-readable descriptions of each config violation.
+        """
         self.violations = violations
         super().__init__("Config validation failed:\n" + "\n".join(f"  - {v}" for v in violations))
 
@@ -77,7 +92,9 @@ def validate(config: dict[str, Any], schema: ConfigSchema) -> dict[str, Any]:
         val = config[spec.name]
 
         if not isinstance(val, spec.type):
-            violations.append(f"'{spec.name}' expected {spec.type.__name__}, got {type(val).__name__}")
+            violations.append(
+                f"'{spec.name}' expected {spec.type.__name__}, got {type(val).__name__}"
+            )
             continue
 
         if spec.choices is not None and val not in spec.choices:
@@ -95,3 +112,39 @@ def validate(config: dict[str, Any], schema: ConfigSchema) -> dict[str, Any]:
         raise ValidationError(violations)
 
     return result
+
+
+def schema_field_names(schema: ConfigSchema) -> list[str]:
+    """Return a sorted list of all field names defined in *schema*.
+
+    Args:
+        schema: A :class:`ConfigSchema` to inspect.
+
+    Returns:
+        Sorted list of field name strings.
+    """
+    return sorted(spec.name for spec in schema.fields)
+
+
+def has_required_fields(schema: ConfigSchema) -> bool:
+    """Return ``True`` if *schema* contains at least one required field.
+
+    Args:
+        schema: A :class:`ConfigSchema` to inspect.
+
+    Returns:
+        ``True`` when any field has ``required=True``, ``False`` otherwise.
+    """
+    return any(spec.required for spec in schema.fields)
+
+
+def optional_field_names(schema: ConfigSchema) -> list[str]:
+    """Return a sorted list of optional (non-required) field names in *schema*.
+
+    Args:
+        schema: A :class:`ConfigSchema` to inspect.
+
+    Returns:
+        Sorted list of field name strings where ``required`` is False.
+    """
+    return sorted(spec.name for spec in schema.fields if not spec.required)

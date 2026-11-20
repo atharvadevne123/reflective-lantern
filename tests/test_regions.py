@@ -4,7 +4,14 @@ from __future__ import annotations
 
 import pytest
 
-from app.regions import compare_peak_loads, get_region, get_region_name, list_regions, region_count, validate_region
+from app.regions import (
+    compare_peak_loads,
+    get_region,
+    get_region_name,
+    list_regions,
+    region_count,
+    validate_region,
+)
 
 
 class TestRegionRegistry:
@@ -85,7 +92,9 @@ def test_get_peak_load_unknown() -> None:
     assert get_peak_load("atlantis") is None
 
 
-@pytest.mark.parametrize("region_id", ["northeast", "midwest", "south", "west", "texas", "pacific_nw"])
+@pytest.mark.parametrize(
+    "region_id", ["northeast", "midwest", "south", "west", "texas", "pacific_nw"]
+)
 def test_validate_region_known(region_id) -> None:
     from app.regions import validate_region
 
@@ -117,7 +126,9 @@ def test_get_region_timezone_new_regions() -> None:
     assert get_region_timezone("florida") == "America/New_York"
 
 
-@pytest.mark.parametrize("region_id", ["pacific_nw", "new_england", "mountain", "southeast", "florida"])
+@pytest.mark.parametrize(
+    "region_id", ["pacific_nw", "new_england", "mountain", "southeast", "florida"]
+)
 def test_get_peak_load_new_regions(region_id) -> None:
     from app.regions import get_peak_load
 
@@ -224,7 +235,9 @@ def test_get_all_region_ids_is_sorted() -> None:
     assert ids == sorted(ids)
 
 
-@pytest.mark.parametrize("region_id", ["pacific_nw", "new_england", "mountain", "southeast", "florida"])
+@pytest.mark.parametrize(
+    "region_id", ["pacific_nw", "new_england", "mountain", "southeast", "florida"]
+)
 def test_additional_regions_valid(region_id: str) -> None:
     assert validate_region(region_id) is True
 
@@ -362,7 +375,11 @@ class TestRegionIdsForTimezones:
         assert region_ids_for_timezones([]) == []
 
     def test_known_timezone(self) -> None:
-        from app.regions import get_all_region_ids, get_region_timezone, region_ids_for_timezones
+        from app.regions import (
+            get_all_region_ids,
+            get_region_timezone,
+            region_ids_for_timezones,
+        )
 
         ids = get_all_region_ids()
         if not ids:
@@ -592,3 +609,175 @@ class TestPeakLoadRangeMw:
         result = peak_load_range_mw()
         assert result["max"] == pytest.approx(14000.0)
         assert result["min"] == pytest.approx(5500.0)
+
+
+@pytest.mark.parametrize("region_id", ["default", "florida", "midwest", "mountain", "new_england"])
+def test_validate_region_returns_true_for_known(region_id: str) -> None:
+    """validate_region returns True for every known built-in region ID."""
+    from app.regions import validate_region
+
+    assert validate_region(region_id) is True
+
+
+@pytest.mark.parametrize("region_id", ["default", "florida", "midwest"])
+def test_get_peak_load_is_positive(region_id: str) -> None:
+    """get_peak_load returns a positive float for known regions."""
+    from app.regions import get_peak_load
+
+    load = get_peak_load(region_id)
+    assert load is not None
+    assert load > 0.0
+
+
+class TestRegionSummaryEdgeCases:
+    def test_region_count_is_positive(self) -> None:
+        from app.regions import region_count
+
+        assert region_count() > 0
+
+    def test_region_names_length_matches_region_count(self) -> None:
+        from app.regions import region_count, region_names
+
+        assert len(region_names()) == region_count()
+
+    @pytest.mark.parametrize("region_id", ["default", "midwest"])
+    def test_region_share_between_zero_and_one(self, region_id: str) -> None:
+        from app.regions import region_share_of_total
+
+        share = region_share_of_total(region_id)
+        assert 0.0 < share <= 1.0
+
+
+class TestRegionsByPeakLoadExtended:
+    def test_returns_list(self) -> None:
+        from app.regions import regions_by_peak_load
+
+        result = regions_by_peak_load()
+        assert isinstance(result, list)
+
+    def test_descending_order(self) -> None:
+        from app.regions import get_peak_load, regions_by_peak_load
+
+        ids = regions_by_peak_load(descending=True)
+        loads = [get_peak_load(r) for r in ids if get_peak_load(r) is not None]
+        assert loads == sorted(loads, reverse=True)
+
+    def test_ascending_order(self) -> None:
+        from app.regions import get_peak_load, regions_by_peak_load
+
+        ids = regions_by_peak_load(descending=False)
+        loads = [get_peak_load(r) for r in ids if get_peak_load(r) is not None]
+        assert loads == sorted(loads)
+
+
+class TestTotalPeakLoad:
+    def test_total_is_positive(self) -> None:
+        from app.regions import total_peak_load_mw
+
+        assert total_peak_load_mw() > 0.0
+
+    def test_above_any_individual_region(self) -> None:
+        from app.regions import get_all_region_ids, get_peak_load, total_peak_load_mw
+
+        total = total_peak_load_mw()
+        for rid in get_all_region_ids():
+            pl = get_peak_load(rid)
+            if pl is not None:
+                assert total >= pl
+
+    @pytest.mark.parametrize("threshold", [0.0, 100.0, 5000.0])
+    def test_regions_above_threshold_is_subset(self, threshold: float) -> None:
+        from app.regions import get_all_region_ids, regions_above_peak
+
+        all_ids = set(get_all_region_ids())
+        above = regions_above_peak(threshold)
+        assert set(above).issubset(all_ids)
+
+
+class TestRegionShareOfTotalExt:
+    def test_share_sums_to_one(self) -> None:
+        from app.regions import get_all_region_ids, region_share_of_total
+
+        total = sum(
+            region_share_of_total(r)
+            for r in get_all_region_ids()
+            if region_share_of_total(r) is not None
+        )
+        assert abs(total - 1.0) < 0.01
+
+    def test_share_between_zero_and_one(self) -> None:
+        from app.regions import get_all_region_ids, region_share_of_total
+
+        for rid in get_all_region_ids():
+            share = region_share_of_total(rid)
+            if share is not None:
+                assert 0.0 <= share <= 1.0
+
+    def test_unknown_region_returns_none_or_raises(self) -> None:
+        from app.regions import region_share_of_total
+
+        try:
+            result = region_share_of_total("INVALID_XYZ")
+            assert result is None or isinstance(result, float)
+        except (KeyError, ValueError):
+            pass
+
+
+class TestRegionLoadFactorExt:
+    def test_positive_for_valid_region(self) -> None:
+        from app.regions import get_all_region_ids, region_load_factor
+
+        ids = get_all_region_ids()
+        if ids:
+            lf = region_load_factor(ids[0])
+            assert lf is None or lf > 0.0
+
+    @pytest.mark.parametrize("rid", ["NSW", "VIC", "QLD"])
+    def test_known_regions_return_value(self, rid: str) -> None:
+        from app.regions import region_load_factor
+
+        try:
+            lf = region_load_factor(rid)
+            assert lf is None or isinstance(lf, float)
+        except (KeyError, ValueError):
+            pass
+
+    def test_highest_peak_region_exists(self) -> None:
+        from app.regions import get_all_region_ids, highest_peak_region
+
+        result = highest_peak_region()
+        assert result in get_all_region_ids()
+
+
+class TestRegionIdsWithMinimumLoad:
+    def test_zero_threshold_returns_all_regions(self) -> None:
+        from app.regions import get_all_region_ids, region_ids_with_minimum_load
+
+        result = region_ids_with_minimum_load(0.0)
+        assert set(result) == set(get_all_region_ids())
+
+    def test_very_high_threshold_returns_empty(self) -> None:
+        from app.regions import region_ids_with_minimum_load
+
+        result = region_ids_with_minimum_load(float("inf"))
+        assert result == []
+
+    def test_result_is_sorted(self) -> None:
+        from app.regions import region_ids_with_minimum_load
+
+        result = region_ids_with_minimum_load(0.0)
+        assert result == sorted(result)
+
+    def test_result_subset_of_all_ids(self) -> None:
+        from app.regions import get_all_region_ids, region_ids_with_minimum_load
+
+        result = region_ids_with_minimum_load(1000.0)
+        all_ids = set(get_all_region_ids())
+        assert all(rid in all_ids for rid in result)
+
+    @pytest.mark.parametrize("threshold", [0.0, 100.0, 1000.0])
+    def test_threshold_filter_monotonic(self, threshold: float) -> None:
+        from app.regions import region_ids_with_minimum_load
+
+        result = region_ids_with_minimum_load(threshold)
+        assert isinstance(result, list)

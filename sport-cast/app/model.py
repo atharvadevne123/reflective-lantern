@@ -1,5 +1,4 @@
 """ML model training, prediction, and persistence for Sport-Cast."""
-
 from __future__ import annotations
 
 import json
@@ -48,16 +47,10 @@ def build_ensemble() -> VotingClassifier:
     }
     try:
         from lightgbm import LGBMClassifier
-
         lgb = LGBMClassifier(**lgb_params)
     except ImportError:
-        lgb = XGBClassifier(
-            n_estimators=150,
-            max_depth=3,
-            eval_metric="mlogloss",
-            use_label_encoder=False,
-            verbosity=0,
-        )
+        lgb = XGBClassifier(n_estimators=150, max_depth=3, eval_metric="mlogloss",
+                            use_label_encoder=False, verbosity=0)
     rf = RandomForestClassifier(n_estimators=200, max_depth=6, random_state=42)
     return VotingClassifier(
         estimators=[("xgb", xgb), ("lgb", lgb), ("rf", rf)],
@@ -108,9 +101,7 @@ def train_model(
             CHAMPION_METRICS_PATH.write_text(json.dumps(metrics))
         logger.info("Model promoted: auc=%.4f (champion=%.4f)", metrics["auc_mean"], champion_auc)
     else:
-        logger.warning(
-            "Challenger rejected: auc=%.4f < champion=%.4f", metrics["auc_mean"], champion_auc
-        )
+        logger.warning("Challenger rejected: auc=%.4f < champion=%.4f", metrics["auc_mean"], champion_auc)
         if CHAMPION_METRICS_PATH.exists():
             METRICS_PATH.write_text(CHAMPION_METRICS_PATH.read_text())
 

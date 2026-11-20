@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 import json
+import logging
 from datetime import date
 from pathlib import Path
 from typing import Any
 
 from config.constants import CLEANUP_DEFAULT_DAYS, HISTORY_DIR, NON_RECORD_FILES
+
+logger = logging.getLogger(__name__)
 
 
 def _entry_date(entry: dict) -> date | None:
@@ -94,6 +97,7 @@ def count_entries(directory: Path) -> dict[str, int]:
 
 
 def main() -> int:
+    """Parse CLI arguments and remove history entries older than --days."""
     import argparse
     from datetime import timedelta
 
@@ -111,9 +115,9 @@ def main() -> int:
             continue
         removed = clean_file(f, cutoff, dry_run=args.dry_run)
         if removed:
-            print(f"  {f.name}: removed {removed} entries")
+            logger.info("  %s: removed %d entries", f.name, removed)
         total += removed
-    print(f"Total removed: {total}")
+    logger.info("Total removed: %d", total)
     return 0
 
 

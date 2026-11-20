@@ -9,11 +9,15 @@ a claim to nothing.
 from __future__ import annotations
 
 import logging
+import time
 
 from ..schemas import Citation, ScoredChunk
 from .prompts import CONSTRAINED_SYSTEM_PROMPT
 
 logger = logging.getLogger(__name__)
+
+_MAX_RETRIES = 2
+_RETRY_DELAY_S = 1.0
 
 
 class AnthropicGenerator:
@@ -53,12 +57,31 @@ class AnthropicGenerator:
         ]
         content.append({"type": "text", "text": query})
 
-        response = self.client.messages.create(
-            model=self.model,
-            max_tokens=self.max_tokens,
-            system=CONSTRAINED_SYSTEM_PROMPT,
-            messages=[{"role": "user", "content": content}],
-        )
+        last_exc: Exception | None = None
+        response = None
+        for attempt in range(_MAX_RETRIES + 1):
+            try:
+                response = self.client.messages.create(
+                    model=self.model,
+                    max_tokens=self.max_tokens,
+                    system=CONSTRAINED_SYSTEM_PROMPT,
+                    messages=[{"role": "user", "content": content}],
+                )
+                break
+            except Exception as exc:
+                last_exc = exc
+                logger.warning(
+                    "Anthropic API error on attempt %d/%d: %s",
+                    attempt + 1,
+                    _MAX_RETRIES + 1,
+                    exc,
+                )
+                if attempt < _MAX_RETRIES:
+                    time.sleep(_RETRY_DELAY_S * (2**attempt))
+
+        if response is None:
+            logger.error("All %d Anthropic API attempts failed: %s", _MAX_RETRIES + 1, last_exc)
+            return "", []
 
         if response.stop_reason == "refusal":
             logger.warning("Model refused the generation request")

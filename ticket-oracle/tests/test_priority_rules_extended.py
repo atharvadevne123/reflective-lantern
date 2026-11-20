@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import pytest
-
 from app.priority_rules import (
     P1_KEYWORDS,
     P1_TIERS,
@@ -45,11 +44,7 @@ class TestApplyPriorityRules:
 
     def test_gold_outage_overrides_to_p1(self) -> None:
         pred = {"priority": "P2", "sla_breach_risk": 0.3}
-        payload = {
-            "description": "something minor",
-            "customer_tier": "Gold",
-            "incident_type": "outage",
-        }
+        payload = {"description": "something minor", "customer_tier": "Gold", "incident_type": "outage"}
         result = apply_priority_rules(pred, payload)
         assert result["priority"] == "P1"
 

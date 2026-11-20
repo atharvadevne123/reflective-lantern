@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import logging
 import re
 
 from ..schemas import Chunk, Document
+
+logger = logging.getLogger(__name__)
 
 _SENTENCE_END = re.compile(r"(?<=[.!?])\s+")
 
@@ -31,6 +34,14 @@ def chunk_document(doc: Document, chunk_size: int = 800, overlap: int = 150) -> 
     """
     chunks: list[Chunk] = []
     seq = 0
+
+    logger.debug(
+        "Chunking document %s (%d pages, chunk_size=%d, overlap=%d)",
+        doc.doc_id,
+        len(doc.pages),
+        chunk_size,
+        overlap,
+    )
 
     for page_number, page_text in enumerate(doc.pages, start=1):
         sentences = _split_sentences(page_text)
@@ -77,4 +88,5 @@ def chunk_document(doc: Document, chunk_size: int = 800, overlap: int = 150) -> 
                 current = tail
                 current_len = tail_len
 
+    logger.debug("Produced %d chunks from document %s", len(chunks), doc.doc_id)
     return chunks

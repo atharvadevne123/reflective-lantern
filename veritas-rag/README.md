@@ -81,7 +81,18 @@ Response — evidence too weak (the hallucination fallback):
 }
 ```
 
-Other endpoints: `GET /api/v1/health`, `GET /api/v1/metrics` (index sizes, cache hit rate), `GET /api/v1/trace/{request_id}` (the full stage-10 trace), `GET /api/v1/traces`.
+Other endpoints:
+
+| Endpoint | Method | Purpose |
+|---|---|---|
+| `/api/v1/health` | GET | Liveness + config summary |
+| `/api/v1/metrics` | GET | Index sizes, cache hit rate, pipeline counters |
+| `/api/v1/trace/{id}` | GET | Full stage-10 trace for a request |
+| `/api/v1/traces` | GET | Recent traces (newest last) |
+| `/api/v1/version` | GET | Service version string |
+| `/api/v1/documents` | GET | List all indexed documents |
+| `/api/v1/documents/{source}` | DELETE | Remove a document from the index |
+| `/api/v1/sources` | GET | List all indexed source names |
 
 ## How hallucinations are prevented
 

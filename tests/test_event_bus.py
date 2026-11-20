@@ -2,27 +2,29 @@
 
 from __future__ import annotations
 
+import pytest
+
 from app.event_bus import EventBus, get_bus
 
 
-def _make_recorder():
+def _make_recorder() -> None:
     calls = []
 
-    def handler(event, payload):
+    def handler(event, payload) -> None:
         calls.append((event, payload))
 
     return handler, calls
 
 
 class TestEventBusSubscribePublish:
-    def test_published_event_reaches_handler(self):
+    def test_published_event_reaches_handler(self) -> None:
         bus = EventBus()
         handler, calls = _make_recorder()
         bus.subscribe("user.created", handler)
         bus.publish("user.created", {"id": 1})
         assert calls == [("user.created", {"id": 1})]
 
-    def test_multiple_handlers_called_in_order(self):
+    def test_multiple_handlers_called_in_order(self) -> None:
         bus = EventBus()
         order = []
         bus.subscribe("evt", lambda e, p: order.append(1))
@@ -30,24 +32,24 @@ class TestEventBusSubscribePublish:
         bus.publish("evt")
         assert order == [1, 2]
 
-    def test_returns_handler_count(self):
+    def test_returns_handler_count(self) -> None:
         bus = EventBus()
         bus.subscribe("x", lambda e, p: None)
         bus.subscribe("x", lambda e, p: None)
         assert bus.publish("x") == 2
 
-    def test_no_handlers_returns_zero(self):
+    def test_no_handlers_returns_zero(self) -> None:
         bus = EventBus()
         assert bus.publish("unknown") == 0
 
-    def test_handler_exception_does_not_block_others(self):
+    def test_handler_exception_does_not_block_others(self) -> None:
         bus = EventBus()
         results = []
 
-        def bad(e, p):
+        def bad(e, p) -> None:
             raise RuntimeError("bad")
 
-        def good(e, p):
+        def good(e, p) -> None:
             results.append("good")
 
         bus.subscribe("x", bad)
@@ -57,7 +59,7 @@ class TestEventBusSubscribePublish:
 
 
 class TestWildcardHandler:
-    def test_wildcard_receives_all_events(self):
+    def test_wildcard_receives_all_events(self) -> None:
         bus = EventBus()
         handler, calls = _make_recorder()
         bus.subscribe("*", handler)
@@ -65,7 +67,7 @@ class TestWildcardHandler:
         bus.publish("b")
         assert len(calls) == 2
 
-    def test_wildcard_and_specific_both_called(self):
+    def test_wildcard_and_specific_both_called(self) -> None:
         bus = EventBus()
         specific, s_calls = _make_recorder()
         wildcard, w_calls = _make_recorder()
@@ -77,18 +79,18 @@ class TestWildcardHandler:
 
 
 class TestUnsubscribe:
-    def test_unsubscribe_returns_true_when_found(self):
+    def test_unsubscribe_returns_true_when_found(self) -> None:
         bus = EventBus()
         handler, _ = _make_recorder()
         bus.subscribe("x", handler)
         assert bus.unsubscribe("x", handler) is True
 
-    def test_unsubscribe_returns_false_when_missing(self):
+    def test_unsubscribe_returns_false_when_missing(self) -> None:
         bus = EventBus()
         handler, _ = _make_recorder()
         assert bus.unsubscribe("x", handler) is False
 
-    def test_unsubscribed_handler_not_called(self):
+    def test_unsubscribed_handler_not_called(self) -> None:
         bus = EventBus()
         handler, calls = _make_recorder()
         bus.subscribe("x", handler)
@@ -98,7 +100,7 @@ class TestUnsubscribe:
 
 
 class TestClear:
-    def test_clear_specific_event(self):
+    def test_clear_specific_event(self) -> None:
         bus = EventBus()
         handler, calls = _make_recorder()
         bus.subscribe("x", handler)
@@ -106,7 +108,7 @@ class TestClear:
         bus.publish("x")
         assert calls == []
 
-    def test_clear_all(self):
+    def test_clear_all(self) -> None:
         bus = EventBus()
         h1, c1 = _make_recorder()
         h2, c2 = _make_recorder()
@@ -117,7 +119,7 @@ class TestClear:
         assert c1 == [] and c2 == []
 
 
-def test_listener_count():
+def test_listener_count() -> None:
     bus = EventBus()
     bus.subscribe("ev", lambda e, p: None)
     bus.subscribe("ev", lambda e, p: None)
@@ -125,7 +127,7 @@ def test_listener_count():
     assert bus.listener_count("other") == 0
 
 
-def test_get_bus_returns_singleton():
+def test_get_bus_returns_singleton() -> None:
     assert get_bus() is get_bus()
 
 
@@ -336,3 +338,172 @@ class TestDefaultBus:
             assert seen == ["tick"]
         finally:
             bus.clear()
+
+
+class TestEventBusClearAndCount:
+    def test_clear_specific_event(self) -> None:
+        bus = EventBus()
+        bus.subscribe("a", lambda e, p: None)
+        bus.subscribe("b", lambda e, p: None)
+        bus.clear("a")
+        assert bus.listener_count("a") == 0
+        assert bus.listener_count("b") == 1
+
+    def test_clear_all_events(self) -> None:
+        bus = EventBus()
+        bus.subscribe("a", lambda e, p: None)
+        bus.subscribe("b", lambda e, p: None)
+        bus.clear()
+        assert bus.listener_count("a") == 0
+        assert bus.listener_count("b") == 0
+
+    def test_listener_count_after_unsubscribe(self) -> None:
+        bus = EventBus()
+        h = lambda e, p: None
+        bus.subscribe("evt", h)
+        assert bus.listener_count("evt") == 1
+        bus.unsubscribe("evt", h)
+        assert bus.listener_count("evt") == 0
+
+    def test_multiple_subscribers_counted(self) -> None:
+        bus = EventBus()
+        for _ in range(5):
+            bus.subscribe("evt", lambda e, p: None)
+        assert bus.listener_count("evt") == 5
+
+    @pytest.mark.parametrize("event_name", ["a", "user.login", "data:received", "x.y.z"])
+    def test_zero_count_for_unregistered_events(self, event_name: str) -> None:
+        bus = EventBus()
+        assert bus.listener_count(event_name) == 0
+
+    def test_clear_wildcard_handlers(self) -> None:
+        bus = EventBus()
+        received: list[str] = []
+        bus.subscribe("*", lambda e, p: received.append(e))
+        bus.clear("*")
+        bus.publish("any")
+        assert received == []
+
+
+@pytest.mark.parametrize("n_events", [1, 3, 5])
+def test_multiple_events_each_received_once(n_events: int) -> None:
+    """Publishing N distinct events delivers each exactly once to a wildcard listener."""
+    from app.event_bus import EventBus
+
+    bus = EventBus()
+    received: list[str] = []
+    bus.subscribe("*", lambda e, p: received.append(e))
+    for i in range(n_events):
+        bus.publish(f"event-{i}")
+    assert len(received) == n_events
+
+
+@pytest.mark.parametrize("payload", [None, {"key": "val"}, [1, 2, 3], 42])
+def test_payload_is_passed_to_listener(payload: object) -> None:
+    """The published payload reaches the listener unchanged."""
+    from app.event_bus import EventBus
+
+    bus = EventBus()
+    received: list[object] = []
+    bus.subscribe("test", lambda e, p: received.append(p))
+    bus.publish("test", payload)
+    assert received == [payload]
+
+
+class TestEventBusSubscribeMany:
+    @pytest.mark.parametrize("n", [1, 3, 5])
+    def test_all_listeners_called_on_publish(self, n: int) -> None:
+        from app.event_bus import EventBus
+
+        bus = EventBus()
+        counts = [0]
+        for _ in range(n):
+            bus.subscribe("evt", lambda e, p: counts.__setitem__(0, counts[0] + 1))
+        bus.publish("evt")
+        assert counts[0] == n
+
+    def test_unsubscribe_stops_delivery(self) -> None:
+        from app.event_bus import EventBus
+
+        bus = EventBus()
+        received: list[str] = []
+
+        def handler(e: str, p: object) -> None:
+            received.append(e)
+
+        bus.subscribe("done", handler)
+        bus.unsubscribe("done", handler)
+        bus.publish("done")
+        assert received == []
+
+
+class TestEventBusEventNames:
+    def test_empty_when_no_subscribers(self) -> None:
+        from app.event_bus import EventBus
+
+        bus = EventBus()
+        assert bus.event_names() == []
+
+    def test_event_appears_after_subscribe(self) -> None:
+        from app.event_bus import EventBus
+
+        bus = EventBus()
+        bus.subscribe("my_event", lambda e, p: None)
+        assert "my_event" in bus.event_names()
+
+    def test_sorted_order(self) -> None:
+        from app.event_bus import EventBus
+
+        bus = EventBus()
+        bus.subscribe("zzz", lambda e, p: None)
+        bus.subscribe("aaa", lambda e, p: None)
+        names = bus.event_names()
+        assert names == sorted(names)
+
+
+class TestEventBusTotalListeners:
+    def test_zero_initially(self) -> None:
+        from app.event_bus import EventBus
+
+        bus = EventBus()
+        assert bus.total_listeners() == 0
+
+    def test_increases_after_subscribe(self) -> None:
+        from app.event_bus import EventBus
+
+        bus = EventBus()
+        bus.subscribe("e1", lambda e, p: None)
+        bus.subscribe("e2", lambda e, p: None)
+        assert bus.total_listeners() >= 2
+
+    @pytest.mark.parametrize("n", [1, 2, 3])
+    def test_total_matches_subscriptions(self, n: int) -> None:
+        from app.event_bus import EventBus
+
+        bus = EventBus()
+        for i in range(n):
+            bus.subscribe(f"event_{i}", lambda e, p: None)
+        assert bus.total_listeners() >= n
+
+
+class TestEventBusHasListeners:
+    def test_false_when_no_subscribers(self) -> None:
+        from app.event_bus import EventBus
+
+        bus = EventBus()
+        assert bus.has_listeners("no_one") is False
+
+    def test_true_after_subscribe(self) -> None:
+        from app.event_bus import EventBus
+
+        bus = EventBus()
+        bus.subscribe("available", lambda e, p: None)
+        assert bus.has_listeners("available") is True
+
+    def test_false_after_clear(self) -> None:
+        from app.event_bus import EventBus
+
+        bus = EventBus()
+        bus.subscribe("temp", lambda e, p: None)
+        bus.clear("temp")
+        assert bus.has_listeners("temp") is False
