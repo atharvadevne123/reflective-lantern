@@ -104,3 +104,32 @@ def safe_divide(numerator: float, denominator: float, default: float = 0.0) -> f
     if denominator == 0:
         return default
     return numerator / denominator
+
+
+def truncate_text(text: str, max_chars: int = 280) -> str:
+    """Truncate *text* to at most *max_chars* characters.
+
+    If truncated, appends an ellipsis so callers know the text was cut.
+
+    Args:
+        text: Input string.
+        max_chars: Maximum allowed length including the ellipsis.
+
+    Returns:
+        The original string if short enough, otherwise a truncated version.
+    """
+    if len(text) <= max_chars:
+        return text
+    return text[: max_chars - 1] + "…"
+
+
+def batch_normalise(texts: list[str]) -> list[str]:
+    """Apply :func:`normalise_text` to every string in *texts*.
+
+    Args:
+        texts: List of raw post strings.
+
+    Returns:
+        New list of normalised strings in the same order.
+    """
+    return [normalise_text(t) for t in texts]
