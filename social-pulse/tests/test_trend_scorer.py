@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from app.trend_scorer import TrendScore, filter_by_tier, rank_posts, score_post, top_n_posts
+from app.trend_scorer import TrendScore, avg_score, filter_by_tier, get_trending_hashtags, rank_posts, score_post, top_n_posts
 
 
 def _score(
@@ -146,3 +146,50 @@ class TestFilterByTier:
 
     def test_empty_input(self) -> None:
         assert filter_by_tier([], "Viral") == []
+
+
+class TestAvgScore:
+    def test_empty_list_returns_zero(self) -> None:
+        assert avg_score([]) == 0.0
+
+    def test_single_score(self) -> None:
+        s = _score(viral_probability=0.8, post_id="p1")
+        result = avg_score([s])
+        assert result == pytest.approx(s.trend_score, abs=1e-6)
+
+    def test_average_of_two(self) -> None:
+        s1 = _score(viral_probability=0.0, author_followers=0, hashtag_count=0, has_media=False, mention_count=0, post_id="a")
+        s2 = _score(viral_probability=1.0, author_followers=5_000_000, hashtag_count=5, has_media=True, mention_count=3, post_id="b")
+        result = avg_score([s1, s2])
+        expected = (s1.trend_score + s2.trend_score) / 2
+        assert result == pytest.approx(expected, abs=1e-6)
+
+    def test_returns_float(self) -> None:
+        s = _score()
+        assert isinstance(avg_score([s]), float)
+
+
+class TestGetTrendingHashtags:
+    def _make_post(self, post_id: str, text: str) -> dict:
+        return {"post_id": post_id, "text": text}
+
+    def test_empty_scores_returns_empty(self) -> None:
+        posts = [self._make_post("p1", "#news")]
+        result = get_trending_hashtags([], posts, top_k=5)
+        assert result == []
+
+    def test_returns_hashtags(self) -> None:
+        s = _score(viral_probability=0.9, post_id="p1")
+        posts = [self._make_post("p1", "#news #breaking")]
+        result = get_trending_hashtags([s], posts, top_k=1)
+        assert "news" in result or "breaking" in result
+
+    def test_most_common_first(self) -> None:
+        scores = [_score(post_id=f"p{i}") for i in range(3)]
+        posts = [
+            self._make_post("p0", "#python #python #python"),
+            self._make_post("p1", "#python #java"),
+            self._make_post("p2", "#java"),
+        ]
+        result = get_trending_hashtags(scores, posts, top_k=3)
+        assert result[0] == "python"
