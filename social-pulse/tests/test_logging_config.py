@@ -6,7 +6,7 @@ import logging
 
 import pytest
 
-from app.logging_config import configure_logging, get_logger, log_dict
+from app.logging_config import configure_logging, get_logger, is_valid_level, log_dict
 
 
 class TestConfigureLogging:
@@ -56,3 +56,49 @@ def test_configure_logging_accepts_all_levels(level_str: str) -> None:
     configure_logging(level=level_str)
     expected = getattr(logging, level_str)
     assert logging.getLogger().level == expected
+
+
+class TestIsValidLevel:
+    def test_debug_is_valid(self) -> None:
+        assert is_valid_level("DEBUG") is True
+
+    def test_info_is_valid(self) -> None:
+        assert is_valid_level("INFO") is True
+
+    def test_warning_is_valid(self) -> None:
+        assert is_valid_level("WARNING") is True
+
+    def test_error_is_valid(self) -> None:
+        assert is_valid_level("ERROR") is True
+
+    def test_critical_is_valid(self) -> None:
+        assert is_valid_level("CRITICAL") is True
+
+    def test_lowercase_accepted(self) -> None:
+        assert is_valid_level("debug") is True
+
+    def test_mixed_case_accepted(self) -> None:
+        assert is_valid_level("Warning") is True
+
+    def test_invalid_returns_false(self) -> None:
+        assert is_valid_level("VERBOSE") is False
+
+    def test_empty_string_returns_false(self) -> None:
+        assert is_valid_level("") is False
+
+    def test_numeric_string_returns_false(self) -> None:
+        assert is_valid_level("20") is False
+
+
+@pytest.mark.parametrize(
+    "level,expected",
+    [
+        ("DEBUG", True),
+        ("INFO", True),
+        ("CRITICAL", True),
+        ("TRACE", False),
+        ("ALL", False),
+    ],
+)
+def test_is_valid_level_parametrized(level: str, expected: bool) -> None:
+    assert is_valid_level(level) == expected
