@@ -6,7 +6,7 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from app.middleware import CorrelationIdMiddleware, SecurityHeadersMiddleware
+from app.middleware import ContentSecurityPolicyMiddleware, CorrelationIdMiddleware, SecurityHeadersMiddleware
 
 
 def _make_app() -> FastAPI:
@@ -72,3 +72,42 @@ def test_middleware_applied_to_all_paths(middleware_client: TestClient, path: st
     resp = middleware_client.get(path)
     assert "X-Request-ID" in resp.headers
     assert "X-Content-Type-Options" in resp.headers
+
+
+def _make_csp_app(policy: str | None = None) -> FastAPI:
+    app = FastAPI()
+    app.add_middleware(ContentSecurityPolicyMiddleware, policy=policy)
+
+    @app.get("/ping")
+    def ping():
+        return {"ok": True}
+
+    return app
+
+
+class TestContentSecurityPolicyMiddleware:
+    def test_default_policy_header_present(self) -> None:
+        client = TestClient(_make_csp_app())
+        resp = client.get("/ping")
+        assert "Content-Security-Policy" in resp.headers
+
+    def test_default_policy_value(self) -> None:
+        client = TestClient(_make_csp_app())
+        resp = client.get("/ping")
+        assert "default-src 'self'" in resp.headers["Content-Security-Policy"]
+
+    def test_custom_policy_applied(self) -> None:
+        custom = "default-src 'none'; img-src 'self'"
+        client = TestClient(_make_csp_app(policy=custom))
+        resp = client.get("/ping")
+        assert resp.headers["Content-Security-Policy"] == custom
+
+    def test_script_src_in_default(self) -> None:
+        client = TestClient(_make_csp_app())
+        resp = client.get("/ping")
+        assert "script-src" in resp.headers["Content-Security-Policy"]
+
+    def test_object_src_none_in_default(self) -> None:
+        client = TestClient(_make_csp_app())
+        resp = client.get("/ping")
+        assert "object-src 'none'" in resp.headers["Content-Security-Policy"]
