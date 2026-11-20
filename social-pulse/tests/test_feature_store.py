@@ -112,3 +112,33 @@ def test_cache_respects_max_size(max_size: int) -> None:
     for i in range(max_size + 5):
         cache.set(str(i), {"i": i})
     assert cache.size <= max_size
+
+
+class TestFeatureCacheWarm:
+    def test_warm_inserts_entries(self) -> None:
+        cache = FeatureCache(max_size=100)
+        entries = {f"key{i}": {"i": i} for i in range(10)}
+        inserted = cache.warm(entries)
+        assert inserted == 10
+
+    def test_warm_returns_count(self) -> None:
+        cache = FeatureCache(max_size=5)
+        entries = {f"k{i}": {} for i in range(20)}
+        inserted = cache.warm(entries)
+        assert inserted <= 5
+
+    def test_warm_entries_retrievable(self) -> None:
+        cache = FeatureCache()
+        cache.warm({"abc": {"feature": 42}})
+        assert cache.get("abc") == {"feature": 42}
+
+    def test_warm_empty_dict(self) -> None:
+        cache = FeatureCache()
+        inserted = cache.warm({})
+        assert inserted == 0
+
+    def test_warm_respects_max_size(self) -> None:
+        cache = FeatureCache(max_size=3)
+        entries = {f"k{i}": {} for i in range(10)}
+        cache.warm(entries)
+        assert cache.size <= 3
