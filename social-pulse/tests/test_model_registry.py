@@ -9,6 +9,7 @@ import pytest
 
 import app.model_registry as registry_module
 from app.model_registry import (
+    delete_model,
     get_latest_promoted,
     list_models,
     promote_model,
@@ -93,3 +94,27 @@ def test_register_various_metrics(auc: float, f1: float) -> None:
     entry = register_model("run-v", "1.0.0", auc, f1, 100)
     assert entry["auc_roc"] == pytest.approx(auc, abs=1e-4)
     assert entry["f1"] == pytest.approx(f1, abs=1e-4)
+
+
+class TestDeleteModel:
+    def test_delete_existing_returns_true(self) -> None:
+        register_model("del-01", "1.0.0", 0.8, 0.7, 100)
+        result = delete_model("del-01")
+        assert result is True
+
+    def test_deleted_model_not_in_list(self) -> None:
+        register_model("del-02", "1.0.0", 0.8, 0.7, 100)
+        delete_model("del-02")
+        assert all(m["run_id"] != "del-02" for m in list_models())
+
+    def test_delete_nonexistent_returns_false(self) -> None:
+        result = delete_model("no-such-run")
+        assert result is False
+
+    def test_other_models_unaffected(self) -> None:
+        register_model("keep-01", "1.0.0", 0.8, 0.7, 100)
+        register_model("del-03", "1.0.0", 0.7, 0.6, 50)
+        delete_model("del-03")
+        models = list_models()
+        assert any(m["run_id"] == "keep-01" for m in models)
+        assert not any(m["run_id"] == "del-03" for m in models)
