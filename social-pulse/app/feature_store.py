@@ -22,6 +22,12 @@ class FeatureCache:
     """
 
     def __init__(self, max_size: int = 1000, ttl_seconds: float = 300.0) -> None:
+        """Initialise cache with capacity and TTL settings.
+
+        Args:
+            max_size: Maximum number of entries to retain.
+            ttl_seconds: Seconds before an entry is considered stale.
+        """
         self.max_size = max_size
         self.ttl_seconds = ttl_seconds
         self._store: OrderedDict[str, tuple[dict[str, Any], float]] = OrderedDict()
