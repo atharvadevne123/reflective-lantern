@@ -126,6 +126,25 @@ class PostIndex:
         logger.info("Index loaded from %s (%d vectors)", path, len(inst._vectors))
         return inst
 
+    def bulk_add(self, vectors: list[np.ndarray], metadatas: list[dict[str, Any]] | None = None) -> int:
+        """Add multiple vectors to the index in a single call.
+
+        Args:
+            vectors: List of 1-D float32 arrays, each of length *dim*.
+            metadatas: Optional list of metadata dicts, one per vector.
+                       Defaults to empty dicts.
+
+        Returns:
+            Number of vectors successfully added.
+        """
+        metas = metadatas or [{} for _ in vectors]
+        added = 0
+        for vec, meta in zip(vectors, metas):
+            self.add(vec, metadata=meta)
+            added += 1
+        logger.info("bulk_add: inserted %d vectors", added)
+        return added
+
     def clear(self) -> None:
         """Remove all vectors and metadata from the index."""
         self._vectors = []
