@@ -122,3 +122,24 @@ class FeatureCache:
             "misses": self._misses,
             "hit_rate": round(self.hit_rate, 4),
         }
+
+    def warm(self, entries: dict[str, dict[str, Any]]) -> int:
+        """Pre-populate the cache from a mapping of key → feature-dict.
+
+        Useful during startup to seed the cache from a persistent store so
+        the first batch of requests benefits from cache hits.
+
+        Args:
+            entries: Mapping of cache key to feature dict.
+
+        Returns:
+            Number of entries actually inserted (entries beyond max_size are ignored).
+        """
+        inserted = 0
+        for key, value in entries.items():
+            if self.size >= self.max_size:
+                break
+            self.set(key, value)
+            inserted += 1
+        logger.info("FeatureCache warmed with %d entries", inserted)
+        return inserted
