@@ -13,6 +13,8 @@ import hashlib
 import logging
 import struct
 
+__all__ = ["DuplicateDetector", "content_hash", "minhash_signature", "signature_similarity"]
+
 logger = logging.getLogger(__name__)
 
 _NUM_HASHES = 64
