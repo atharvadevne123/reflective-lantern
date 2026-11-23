@@ -11,6 +11,21 @@ import pytest
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from app.schemas import Chunk, ScoredChunk
+from app.scoring.trust import (
+    SOURCE_QUALITY_PRIORS,
+    above_threshold_ratio,
+    answer_confidence,
+    consistency_score,
+    freshness_score,
+    min_trust_gate,
+    normalize_trust_scores,
+    score_chunk,
+    source_quality_score,
+    top_k_trust,
+    trust_tier,
+    trust_variance,
+    weighted_answer_confidence,
+)
 
 
 def _make_scored_chunk(trust: float = 0.6, rerank_score: float = 0.5) -> ScoredChunk:
@@ -28,22 +43,6 @@ def _make_scored_chunk(trust: float = 0.6, rerank_score: float = 0.5) -> ScoredC
     sc.trust = trust
     sc.rerank_score = rerank_score
     return sc
-
-from app.scoring.trust import (
-    SOURCE_QUALITY_PRIORS,
-    above_threshold_ratio,
-    answer_confidence,
-    consistency_score,
-    freshness_score,
-    min_trust_gate,
-    normalize_trust_scores,
-    score_chunk,
-    source_quality_score,
-    top_k_trust,
-    trust_tier,
-    trust_variance,
-    weighted_answer_confidence,
-)
 
 
 def test_freshness_score_new_doc_near_one():

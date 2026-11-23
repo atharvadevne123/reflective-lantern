@@ -79,7 +79,7 @@ def test_query_text_relevance(query, text, expect_nonzero, reranker):
         assert scores[0] >= 0.0  # could be zero or low
 
 
-def test_scores_in_zero_one_range(reranker):
+def test_scores_in_zero_one_range_multiple(reranker):
     texts = [
         "machine learning neural network deep learning",
         "cooking pasta recipe italian food wine",

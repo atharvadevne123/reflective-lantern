@@ -171,7 +171,7 @@ def test_make_doc_id_stable():
     assert id1 == id2
 
 
-def test_make_doc_id_different_versions():
+def test_make_doc_id_different_versions_stable():
     from app.ingestion.versioning import make_doc_id
     id1 = make_doc_id("file.txt", 1)
     id2 = make_doc_id("file.txt", 2)

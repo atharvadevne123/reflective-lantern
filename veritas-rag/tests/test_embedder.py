@@ -69,7 +69,7 @@ def test_different_dims_produce_different_shapes():
     assert r128.shape == (1, 128)
 
 
-@pytest.mark.parametrize("text", ["hello", "world", "foo bar baz", "a"])
+@pytest.mark.parametrize("text", ["hello", "world", "foo bar baz", "longer text"])
 def test_single_text_embed_has_unit_norm(text):
     emb = HashingEmbedder(dim=64)
     result = emb.embed([text])

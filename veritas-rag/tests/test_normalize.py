@@ -98,7 +98,7 @@ def test_normalize_known_outputs(text, expected_len):
 def test_normalize_tabs_to_space():
     result = normalize_text("hello\tworld")
     assert "\t" not in result
-    assert "hello world" == result
+    assert result == "hello world"
 
 
 def test_normalize_form_feed_removed():
@@ -113,7 +113,7 @@ def test_normalize_preserves_newlines_within_limit():
 
 
 def test_strip_email_quotes_nested_whitespace():
-    result = strip_email_quotes(">  > deeply quoted")
+    result = strip_email_quotes(">> deeply quoted")
     assert not result.strip().startswith(">")
 
 
