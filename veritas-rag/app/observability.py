@@ -13,6 +13,14 @@ import time
 import uuid
 from collections import OrderedDict
 from dataclasses import dataclass, field
+
+__all__ = [
+    "Trace",
+    "TraceRecorder",
+    "TraceStore",
+    "average_latency_ms",
+    "trace_error_rate",
+]
 from typing import Any
 
 
