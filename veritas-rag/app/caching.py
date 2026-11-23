@@ -14,6 +14,15 @@ import time
 from collections import OrderedDict
 from typing import Any
 
+__all__ = [
+    "RetrievalCache",
+    "cache_age_seconds",
+    "cache_fill_ratio",
+    "cache_key",
+    "normalize_query",
+    "top_cached_queries",
+]
+
 _NORMALIZE = re.compile(r"[^a-z0-9 ]+")
 
 
