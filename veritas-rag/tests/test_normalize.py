@@ -135,3 +135,45 @@ def test_truncate_to_bytes_always_valid_utf8(max_bytes):
     result = truncate_to_bytes(text, max_bytes=max_bytes)
     assert len(result.encode("utf-8")) <= max_bytes
     result.encode("utf-8")  # must not raise
+
+
+def test_normalize_multiple_blank_lines_collapsed():
+    text = "line1\n\n\n\nline2"
+    result = normalize_text(text)
+    assert "\n\n\n" not in result
+
+
+def test_normalize_leading_trailing_whitespace_stripped():
+    result = normalize_text("  hello world  ")
+    assert result == "hello world"
+
+
+def test_normalize_control_characters_removed():
+    text = "hello\x01\x02world"
+    result = normalize_text(text)
+    assert "\x01" not in result
+    assert "\x02" not in result
+
+
+def test_strip_email_quotes_multiple_lines():
+    text = "> line one\n> line two\nreply"
+    result = strip_email_quotes(text)
+    assert ">" not in result.split("\n")[0]
+
+
+def test_truncate_to_bytes_no_change_when_under_limit():
+    text = "short text"
+    result = truncate_to_bytes(text, max_bytes=1000)
+    assert result == text
+
+
+@pytest.mark.parametrize("text", [
+    "hello world",
+    "HELLO WORLD",
+    "  spaces  ",
+    "line1\nline2",
+])
+def test_normalize_text_is_idempotent(text):
+    once = normalize_text(text)
+    twice = normalize_text(once)
+    assert once == twice
