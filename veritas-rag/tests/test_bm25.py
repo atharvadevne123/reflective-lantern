@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from app.retrieval.bm25 import BM25Index, tokenize
 
 
@@ -80,3 +82,47 @@ class TestBM25Index:
         idx = BM25Index()
         results = idx.search("test query", top_k=5)
         assert results == []
+
+
+def test_bm25_stopword_only_query_returns_empty():
+    idx = BM25Index()
+    idx.add("c1", "some relevant content about machine learning")
+    results = idx.search("the a an is")
+    assert results == []
+
+
+def test_bm25_scores_are_positive():
+    idx = BM25Index()
+    idx.add("c1", "python machine learning neural network")
+    results = idx.search("machine learning", top_k=5)
+    assert all(score >= 0 for _, score in results)
+
+
+def test_bm25_top_k_limits_results():
+    idx = BM25Index()
+    for i in range(10):
+        idx.add(f"c{i}", f"python machine learning document number {i}")
+    results = idx.search("python machine", top_k=3)
+    assert len(results) <= 3
+
+
+def test_bm25_remove_nonexistent_no_error():
+    idx = BM25Index()
+    idx.remove("nonexistent-chunk")
+    assert len(idx) == 0
+
+
+def test_bm25_relevance_ordering():
+    idx = BM25Index()
+    idx.add("relevant", "python machine learning neural network deep learning")
+    idx.add("irrelevant", "cooking pasta recipe italian food")
+    results = idx.search("machine learning python", top_k=2)
+    assert results[0][0] == "relevant"
+
+
+@pytest.mark.parametrize("k1,b", [(1.2, 0.75), (2.0, 0.5), (1.5, 0.0)])
+def test_bm25_custom_params(k1, b):
+    idx = BM25Index(k1=k1, b=b)
+    idx.add("c1", "python machine learning")
+    results = idx.search("python")
+    assert len(results) == 1
