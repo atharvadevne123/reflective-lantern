@@ -20,6 +20,8 @@ import numpy as np
 
 from .bm25 import tokenize
 
+__all__ = ["Embedder", "HashingEmbedder"]
+
 
 class Embedder(Protocol):
     """Interface every embedding backend must satisfy.
