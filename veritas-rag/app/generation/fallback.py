@@ -14,6 +14,8 @@ from dataclasses import dataclass
 from ..schemas import ScoredChunk
 from ..scoring.trust import answer_confidence
 
+__all__ = ["GateDecision", "evaluate_evidence"]
+
 logger = logging.getLogger(__name__)
 
 
