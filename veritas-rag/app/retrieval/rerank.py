@@ -26,7 +26,11 @@ class Reranker(Protocol):
 
 
 class LexicalReranker:
-    """Deterministic query-document cross-scorer."""
+    """Deterministic query-document cross-scorer.
+
+    Combines term coverage, ordered-window proximity, and term density to
+    produce a relevance score in [0, 1] without requiring a neural model.
+    """
 
     def score(self, query: str, texts: list[str]) -> list[float]:
         """Score each candidate against the query.
