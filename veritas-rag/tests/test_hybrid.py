@@ -88,3 +88,42 @@ def test_custom_k_produces_valid_results(k):
     vector = [("c1", 0.8)]
     result = reciprocal_rank_fusion(bm25, vector, k=k)
     assert len(result) >= 1
+
+
+def test_larger_k_dampens_top_scores():
+    bm25 = [("c1", 0.9)]
+    vector = [("c1", 0.9)]
+    low_k = reciprocal_rank_fusion(bm25, vector, k=1)
+    high_k = reciprocal_rank_fusion(bm25, vector, k=1000)
+    assert low_k[0][1] > high_k[0][1]
+
+
+def test_many_items_all_included():
+    bm25 = [(f"c{i}", 1.0 / (i + 1)) for i in range(20)]
+    vector = [(f"c{i}", 1.0 / (i + 1)) for i in range(20)]
+    result = reciprocal_rank_fusion(bm25, vector)
+    assert len(result) == 20
+
+
+def test_disjoint_lists_all_included():
+    bm25 = [("a", 0.9), ("b", 0.5)]
+    vector = [("c", 0.8), ("d", 0.4)]
+    result = reciprocal_rank_fusion(bm25, vector)
+    ids = {r[0] for r in result}
+    assert ids == {"a", "b", "c", "d"}
+
+
+def test_scores_are_positive():
+    bm25 = [("c1", 0.5), ("c2", 0.3)]
+    vector = [("c1", 0.4)]
+    result = reciprocal_rank_fusion(bm25, vector)
+    for _, score, _, _ in result:
+        assert score > 0.0
+
+
+def test_missing_vector_rank_is_none():
+    bm25 = [("a", 0.9), ("b", 0.5)]
+    vector = [("b", 0.8)]
+    result = reciprocal_rank_fusion(bm25, vector)
+    result_map = {r[0]: r for r in result}
+    assert result_map["a"][3] is None  # a not in vector
