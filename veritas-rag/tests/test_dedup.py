@@ -98,3 +98,27 @@ class TestDuplicateDetector:
         result = dd.check("some text")
         assert isinstance(result, tuple)
         assert len(result) == 2
+
+    def test_exact_dup_has_similarity_one(self) -> None:
+        dd = DuplicateDetector()
+        text = "exact same content repeated twice for exact dedup detection"
+        dd.register("doc-exact", text)
+        _, sim = dd.check(text)
+        assert sim == pytest.approx(1.0)
+
+    def test_len_after_multiple_registers(self) -> None:
+        dd = DuplicateDetector()
+        for i in range(5):
+            dd.register(f"doc-{i}", f"unique text number {i} with enough words to shingle")
+        assert len(dd) == 5
+
+    def test_check_before_register_returns_none(self) -> None:
+        dd = DuplicateDetector()
+        dup_id, sim = dd.check("some completely fresh text")
+        assert dup_id is None
+        assert sim == pytest.approx(0.0)
+
+    @pytest.mark.parametrize("threshold", [0.5, 0.8, 0.95])
+    def test_custom_threshold_applied(self, threshold: float) -> None:
+        dd = DuplicateDetector(near_threshold=threshold)
+        assert dd.near_threshold == threshold
