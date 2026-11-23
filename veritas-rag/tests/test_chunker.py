@@ -6,11 +6,11 @@ from app.ingestion.chunker import chunk_document
 from app.schemas import Document
 
 
-def _doc(text: str, pages: list[str] | None = None) -> Document:
+def _doc(text: str, pages: list[str] | None = None, source: str = "test.txt", source_type: str = "text") -> Document:
     return Document(
         doc_id="d1",
-        source="test.txt",
-        source_type="text",
+        source=source,
+        source_type=source_type,
         text=text,
         pages=pages or [text],
         created_at="2024-01-01",
@@ -81,3 +81,32 @@ class TestChunkDocument:
         small = chunk_document(doc, chunk_size=30)
         large = chunk_document(doc, chunk_size=500)
         assert len(small) >= len(large)
+
+    def test_chunk_ids_are_unique(self) -> None:
+        text = " ".join(f"Sentence number {i} with some extra words." for i in range(20))
+        doc = _doc(text)
+        chunks = chunk_document(doc, chunk_size=100)
+        ids = [c.chunk_id for c in chunks]
+        assert len(ids) == len(set(ids))
+
+    def test_chunk_preserves_source_info(self) -> None:
+        doc = _doc("Some important text here.", source="report.pdf", source_type="pdf")
+        chunks = chunk_document(doc)
+        for c in chunks:
+            assert c.source == "report.pdf"
+            assert c.source_type == "pdf"
+
+    def test_chunk_seq_starts_at_zero(self) -> None:
+        text = "First sentence. Second sentence. Third sentence."
+        doc = _doc(text)
+        chunks = chunk_document(doc, chunk_size=30)
+        assert chunks[0].seq == 0
+
+    def test_overlap_causes_text_repetition(self) -> None:
+        words = " ".join(f"word{i}" for i in range(100))
+        doc = _doc(words)
+        chunks = chunk_document(doc, chunk_size=50, overlap=20)
+        if len(chunks) >= 2:
+            first_words = set(chunks[0].text.split())
+            second_words = set(chunks[1].text.split())
+            assert first_words & second_words  # overlap should cause word repetition
