@@ -103,3 +103,32 @@ def test_empty_texts_list_returns_empty(reranker):
 def test_stopword_only_query_returns_all_zeros(reranker):
     scores = reranker.score("the and or is", ["some text", "other text"])
     assert all(s == 0.0 for s in scores)
+
+
+def test_score_returns_one_per_text(reranker):
+    texts = ["first", "second", "third", "fourth"]
+    scores = reranker.score("first second", texts)
+    assert len(scores) == len(texts)
+
+
+def test_score_single_text(reranker):
+    scores = reranker.score("machine learning", ["machine learning is powerful"])
+    assert len(scores) == 1
+    assert scores[0] >= 0.0
+
+
+def test_identical_texts_get_same_score(reranker):
+    t = "machine learning neural network optimization algorithm"
+    scores = reranker.score("machine learning neural", [t, t])
+    assert abs(scores[0] - scores[1]) < 1e-9
+
+
+@pytest.mark.parametrize("query", [
+    "machine learning",
+    "data science statistics",
+    "cloud computing infrastructure",
+])
+def test_query_variety_produces_valid_scores(query, reranker):
+    texts = ["cloud machine learning data platform", "natural language processing"]
+    scores = reranker.score(query, texts)
+    assert all(0.0 <= s <= 1.0 for s in scores)
