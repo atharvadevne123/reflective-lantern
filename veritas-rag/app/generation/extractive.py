@@ -15,6 +15,8 @@ import re
 from ..retrieval.bm25 import tokenize
 from ..schemas import Citation, ScoredChunk
 
+__all__ = ["ExtractiveGenerator"]
+
 logger = logging.getLogger(__name__)
 
 _SENTENCE_END = re.compile(r"(?<=[.!?])\s+")
