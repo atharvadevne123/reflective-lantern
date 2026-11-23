@@ -93,3 +93,45 @@ def test_truncate_to_bytes_valid_utf8():
 def test_normalize_known_outputs(text, expected_len):
     result = normalize_text(text)
     assert len(result) == expected_len
+
+
+def test_normalize_tabs_to_space():
+    result = normalize_text("hello\tworld")
+    assert "\t" not in result
+    assert "hello world" == result
+
+
+def test_normalize_form_feed_removed():
+    result = normalize_text("page1\fpage2")
+    assert "\f" not in result
+
+
+def test_normalize_preserves_newlines_within_limit():
+    result = normalize_text("line1\nline2")
+    assert "line1" in result
+    assert "line2" in result
+
+
+def test_strip_email_quotes_nested_whitespace():
+    result = strip_email_quotes(">  > deeply quoted")
+    assert not result.strip().startswith(">")
+
+
+def test_truncate_to_bytes_exact_boundary():
+    text = "a" * 10
+    result = truncate_to_bytes(text, max_bytes=10)
+    assert result == text
+    assert len(result.encode("utf-8")) == 10
+
+
+def test_truncate_to_bytes_zero():
+    result = truncate_to_bytes("hello", max_bytes=0)
+    assert result == ""
+
+
+@pytest.mark.parametrize("max_bytes", [1, 5, 50, 500])
+def test_truncate_to_bytes_always_valid_utf8(max_bytes):
+    text = "日本語テスト" * 20
+    result = truncate_to_bytes(text, max_bytes=max_bytes)
+    assert len(result.encode("utf-8")) <= max_bytes
+    result.encode("utf-8")  # must not raise
