@@ -19,6 +19,22 @@ from functools import lru_cache
 
 from ..schemas import ScoredChunk
 
+__all__ = [
+    "SOURCE_QUALITY_PRIORS",
+    "above_threshold_ratio",
+    "answer_confidence",
+    "consistency_score",
+    "freshness_score",
+    "min_trust_gate",
+    "normalize_trust_scores",
+    "score_chunk",
+    "source_quality_score",
+    "top_k_trust",
+    "trust_tier",
+    "trust_variance",
+    "weighted_answer_confidence",
+]
+
 # Priors reflect how much a source type is trusted before content is examined.
 SOURCE_QUALITY_PRIORS: dict[str, float] = {
     "pdf": 0.90,  # authored, versioned artifacts
