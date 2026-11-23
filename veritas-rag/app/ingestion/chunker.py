@@ -7,6 +7,8 @@ import re
 
 from ..schemas import Chunk, Document
 
+__all__ = ["chunk_document"]
+
 logger = logging.getLogger(__name__)
 
 _SENTENCE_END = re.compile(r"(?<=[.!?])\s+")
