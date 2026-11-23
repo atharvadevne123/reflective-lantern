@@ -61,6 +61,12 @@ class BM25Index:
     """
 
     def __init__(self, k1: float = 1.5, b: float = 0.75) -> None:
+        """Create an empty BM25Index with the given term-saturation and length-normalization parameters.
+
+        Args:
+            k1: Term-frequency saturation parameter (typical range 1.2–2.0).
+            b: Length-normalization parameter (0 = no normalization, 1 = full).
+        """
         self.k1 = k1
         self.b = b
         self._doc_tokens: dict[str, Counter[str]] = {}
