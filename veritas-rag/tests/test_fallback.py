@@ -95,3 +95,39 @@ def test_trust_threshold_parametrized(trust, should_allow):
     chunks = [_chunk(trust=trust)]
     decision = evaluate_evidence(chunks, confidence_threshold=0.45, chunk_trust_floor=0.35)
     assert decision.allowed == should_allow
+
+
+def test_confidence_below_threshold_reason():
+    chunks = [_chunk(trust=0.4)]
+    decision = evaluate_evidence(chunks, confidence_threshold=0.9, chunk_trust_floor=0.35)
+    assert decision.reason == "confidence_below_threshold"
+
+
+def test_evidence_sufficient_reason():
+    chunks = [_chunk(trust=0.9)]
+    decision = evaluate_evidence(chunks, confidence_threshold=0.5, chunk_trust_floor=0.35)
+    assert decision.reason == "evidence_sufficient"
+
+
+def test_too_few_supporting_chunks_reason():
+    chunks = [_chunk(trust=0.9)]
+    decision = evaluate_evidence(chunks, min_supporting_chunks=3)
+    assert decision.reason == "too_few_supporting_chunks"
+
+
+def test_multiple_high_trust_chunks_allowed():
+    chunks = [_chunk(f"c{i}", trust=0.8) for i in range(5)]
+    decision = evaluate_evidence(chunks)
+    assert decision.allowed is True
+
+
+def test_decision_confidence_matches_supporting():
+    chunks = [_chunk("c1", trust=0.9), _chunk("c2", trust=0.9)]
+    decision = evaluate_evidence(chunks)
+    assert abs(decision.confidence - 0.9) < 0.01
+
+
+def test_gate_decision_supporting_chunks_list():
+    chunks = [_chunk("c1", trust=0.9), _chunk("c2", trust=0.2)]
+    decision = evaluate_evidence(chunks, chunk_trust_floor=0.5)
+    assert len(decision.supporting_chunks) == 1
