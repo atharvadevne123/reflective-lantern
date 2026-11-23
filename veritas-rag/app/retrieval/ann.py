@@ -12,6 +12,8 @@ import logging
 
 import numpy as np
 
+__all__ = ["VectorIndex"]
+
 logger = logging.getLogger(__name__)
 
 try:
