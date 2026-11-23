@@ -63,3 +63,37 @@ class TestSettingsSummary:
     def test_has_generator_backend(self) -> None:
         s = Settings()
         assert "generator_backend" in settings_summary(s)
+
+    def test_has_all_expected_keys(self) -> None:
+        s = Settings()
+        summary = settings_summary(s)
+        expected = {
+            "embedding_dim", "chunk_size", "chunk_overlap",
+            "bm25_top_k", "vector_top_k", "final_top_k",
+            "confidence_threshold", "chunk_trust_floor",
+            "generator_backend", "near_dup_threshold",
+        }
+        assert expected.issubset(summary.keys())
+
+
+class TestSettingsValidation:
+    def test_invalid_near_dup_threshold(self) -> None:
+        with pytest.raises(ValueError):
+            Settings(near_dup_threshold=0.0)
+
+    def test_invalid_freshness_half_life(self) -> None:
+        with pytest.raises(ValueError):
+            Settings(freshness_half_life_days=0.0)
+
+    def test_invalid_final_top_k(self) -> None:
+        with pytest.raises(ValueError):
+            Settings(final_top_k=0)
+
+    def test_negative_chunk_overlap_allowed(self) -> None:
+        with pytest.raises(ValueError):
+            Settings(chunk_overlap=-1)
+
+    @pytest.mark.parametrize("backend", ["extractive", "anthropic"])
+    def test_valid_generator_backends(self, backend: str) -> None:
+        s = Settings(generator_backend=backend)
+        assert s.generator_backend == backend
