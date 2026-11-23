@@ -26,6 +26,12 @@ class VectorIndex:
     """ANN index over chunk embeddings with id mapping and deletion support."""
 
     def __init__(self, dim: int, ivf_threshold: int = 5000) -> None:
+        """Create an empty VectorIndex with the given embedding dimensionality.
+
+        Args:
+            dim: Dimensionality of the embedding vectors.
+            ivf_threshold: Number of vectors above which FAISS IVF is used.
+        """
         self.dim = dim
         self.ivf_threshold = ivf_threshold
         self._ids: list[str] = []
@@ -67,6 +73,7 @@ class VectorIndex:
         return len(self._ids) - len(self._deleted & set(self._ids))
 
     def _rebuild_faiss(self) -> None:
+        """Rebuild the FAISS IVF-Flat index when the corpus exceeds ivf_threshold."""
         n = self._vectors.shape[0]
         if not _FAISS or n < self.ivf_threshold:
             self._faiss_index = None
