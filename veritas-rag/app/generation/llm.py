@@ -24,6 +24,12 @@ class AnthropicGenerator:
     """Constrained abstractive answering via the Anthropic Messages API."""
 
     def __init__(self, model: str = "claude-opus-4-8", max_tokens: int = 1024) -> None:
+        """Initialize the generator with a specific Anthropic model.
+
+        Args:
+            model: Anthropic model ID to use for generation.
+            max_tokens: Maximum tokens to generate per response.
+        """
         import anthropic
 
         self.client = anthropic.Anthropic()
