@@ -89,3 +89,47 @@ def test_latest_returns_last_added():
     store.add(doc2)
     chain = store._chains["src.txt"]
     assert chain.latest.version == 2
+
+
+def test_latest_on_unknown_source_returns_none():
+    store = VersionStore()
+    assert store.latest("nonexistent.txt") is None
+
+
+def test_history_on_unknown_source_returns_empty_list():
+    store = VersionStore()
+    assert store.history("nonexistent.txt") == []
+
+
+def test_history_returns_all_versions_in_order():
+    store = VersionStore()
+    for v in range(1, 5):
+        store.add(_make_doc(version=v, content_hash=f"h{v}"))
+    history = store.history("src.txt")
+    assert [d.version for d in history] == [1, 2, 3, 4]
+
+
+def test_superseded_doc_ids_no_prior():
+    store = VersionStore()
+    doc = _make_doc(version=1)
+    store.add(doc)
+    assert store.superseded_doc_ids("src.txt") == []
+
+
+def test_superseded_doc_ids_after_two_versions():
+    store = VersionStore()
+    doc1 = _make_doc(version=1, content_hash="h1")
+    doc2 = _make_doc(version=2, content_hash="h2")
+    store.add(doc1)
+    store.add(doc2)
+    superseded = store.superseded_doc_ids("src.txt")
+    assert len(superseded) == 1
+    assert doc1.doc_id in superseded
+
+
+def test_len_counts_distinct_sources():
+    store = VersionStore()
+    store.add(_make_doc(source="a.txt", version=1, content_hash="h1"))
+    store.add(_make_doc(source="b.txt", version=1, content_hash="h2"))
+    store.add(_make_doc(source="a.txt", version=2, content_hash="h3"))
+    assert len(store) == 2
