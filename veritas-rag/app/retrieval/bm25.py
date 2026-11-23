@@ -2,10 +2,15 @@
 
 from __future__ import annotations
 
+import logging
 import math
 import re
 from collections import Counter
 from functools import lru_cache
+
+__all__ = ["BM25Index", "tokenize"]
+
+logger = logging.getLogger(__name__)
 
 _TOKEN = re.compile(r"[a-z0-9]+")
 
@@ -88,6 +93,7 @@ class BM25Index:
         self._total_len += length
         for term in tokens:
             self._df[term] += 1
+        logger.debug("BM25Index: added chunk %s (%d tokens)", chunk_id, length)
 
     def remove(self, chunk_id: str) -> None:
         """Drop a chunk from the index (used when versions supersede).
@@ -139,4 +145,11 @@ class BM25Index:
                 scores[chunk_id] = scores.get(chunk_id, 0.0) + idf * tf * (self.k1 + 1) / denom
 
         ranked = sorted(scores.items(), key=lambda kv: kv[1], reverse=True)
-        return ranked[:top_k]
+        result = ranked[:top_k]
+        logger.debug(
+            "BM25Index: query=%r returned %d/%d results",
+            query[:50],
+            len(result),
+            len(scores),
+        )
+        return result
