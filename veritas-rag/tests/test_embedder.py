@@ -111,3 +111,33 @@ def test_embed_dim_attribute_matches_output():
     assert emb.dim == 192
     result = emb.embed(["test"])
     assert result.shape[1] == 192
+
+
+def test_embed_all_rows_unit_norm():
+    emb = HashingEmbedder(dim=128)
+    texts = ["hello world", "machine learning", "quantum computing"]
+    result = emb.embed(texts)
+    for row in result:
+        norm = float(np.linalg.norm(row))
+        assert abs(norm - 1.0) < 1e-4
+
+
+def test_embed_deterministic_across_calls():
+    emb = HashingEmbedder(dim=64)
+    v1 = emb.embed(["same text exactly"])
+    v2 = emb.embed(["same text exactly"])
+    assert np.allclose(v1, v2)
+
+
+def test_embed_different_text_different_vectors():
+    emb = HashingEmbedder(dim=64)
+    v1 = emb.embed(["alpha beta gamma"])
+    v2 = emb.embed(["delta epsilon zeta"])
+    assert not np.allclose(v1, v2)
+
+
+@pytest.mark.parametrize("dim", [32, 64, 128, 256])
+def test_embed_various_dims(dim):
+    emb = HashingEmbedder(dim=dim)
+    result = emb.embed(["test embedding dimension"])
+    assert result.shape == (1, dim)
