@@ -11,6 +11,8 @@ from io import BytesIO
 from pathlib import Path
 from typing import Any
 
+__all__ = ["detect_source_type", "extract_text"]
+
 logger = logging.getLogger(__name__)
 
 
