@@ -13,6 +13,7 @@ _SENTENCE_END = re.compile(r"(?<=[.!?])\s+")
 
 
 def _split_sentences(text: str) -> list[str]:
+    """Split *text* into non-empty sentences at terminal punctuation boundaries."""
     return [s for s in _SENTENCE_END.split(text) if s.strip()]
 
 
