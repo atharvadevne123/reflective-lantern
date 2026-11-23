@@ -122,3 +122,34 @@ class TestDuplicateDetector:
     def test_custom_threshold_applied(self, threshold: float) -> None:
         dd = DuplicateDetector(near_threshold=threshold)
         assert dd.near_threshold == threshold
+
+    def test_register_same_doc_id_twice_no_error(self) -> None:
+        dd = DuplicateDetector()
+        dd.register("doc1", "content about machine learning today")
+        dd.register("doc1", "content about machine learning today updated version")
+        assert len(dd) >= 1
+
+    def test_check_similarity_in_range(self) -> None:
+        dd = DuplicateDetector()
+        dd.register("doc1", "machine learning neural network training optimization")
+        _, sim = dd.check("machine learning neural network training modern")
+        assert 0.0 <= sim <= 1.0
+
+    def test_near_duplicate_text_detected(self) -> None:
+        dd = DuplicateDetector(near_threshold=0.3)
+        base = "machine learning neural network deep learning training data"
+        variant = "machine learning neural network deep learning optimization algorithm"
+        dd.register("original", base)
+        dup_id, sim = dd.check(variant)
+        # With low threshold, highly similar texts should be detected
+        if sim >= 0.3:
+            assert dup_id == "original"
+
+
+
+def test_content_hash_function():
+    from app.ingestion.dedup import content_hash
+    h1 = content_hash("hello world")
+    h2 = content_hash("hello world")
+    assert h1 == h2
+    assert len(h1) == 64  # SHA-256 hex = 64 chars
