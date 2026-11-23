@@ -44,6 +44,15 @@ class Embedder(Protocol):
 
 
 def _bucket(feature: str, dim: int) -> tuple[int, float]:
+    """Hash *feature* to a (bucket_index, sign) pair for feature hashing.
+
+    Args:
+        feature: Pre-formatted feature string to hash.
+        dim: Number of hash buckets (output vector length).
+
+    Returns:
+        A (index, sign) tuple where index < dim and sign is ±1.0.
+    """
     digest = hashlib.blake2b(feature.encode("utf-8"), digest_size=8).digest()
     value = struct.unpack("<Q", digest)[0]
     index = value % dim
