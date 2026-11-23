@@ -50,34 +50,34 @@ class TestRetrievalCache:
         cache = RetrievalCache()
         assert cache.get("anything") is None
 
-    def test_set_and_get(self) -> None:
+    def test_put_and_get(self) -> None:
         cache = RetrievalCache()
         result = {"chunks": ["a"]}
-        cache.set("query", result)
+        cache.put("query", result)
         assert cache.get("query") == result
 
     def test_hit_increments_counter(self) -> None:
         cache = RetrievalCache()
-        cache.set("q", {"data": 1})
-        before_hits = cache._counters.get("hits", 0)
+        cache.put("q", {"data": 1})
+        before_hits = cache.hits
         cache.get("q")
-        assert cache._counters.get("hits", 0) > before_hits
+        assert cache.hits > before_hits
 
     def test_miss_increments_counter(self) -> None:
         cache = RetrievalCache()
-        before_misses = cache._counters.get("misses", 0)
+        before_misses = cache.misses
         cache.get("not_cached")
-        assert cache._counters.get("misses", 0) > before_misses
+        assert cache.misses > before_misses
 
     def test_evicts_oldest_when_full(self) -> None:
         cache = RetrievalCache(max_size=3)
         for i in range(4):
-            cache.set(f"q{i}", {"i": i})
-        assert len(cache._cache) <= 3
+            cache.put(f"q{i}", {"i": i})
+        assert len(cache) <= 3
 
     def test_ttl_expiry(self) -> None:
         cache = RetrievalCache(ttl_seconds=0.05)
-        cache.set("q", {"data": 1})
+        cache.put("q", {"data": 1})
         time.sleep(0.1)
         assert cache.get("q") is None
 
@@ -85,3 +85,37 @@ class TestRetrievalCache:
         cache = RetrievalCache()
         stats = cache.stats()
         assert isinstance(stats, dict)
+
+    def test_invalidate_all_clears_cache(self) -> None:
+        cache = RetrievalCache()
+        for i in range(5):
+            cache.put(f"query{i}", {"data": i})
+        cache.invalidate_all()
+        assert len(cache) == 0
+
+    def test_warm_populates_cache(self) -> None:
+        cache = RetrievalCache()
+        pairs = [("query one", {"r": 1}), ("query two", {"r": 2})]
+        inserted = cache.warm(pairs)
+        assert inserted == 2
+        assert cache.get("query one") is not None
+
+    def test_stats_hit_rate_increases_on_hits(self) -> None:
+        cache = RetrievalCache()
+        cache.put("q", {"data": 1})
+        cache.get("q")
+        cache.get("q")
+        stats = cache.stats()
+        assert stats["hits"] == 2
+
+    def test_cache_len_reflects_entries(self) -> None:
+        cache = RetrievalCache()
+        cache.put("a", 1)
+        cache.put("b", 2)
+        assert len(cache) == 2
+
+    def test_put_and_get_same_value(self) -> None:
+        cache = RetrievalCache()
+        cache.put("my query", {"result": "answer"})
+        result = cache.get("my query")
+        assert result == {"result": "answer"}
