@@ -95,3 +95,38 @@ def test_exact_query_scores_highest(index):
     # target should be in results with a high score
     ids = [r[0] for r in result]
     assert "target" in ids
+
+
+def test_search_returns_top_k_limit(index):
+    for i in range(20):
+        index.add([f"c{i}"], _unit())
+    results = index.search(_unit()[0], top_k=5)
+    assert len(results) <= 5
+
+
+def test_search_empty_index_returns_empty(index):
+    assert index.search(_unit()[0], top_k=10) == []
+
+
+def test_remove_deleted_not_returned(index):
+    v = _unit()
+    index.add(["keep"], _unit())
+    index.add(["remove-me"], v)
+    index.remove(["remove-me"])
+    results = index.search(v[0], top_k=10)
+    assert all(cid != "remove-me" for cid, _ in results)
+
+
+def test_len_excludes_deleted(index):
+    for i in range(5):
+        index.add([f"c{i}"], _unit())
+    index.remove(["c0", "c1"])
+    assert len(index) == 3
+
+
+def test_scores_are_floats(index):
+    for i in range(3):
+        index.add([f"c{i}"], _unit())
+    results = index.search(_unit()[0], top_k=3)
+    for _, score in results:
+        assert isinstance(score, float)
