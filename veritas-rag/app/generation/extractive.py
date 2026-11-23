@@ -37,6 +37,7 @@ def _stem(token: str) -> str:
 
 
 def _stemmed(text: str) -> set[str]:
+    """Return the set of stemmed content tokens in *text*."""
     return {_stem(t) for t in tokenize(text)}
 
 
@@ -44,6 +45,11 @@ class ExtractiveGenerator:
     """Select the most query-relevant sentences from the evidence."""
 
     def __init__(self, max_sentences: int = 3) -> None:
+        """Create an ExtractiveGenerator that returns at most max_sentences per answer.
+
+        Args:
+            max_sentences: Maximum number of verbatim evidence sentences to include.
+        """
         self.max_sentences = max_sentences
 
     def generate(self, query: str, chunks: list[ScoredChunk]) -> tuple[str, list[Citation]]:
