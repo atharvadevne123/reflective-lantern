@@ -133,3 +133,46 @@ def test_len_counts_distinct_sources():
     store.add(_make_doc(source="b.txt", version=1, content_hash="h2"))
     store.add(_make_doc(source="a.txt", version=2, content_hash="h3"))
     assert len(store) == 2
+
+
+def test_is_unchanged_new_source_returns_false():
+    store = VersionStore()
+    assert store.is_unchanged("new.txt", "hash123") is False
+
+
+def test_is_unchanged_same_hash_returns_true():
+    store = VersionStore()
+    store.add(_make_doc(source="file.txt", version=1, content_hash="abc123"))
+    assert store.is_unchanged("file.txt", "abc123") is True
+
+
+def test_is_unchanged_different_hash_returns_false():
+    store = VersionStore()
+    store.add(_make_doc(source="file.txt", version=1, content_hash="abc123"))
+    assert store.is_unchanged("file.txt", "def456") is False
+
+
+def test_next_version_new_source_is_one():
+    store = VersionStore()
+    assert store.next_version("brand-new.txt") == 1
+
+
+def test_history_length_matches_add_count():
+    store = VersionStore()
+    for v in range(1, 6):
+        store.add(_make_doc(version=v, content_hash=f"hash{v}"))
+    assert len(store.history("src.txt")) == 5
+
+
+def test_make_doc_id_stable():
+    from app.ingestion.versioning import make_doc_id
+    id1 = make_doc_id("file.txt", 1)
+    id2 = make_doc_id("file.txt", 1)
+    assert id1 == id2
+
+
+def test_make_doc_id_different_versions():
+    from app.ingestion.versioning import make_doc_id
+    id1 = make_doc_id("file.txt", 1)
+    id2 = make_doc_id("file.txt", 2)
+    assert id1 != id2
