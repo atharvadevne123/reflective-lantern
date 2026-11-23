@@ -14,6 +14,8 @@ from typing import Protocol
 
 from .bm25 import tokenize
 
+__all__ = ["LexicalReranker", "Reranker"]
+
 logger = logging.getLogger(__name__)
 
 
