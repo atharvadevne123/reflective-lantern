@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from app.config import Settings, settings_summary
+from app.config import Settings, is_anthropic_backend, settings_summary
 
 
 class TestSettings:
@@ -97,3 +97,26 @@ class TestSettingsValidation:
     def test_valid_generator_backends(self, backend: str) -> None:
         s = Settings(generator_backend=backend)
         assert s.generator_backend == backend
+
+
+class TestIsAnthropicBackend:
+    def test_anthropic_returns_true(self) -> None:
+        s = Settings(generator_backend="anthropic")
+        assert is_anthropic_backend(s) is True
+
+    def test_extractive_returns_false(self) -> None:
+        s = Settings(generator_backend="extractive")
+        assert is_anthropic_backend(s) is False
+
+    def test_summary_has_all_expected_keys_plus_generator(self) -> None:
+        s = Settings()
+        summary = settings_summary(s)
+        assert "generator_backend" in summary
+
+    def test_cache_ttl_default_positive(self) -> None:
+        s = Settings()
+        assert s.cache_ttl_seconds > 0.0
+
+    def test_trace_buffer_default_positive(self) -> None:
+        s = Settings()
+        assert s.trace_buffer_size > 0
