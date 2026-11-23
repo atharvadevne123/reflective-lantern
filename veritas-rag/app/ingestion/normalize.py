@@ -5,6 +5,8 @@ from __future__ import annotations
 import re
 import unicodedata
 
+__all__ = ["normalize_text", "strip_email_quotes", "truncate_to_bytes"]
+
 _WHITESPACE = re.compile(r"[ \t\f\v]+")
 _MANY_NEWLINES = re.compile(r"\n{3,}")
 _CONTROL = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
