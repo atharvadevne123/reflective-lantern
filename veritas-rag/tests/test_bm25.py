@@ -126,3 +126,39 @@ def test_bm25_custom_params(k1, b):
     idx.add("c1", "python machine learning")
     results = idx.search("python")
     assert len(results) == 1
+
+
+def test_bm25_scores_sorted_descending():
+    idx = BM25Index()
+    idx.add("c1", "machine learning neural network deep learning architecture")
+    idx.add("c2", "machine learning basics tutorial")
+    idx.add("c3", "cooking pasta recipe")
+    results = idx.search("machine learning neural", top_k=3)
+    scores = [s for _, s in results]
+    assert scores == sorted(scores, reverse=True)
+
+
+def test_bm25_exact_match_higher_than_partial():
+    idx = BM25Index()
+    idx.add("exact", "neural network architecture design patterns")
+    idx.add("partial", "some unrelated text with neural")
+    results = idx.search("neural network architecture", top_k=2)
+    result_map = {cid: s for cid, s in results}
+    assert result_map.get("exact", 0) >= result_map.get("partial", 0)
+
+
+def test_bm25_update_by_remove_and_add():
+    idx = BM25Index()
+    idx.add("c1", "original content about machine learning")
+    idx.remove("c1")
+    idx.add("c1", "updated content about deep learning transformers")
+    results = idx.search("transformers deep", top_k=1)
+    assert len(results) == 1
+
+
+def test_bm25_multiple_removes_do_not_error():
+    idx = BM25Index()
+    idx.add("c1", "some content")
+    idx.remove("c1")
+    idx.remove("c1")  # second remove should be a no-op
+    assert len(idx) == 0
