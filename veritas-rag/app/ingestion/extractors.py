@@ -20,23 +20,28 @@ class _HTMLTextExtractor(HTMLParser):
     _SKIP = {"script", "style", "noscript"}
 
     def __init__(self) -> None:
+        """Initialize the HTML text extractor with empty part accumulator."""
         super().__init__()
         self._parts: list[str] = []
         self._skip_depth = 0
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        """Increment skip depth when entering a non-visible tag."""
         if tag in self._SKIP:
             self._skip_depth += 1
 
     def handle_endtag(self, tag: str) -> None:
+        """Decrement skip depth when leaving a non-visible tag."""
         if tag in self._SKIP and self._skip_depth > 0:
             self._skip_depth -= 1
 
     def handle_data(self, data: str) -> None:
+        """Accumulate visible text data, ignoring script/style bodies."""
         if self._skip_depth == 0 and data.strip():
             self._parts.append(data.strip())
 
     def text(self) -> str:
+        """Return all accumulated visible text joined by newlines."""
         return "\n".join(self._parts)
 
 
