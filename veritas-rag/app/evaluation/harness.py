@@ -39,6 +39,7 @@ class EvalReport:
     details: list[dict[str, Any]] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize this evaluation report to a plain dictionary."""
         return {
             "recall_at_k": self.recall_at_k,
             "answer_accuracy": self.answer_accuracy,

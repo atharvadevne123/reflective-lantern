@@ -80,6 +80,7 @@ def consistency_score(
     """
 
     def rank_credit(rank: int | None) -> float:
+        """Convert a 1-based rank position to a [0, 1] credit score."""
         if rank is None:
             return 0.0
         return max(0.0, 1.0 - (rank - 1) / top_k)
