@@ -12,8 +12,11 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from app.scoring.trust import (
     SOURCE_QUALITY_PRIORS,
+    answer_confidence,
+    consistency_score,
     freshness_score,
     source_quality_score,
+    trust_tier,
 )
 
 
@@ -80,3 +83,49 @@ def test_source_quality_all_types(source_type):
     score = source_quality_score(source_type)
     assert isinstance(score, float)
     assert 0.0 <= score <= 1.0
+
+
+def test_trust_tier_high():
+    assert trust_tier(0.80) == "high"
+
+
+def test_trust_tier_medium():
+    assert trust_tier(0.60) == "medium"
+
+
+def test_trust_tier_low():
+    assert trust_tier(0.30) == "low"
+
+
+def test_trust_tier_minimal():
+    assert trust_tier(0.10) == "minimal"
+
+
+@pytest.mark.parametrize("score,expected", [
+    (1.0, "high"),
+    (0.75, "high"),
+    (0.50, "medium"),
+    (0.25, "low"),
+    (0.0, "minimal"),
+])
+def test_trust_tier_boundaries(score, expected):
+    assert trust_tier(score) == expected
+
+
+def test_answer_confidence_empty_returns_zero():
+    assert answer_confidence([]) == 0.0
+
+
+def test_consistency_score_both_found_is_higher():
+    score_both = consistency_score(1, 1, 0.8, 50)
+    score_one = consistency_score(1, None, 0.8, 50)
+    assert score_both > score_one
+
+
+def test_freshness_score_monotone_decay():
+    now = datetime.now(UTC)
+    scores = [
+        freshness_score((now - timedelta(days=d)).isoformat(), half_life_days=365.0, now=now)
+        for d in [0, 100, 200, 400]
+    ]
+    assert scores == sorted(scores, reverse=True)
