@@ -77,3 +77,29 @@ def test_query_text_relevance(query, text, expect_nonzero, reranker):
         assert scores[0] > 0.0
     else:
         assert scores[0] >= 0.0  # could be zero or low
+
+
+def test_scores_in_zero_one_range(reranker):
+    texts = [
+        "machine learning neural network deep learning",
+        "cooking pasta recipe italian food wine",
+        "python programming code software development",
+    ]
+    scores = reranker.score("machine learning python", texts)
+    assert all(0.0 <= s <= 1.0 for s in scores)
+
+
+def test_more_matching_terms_gives_higher_score(reranker):
+    full_match = "python machine learning neural network deep learning"
+    partial_match = "python cooking recipe"
+    scores = reranker.score("python machine learning neural", [full_match, partial_match])
+    assert scores[0] > scores[1]
+
+
+def test_empty_texts_list_returns_empty(reranker):
+    assert reranker.score("any query", []) == []
+
+
+def test_stopword_only_query_returns_all_zeros(reranker):
+    scores = reranker.score("the and or is", ["some text", "other text"])
+    assert all(s == 0.0 for s in scores)
