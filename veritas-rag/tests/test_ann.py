@@ -130,3 +130,35 @@ def test_scores_are_floats(index):
     results = index.search(_unit()[0], top_k=3)
     for _, score in results:
         assert isinstance(score, float)
+
+
+def test_add_single_vector(index):
+    v = _unit()
+    index.add(["solo"], v)
+    assert len(index) == 1
+
+
+def test_search_results_sorted_descending(index):
+    for i in range(5):
+        index.add([f"c{i}"], _unit())
+    results = index.search(_unit()[0], top_k=5)
+    scores = [s for _, s in results]
+    assert scores == sorted(scores, reverse=True)
+
+
+def test_remove_all_then_search_empty(index):
+    for i in range(3):
+        index.add([f"c{i}"], _unit())
+    index.remove(["c0", "c1", "c2"])
+    assert index.search(_unit()[0], top_k=5) == []
+
+
+def test_dim_attribute_matches_expected(index):
+    assert index.dim == 16
+
+
+def test_add_multiple_batches_accumulates(index):
+    index.add(["a"], _unit())
+    index.add(["b"], _unit())
+    index.add(["c"], _unit())
+    assert len(index) == 3
