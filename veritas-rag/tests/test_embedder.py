@@ -75,3 +75,39 @@ def test_single_text_embed_has_unit_norm(text):
     result = emb.embed([text])
     norm = float(np.linalg.norm(result[0]))
     assert abs(norm - 1.0) < 1e-5
+
+
+def test_similar_texts_higher_cosine_than_dissimilar():
+    emb = HashingEmbedder(dim=256)
+    v1 = emb.embed(["python machine learning models"])[0]
+    v2 = emb.embed(["python machine learning neural"])[0]
+    v3 = emb.embed(["cooking pasta italian recipe"])[0]
+    sim_similar = float(v1 @ v2)
+    sim_dissimilar = float(v1 @ v3)
+    assert sim_similar > sim_dissimilar
+
+
+def test_embed_batch_returns_correct_shape():
+    emb = HashingEmbedder(dim=128)
+    texts = ["a", "b", "c", "d"]
+    result = emb.embed(texts)
+    assert result.shape == (4, 128)
+
+
+def test_embed_empty_batch_returns_zero_rows():
+    emb = HashingEmbedder(dim=64)
+    result = emb.embed([])
+    assert result.shape == (0, 64)
+
+
+def test_embed_dtype_is_float32():
+    emb = HashingEmbedder(dim=64)
+    result = emb.embed(["hello world"])
+    assert result.dtype == np.float32
+
+
+def test_embed_dim_attribute_matches_output():
+    emb = HashingEmbedder(dim=192)
+    assert emb.dim == 192
+    result = emb.embed(["test"])
+    assert result.shape[1] == 192
