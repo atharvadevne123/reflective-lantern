@@ -5,6 +5,8 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass, field
 
+__all__ = ["Settings", "settings", "settings_summary"]
+
 
 def _env_float(name: str, default: float) -> float:
     """Read an environment variable as a float, returning *default* if unset."""
@@ -131,3 +133,15 @@ def settings_summary(s: Settings) -> dict[str, object]:
         "generator_backend": s.generator_backend,
         "near_dup_threshold": s.near_dup_threshold,
     }
+
+
+def is_anthropic_backend(s: Settings) -> bool:
+    """Return True when the pipeline is configured to use the Anthropic generator.
+
+    Args:
+        s: Settings instance to inspect.
+
+    Returns:
+        True if generator_backend is "anthropic", False otherwise.
+    """
+    return s.generator_backend == "anthropic"
