@@ -14,6 +14,8 @@ from dataclasses import dataclass, field
 
 from ..schemas import Document
 
+__all__ = ["VersionChain", "VersionStore", "make_doc_id"]
+
 logger = logging.getLogger(__name__)
 
 
