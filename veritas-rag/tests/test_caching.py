@@ -4,7 +4,14 @@ from __future__ import annotations
 
 import time
 
-from app.caching import RetrievalCache, cache_key, normalize_query
+from app.caching import (
+    RetrievalCache,
+    cache_age_seconds,
+    cache_fill_ratio,
+    cache_key,
+    normalize_query,
+    top_cached_queries,
+)
 
 
 class TestNormalizeQuery:
@@ -119,3 +126,65 @@ class TestRetrievalCache:
         cache.put("my query", {"result": "answer"})
         result = cache.get("my query")
         assert result == {"result": "answer"}
+
+    def test_evict_expired_removes_entries(self) -> None:
+        cache = RetrievalCache(ttl_seconds=0.05)
+        cache.put("q1", {"data": 1})
+        cache.put("q2", {"data": 2})
+        time.sleep(0.1)
+        evicted = cache.evict_expired()
+        assert evicted == 2
+        assert len(cache) == 0
+
+    def test_evict_expired_keeps_live_entries(self) -> None:
+        cache = RetrievalCache(ttl_seconds=10.0)
+        cache.put("q", {"data": 1})
+        evicted = cache.evict_expired()
+        assert evicted == 0
+        assert len(cache) == 1
+
+
+class TestCacheUtilities:
+    def test_cache_fill_ratio_empty(self) -> None:
+        cache = RetrievalCache(max_size=100)
+        assert cache_fill_ratio(cache) == 0.0
+
+    def test_cache_fill_ratio_half(self) -> None:
+        cache = RetrievalCache(max_size=4)
+        cache.put("a", 1)
+        cache.put("b", 2)
+        assert cache_fill_ratio(cache) == 0.5
+
+    def test_cache_fill_ratio_full(self) -> None:
+        cache = RetrievalCache(max_size=2)
+        cache.put("x", 1)
+        cache.put("y", 2)
+        assert cache_fill_ratio(cache) == 1.0
+
+    def test_top_cached_queries_order(self) -> None:
+        cache = RetrievalCache()
+        for q in ["first", "second", "third"]:
+            cache.put(q, q)
+        top = top_cached_queries(cache, n=2)
+        assert len(top) == 2
+
+    def test_top_cached_queries_empty(self) -> None:
+        cache = RetrievalCache()
+        assert top_cached_queries(cache, n=5) == []
+
+    def test_cache_age_seconds_present(self) -> None:
+        cache = RetrievalCache()
+        cache.put("q", {"data": 1})
+        age = cache_age_seconds(cache, "q")
+        assert age is not None
+        assert age >= 0.0
+
+    def test_cache_age_seconds_absent(self) -> None:
+        cache = RetrievalCache()
+        assert cache_age_seconds(cache, "not_there") is None
+
+    def test_cache_age_seconds_expired(self) -> None:
+        cache = RetrievalCache(ttl_seconds=0.05)
+        cache.put("q", {"data": 1})
+        time.sleep(0.1)
+        assert cache_age_seconds(cache, "q") is None
