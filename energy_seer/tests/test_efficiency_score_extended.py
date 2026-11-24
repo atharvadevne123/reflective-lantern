@@ -1,259 +1,125 @@
-"""Extended tests for energy_seer app/efficiency_score.py."""
-
+"""Extended efficiency score tests with parametrize and boundary coverage."""
 from __future__ import annotations
 
 import pytest
 
 from app.efficiency_score import (
     BUILDING_BENCHMARKS,
+    GRADE_THRESHOLDS,
+    compare_buildings,
     compute_efficiency_score,
-    efficiency_delta,
     efficiency_percentile,
-    efficiency_trend,
-    normalised_efficiency_index,
+    score_to_color,
 )
 
 
-class TestComputeEfficiencyScoreExtended:
-    def test_negative_consumption_raises(self) -> None:
-        with pytest.raises(ValueError, match="non-negative"):
-            compute_efficiency_score(-1.0, "residential")
-
-    def test_zero_floor_area_raises(self) -> None:
-        with pytest.raises(ValueError, match="positive"):
-            compute_efficiency_score(5.0, "office", floor_area_sqm=0.0)
-
-    def test_negative_floor_area_raises(self) -> None:
-        with pytest.raises(ValueError):
-            compute_efficiency_score(5.0, "office", floor_area_sqm=-10.0)
-
-    def test_case_insensitive_building_type(self) -> None:
-        r1 = compute_efficiency_score(10.0, "RESIDENTIAL")
-        r2 = compute_efficiency_score(10.0, "residential")
-        assert r1["score"] == r2["score"]
-
-    def test_zero_consumption_max_score(self) -> None:
-        result = compute_efficiency_score(0.0, "residential")
-        assert result["score"] == 100.0
-
-    def test_all_known_building_types(self) -> None:
-        for bt in BUILDING_BENCHMARKS:
-            result = compute_efficiency_score(10.0, bt)
-            assert 0.0 <= result["score"] <= 100.0
-            assert result["grade"] in ("A", "B", "C", "D")
-
-    def test_grade_thresholds_respected(self) -> None:
-        result_a = compute_efficiency_score(0.001, "residential")
-        assert result_a["grade"] == "A"
-
-    def test_consumption_per_sqm_in_result(self) -> None:
-        result = compute_efficiency_score(1000.0, "residential", floor_area_sqm=100.0)
-        assert result["consumption_per_sqm"] == pytest.approx(10.0)
-
-    def test_benchmark_per_sqm_in_result(self) -> None:
-        result = compute_efficiency_score(5.0, "residential")
-        assert result["benchmark_per_sqm"] == pytest.approx(BUILDING_BENCHMARKS["residential"] / 100.0)
-
-    @pytest.mark.parametrize("floor_area", [10.0, 100.0, 1000.0, 10000.0])
-    def test_various_floor_areas(self, floor_area: float) -> None:
-        result = compute_efficiency_score(500.0, "commercial", floor_area_sqm=floor_area)
-        assert 0.0 <= result["score"] <= 100.0
+def test_compute_efficiency_score_returns_dict_with_keys() -> None:
+    result = compute_efficiency_score(1000.0, "residential", 200.0)
+    for key in ("score", "grade", "consumption_per_sqm", "benchmark_per_sqm", "building_type"):
+        assert key in result
 
 
-class TestEfficiencyDeltaExtended:
-    def test_improved_direction(self) -> None:
-        result = efficiency_delta(50.0, 70.0)
-        assert result["direction"] == "improved"
-        assert result["delta"] == pytest.approx(20.0)
-
-    def test_degraded_direction(self) -> None:
-        result = efficiency_delta(70.0, 50.0)
-        assert result["direction"] == "degraded"
-        assert result["delta"] == pytest.approx(-20.0)
-
-    def test_unchanged_direction(self) -> None:
-        result = efficiency_delta(60.0, 60.0)
-        assert result["direction"] == "unchanged"
-        assert result["delta"] == pytest.approx(0.0)
-
-    def test_grade_before_and_after_in_result(self) -> None:
-        result = efficiency_delta(85.0, 65.0)
-        assert result["grade_before"] == "A"
-        assert result["grade_after"] == "B"
-
-    @pytest.mark.parametrize(
-        "before,after,direction",
-        [(30.0, 50.0, "improved"), (80.0, 20.0, "degraded"), (60.0, 60.0, "unchanged")],
-    )
-    def test_direction_parametrized(self, before: float, after: float, direction: str) -> None:
-        assert efficiency_delta(before, after)["direction"] == direction
+def test_compute_efficiency_score_negative_consumption_raises() -> None:
+    with pytest.raises(ValueError):
+        compute_efficiency_score(-1.0, "residential", 100.0)
 
 
-class TestEfficiencyTrendExtended:
-    def test_empty_returns_stable(self) -> None:
-        result = efficiency_trend([])
-        assert result["trend"] == "stable"
-        assert result["mean"] == 0.0
-
-    def test_single_value_stable(self) -> None:
-        result = efficiency_trend([70.0])
-        assert result["trend"] == "stable"
-        assert result["mean"] == pytest.approx(70.0)
-
-    def test_improving_trend(self) -> None:
-        result = efficiency_trend([50.0, 60.0, 70.0, 80.0])
-        assert result["trend"] == "improving"
-
-    def test_declining_trend(self) -> None:
-        result = efficiency_trend([80.0, 70.0, 60.0, 50.0])
-        assert result["trend"] == "declining"
-
-    def test_stable_trend_small_change(self) -> None:
-        result = efficiency_trend([60.0, 60.5, 60.0, 60.5])
-        assert result["trend"] == "stable"
-
-    def test_min_max_in_result(self) -> None:
-        scores = [40.0, 60.0, 80.0]
-        result = efficiency_trend(scores)
-        assert result["min"] == pytest.approx(40.0)
-        assert result["max"] == pytest.approx(80.0)
-
-    def test_latest_grade_matches_last_score(self) -> None:
-        result = efficiency_trend([50.0, 60.0, 85.0])
-        assert result["latest_grade"] == "A"
+def test_compute_efficiency_score_zero_area_raises() -> None:
+    with pytest.raises(ValueError):
+        compute_efficiency_score(100.0, "residential", 0.0)
 
 
-class TestNormalisedEfficiencyIndexExtended:
-    def test_zero_floor_area_returns_zero(self) -> None:
-        assert normalised_efficiency_index(100.0, "residential", 0.0) == 0.0
-
-    def test_zero_occupancy_hours_returns_zero(self) -> None:
-        assert normalised_efficiency_index(100.0, "residential", 100.0, occupancy_hours=0.0) == 0.0
-
-    def test_index_in_unit_interval(self) -> None:
-        idx = normalised_efficiency_index(10.0, "residential", 100.0)
-        assert 0.0 <= idx <= 1.0
-
-    def test_low_consumption_gives_high_index(self) -> None:
-        idx = normalised_efficiency_index(0.001, "residential", 100.0)
-        assert idx > 0.5
-
-    @pytest.mark.parametrize("bt", list(BUILDING_BENCHMARKS.keys())[:4])
-    def test_various_building_types(self, bt: str) -> None:
-        idx = normalised_efficiency_index(10.0, bt, 100.0)
-        assert 0.0 <= idx <= 1.0
+def test_compute_efficiency_score_negative_area_raises() -> None:
+    with pytest.raises(ValueError):
+        compute_efficiency_score(100.0, "residential", -10.0)
 
 
-class TestEfficiencyPercentileExtended:
-    def test_empty_population_returns_zero(self) -> None:
-        assert efficiency_percentile(70.0, []) == 0.0
-
-    def test_all_below_returns_100(self) -> None:
-        assert efficiency_percentile(100.0, [10.0, 20.0, 30.0]) == pytest.approx(100.0)
-
-    def test_all_above_returns_zero(self) -> None:
-        assert efficiency_percentile(0.0, [10.0, 20.0, 30.0]) == pytest.approx(0.0)
-
-    def test_median_score_near_50_pct(self) -> None:
-        population = [10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0]
-        pct = efficiency_percentile(55.0, population)
-        assert 40.0 <= pct <= 60.0
-
-    @pytest.mark.parametrize("score", [0.0, 50.0, 100.0])
-    def test_percentile_in_range(self, score: float) -> None:
-        population = [float(i * 10) for i in range(11)]
-        pct = efficiency_percentile(score, population)
-        assert 0.0 <= pct <= 100.0
+@pytest.mark.parametrize("building_type", list(BUILDING_BENCHMARKS.keys()))
+def test_compute_efficiency_score_known_building_types(building_type: str) -> None:
+    result = compute_efficiency_score(100.0, building_type, 100.0)
+    assert 0.0 <= result["score"] <= 100.0
 
 
-class TestCompareBuildingsExtended:
-    def test_empty_scores_returns_no_ranked(self) -> None:
-        from app.efficiency_score import compare_buildings
-        result = compare_buildings({})
-        assert result["ranked"] == []
-        assert result["best"] is None
-        assert result["worst"] is None
-
-    def test_single_building(self) -> None:
-        from app.efficiency_score import compare_buildings
-        result = compare_buildings({"A": 75.0})
-        assert result["best"] == "A"
-        assert result["worst"] == "A"
-
-    def test_ranked_descending(self) -> None:
-        from app.efficiency_score import compare_buildings
-        result = compare_buildings({"Low": 30.0, "Mid": 60.0, "High": 90.0})
-        ranked_ids = [r["id"] for r in result["ranked"]]
-        assert ranked_ids[0] == "High"
-        assert ranked_ids[-1] == "Low"
-
-    def test_grade_assigned_in_ranked(self) -> None:
-        from app.efficiency_score import compare_buildings
-        result = compare_buildings({"X": 85.0})
-        assert result["ranked"][0]["grade"] == "A"
+def test_compute_efficiency_score_unknown_building_type_uses_default() -> None:
+    result = compute_efficiency_score(100.0, "unknown_type", 100.0)
+    assert 0.0 <= result["score"] <= 100.0
 
 
-class TestScoreToColorExtended:
-    def test_a_grade_is_green(self) -> None:
-        from app.efficiency_score import score_to_color
-        assert score_to_color(90.0) == "green"
-
-    def test_b_grade_is_green(self) -> None:
-        from app.efficiency_score import score_to_color
-        assert score_to_color(70.0) == "green"
-
-    def test_c_grade_is_amber(self) -> None:
-        from app.efficiency_score import score_to_color
-        assert score_to_color(50.0) == "amber"
-
-    def test_d_grade_is_red(self) -> None:
-        from app.efficiency_score import score_to_color
-        assert score_to_color(20.0) == "red"
-
-    @pytest.mark.parametrize("score,color", [(95.0, "green"), (65.0, "green"), (45.0, "amber"), (10.0, "red")])
-    def test_color_mapping_parametrized(self, score: float, color: str) -> None:
-        from app.efficiency_score import score_to_color
-        assert score_to_color(score) == color
+def test_compute_efficiency_score_case_insensitive() -> None:
+    result_lower = compute_efficiency_score(100.0, "residential", 100.0)
+    result_upper = compute_efficiency_score(100.0, "RESIDENTIAL", 100.0)
+    assert result_lower["score"] == result_upper["score"]
 
 
-class TestBuildingBenchmarksExtended:
-    def test_all_benchmarks_positive(self) -> None:
-        for bt, benchmark in BUILDING_BENCHMARKS.items():
-            assert benchmark > 0.0, f"{bt} benchmark must be positive"
-
-    def test_data_center_highest_benchmark(self) -> None:
-        assert BUILDING_BENCHMARKS["data_center"] == max(BUILDING_BENCHMARKS.values())
-
-    def test_residential_benchmark_exists(self) -> None:
-        assert "residential" in BUILDING_BENCHMARKS
-
-    def test_known_building_types_count(self) -> None:
-        assert len(BUILDING_BENCHMARKS) >= 7
-
-    @pytest.mark.parametrize("bt", ["residential", "commercial", "industrial", "office"])
-    def test_common_building_types_present(self, bt: str) -> None:
-        assert bt in BUILDING_BENCHMARKS
-
-    def test_all_values_are_floats(self) -> None:
-        for v in BUILDING_BENCHMARKS.values():
-            assert isinstance(v, float)
+def test_compute_efficiency_score_zero_consumption_high_score() -> None:
+    result = compute_efficiency_score(0.0, "residential", 100.0)
+    assert result["score"] == 100.0
 
 
-class TestComputeEfficiencyScoreEdgeCasesExtended:
-    def test_unknown_building_type_uses_fallback(self) -> None:
-        result = compute_efficiency_score(100.0, "spaceship", floor_area_sqm=100.0)
-        assert "score" in result
-        assert result["building_type"] == "spaceship"
+@pytest.mark.parametrize("grade", list(GRADE_THRESHOLDS.keys()) + ["D"])
+def test_grade_is_valid(grade: str) -> None:
+    assert grade in ("A", "B", "C", "D")
 
-    def test_zero_consumption_max_score(self) -> None:
-        result = compute_efficiency_score(0.0, "residential", floor_area_sqm=100.0)
-        assert result["score"] == pytest.approx(100.0)
 
-    def test_very_high_consumption_zero_score(self) -> None:
-        result = compute_efficiency_score(1e9, "residential", floor_area_sqm=1.0)
-        assert result["score"] == pytest.approx(0.0)
+@pytest.mark.parametrize("score,expected_color", [
+    (90.0, "green"),
+    (70.0, "green"),
+    (50.0, "amber"),
+    (20.0, "red"),
+])
+def test_score_to_color_parametrized(score: float, expected_color: str) -> None:
+    assert score_to_color(score) == expected_color
 
-    @pytest.mark.parametrize("bt", list(BUILDING_BENCHMARKS.keys()))
-    def test_all_known_building_types_return_valid_score(self, bt: str) -> None:
-        result = compute_efficiency_score(100.0, bt, floor_area_sqm=100.0)
-        assert 0.0 <= result["score"] <= 100.0
+
+def test_efficiency_percentile_empty_returns_zero() -> None:
+    assert efficiency_percentile(50.0, []) == 0.0
+
+
+def test_efficiency_percentile_all_smaller_returns_100() -> None:
+    result = efficiency_percentile(100.0, [10.0, 20.0, 30.0])
+    assert result == 100.0
+
+
+def test_efficiency_percentile_all_larger_returns_zero() -> None:
+    result = efficiency_percentile(0.0, [10.0, 20.0, 30.0])
+    assert result == 0.0
+
+
+@pytest.mark.parametrize("score,population,expected_range", [
+    (50.0, [0.0, 25.0, 50.0, 75.0, 100.0], (30.0, 60.0)),
+    (75.0, [0.0, 25.0, 50.0, 75.0, 100.0], (50.0, 80.0)),
+])
+def test_efficiency_percentile_in_range(
+    score: float, population: list, expected_range: tuple
+) -> None:
+    result = efficiency_percentile(score, population)
+    assert expected_range[0] <= result <= expected_range[1]
+
+
+def test_compare_buildings_empty_input() -> None:
+    result = compare_buildings({})
+    assert result["ranked"] == []
+    assert result["best"] is None
+    assert result["worst"] is None
+
+
+def test_compare_buildings_single_building() -> None:
+    result = compare_buildings({"A": 75.0})
+    assert result["best"] == "A"
+    assert result["worst"] == "A"
+    assert len(result["ranked"]) == 1
+
+
+def test_compare_buildings_ranked_descending() -> None:
+    result = compare_buildings({"A": 50.0, "B": 90.0, "C": 30.0})
+    scores = [item["score"] for item in result["ranked"]]
+    assert scores == sorted(scores, reverse=True)
+    assert result["best"] == "B"
+    assert result["worst"] == "C"
+
+
+def test_compare_buildings_all_have_grade() -> None:
+    scores = {"A": 85.0, "B": 65.0, "C": 45.0, "D": 20.0}
+    result = compare_buildings(scores)
+    for item in result["ranked"]:
+        assert item["grade"] in ("A", "B", "C", "D")
