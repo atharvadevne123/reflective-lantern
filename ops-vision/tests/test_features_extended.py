@@ -1,68 +1,90 @@
-"""Extended tests for ops-vision app/features.py transformers and helpers."""
-
+"""Extended ops-vision features tests with parametrize and boundary coverage."""
 from __future__ import annotations
+
+import math
 
 import pandas as pd
 import pytest
 
 from app.features import (
+    FEATURE_COLS,
     clip_to_unit_interval,
-    dataframe_from_dict,
+    safe_dataframe_from_dict,
     validate_positive_float,
 )
 
 
-class TestValidatePositiveFloat:
-    def test_valid_value_returned(self) -> None:
-        assert validate_positive_float(1.5, "latency") == 1.5
-
-    def test_zero_raises(self) -> None:
-        with pytest.raises((ValueError, Exception)):
-            validate_positive_float(0.0, "latency")
-
-    def test_negative_raises(self) -> None:
-        with pytest.raises((ValueError, Exception)):
-            validate_positive_float(-0.1, "cpu")
-
-    def test_large_value_ok(self) -> None:
-        assert validate_positive_float(1_000_000.0, "bytes") == 1_000_000.0
+@pytest.mark.parametrize("value,expected", [
+    (0.0, 0.0),
+    (1.0, 1.0),
+    (5.0, 5.0),
+    (100.0, 100.0),
+])
+def test_validate_positive_float_valid(value: float, expected: float) -> None:
+    assert validate_positive_float(value, "field") == pytest.approx(expected)
 
 
-class TestClipToUnitInterval:
-    def test_value_in_range_unchanged(self) -> None:
-        assert clip_to_unit_interval(0.5) == pytest.approx(0.5)
-
-    def test_below_zero_clips_to_zero(self) -> None:
-        assert clip_to_unit_interval(-1.0) == pytest.approx(0.0)
-
-    def test_above_one_clips_to_one(self) -> None:
-        assert clip_to_unit_interval(2.0) == pytest.approx(1.0)
-
-    def test_zero_boundary(self) -> None:
-        assert clip_to_unit_interval(0.0) == pytest.approx(0.0)
-
-    def test_one_boundary(self) -> None:
-        assert clip_to_unit_interval(1.0) == pytest.approx(1.0)
+@pytest.mark.parametrize("value", [-0.001, -1.0, -100.0])
+def test_validate_positive_float_negative_raises(value: float) -> None:
+    with pytest.raises(ValueError, match=">="):
+        validate_positive_float(value, "field")
 
 
-class TestDataframeFromDict:
-    def test_returns_dataframe(self) -> None:
-        payload = {"cpu_util": 0.5, "mem_util": 0.4, "latency_ms": 100.0}
-        df = dataframe_from_dict(payload)
-        assert isinstance(df, pd.DataFrame)
+@pytest.mark.parametrize("bad_value", [float("inf"), float("-inf"), float("nan")])
+def test_validate_positive_float_non_finite_raises(bad_value: float) -> None:
+    with pytest.raises(ValueError, match="finite"):
+        validate_positive_float(bad_value, "field")
 
-    def test_has_expected_columns(self) -> None:
-        payload = {"cpu_util": 0.5, "mem_util": 0.4}
-        df = dataframe_from_dict(payload)
-        assert "cpu_util" in df.columns
-        assert "mem_util" in df.columns
 
-    def test_has_one_row(self) -> None:
-        payload = {"cpu_util": 0.5}
-        df = dataframe_from_dict(payload)
-        assert len(df) == 1
+@pytest.mark.parametrize("value,expected", [
+    (-5.0, 0.0),
+    (0.0, 0.0),
+    (0.5, 0.5),
+    (1.0, 1.0),
+    (5.0, 1.0),
+])
+def test_clip_to_unit_interval_parametrized(value: float, expected: float) -> None:
+    assert clip_to_unit_interval(value) == pytest.approx(expected)
 
-    def test_values_match_payload(self) -> None:
-        payload = {"cpu_util": 0.75, "latency_ms": 200.0}
-        df = dataframe_from_dict(payload)
-        assert df["cpu_util"].iloc[0] == pytest.approx(0.75)
+
+def test_safe_dataframe_from_dict_valid_payload() -> None:
+    payload = {col: 1.0 for col in FEATURE_COLS}
+    df = safe_dataframe_from_dict(payload)
+    assert isinstance(df, pd.DataFrame)
+    assert df.shape[0] == 1
+
+
+def test_safe_dataframe_from_dict_has_all_feature_cols() -> None:
+    payload = {col: 1.0 for col in FEATURE_COLS}
+    df = safe_dataframe_from_dict(payload)
+    for col in FEATURE_COLS:
+        assert col in df.columns
+
+
+def test_safe_dataframe_from_dict_missing_fields_default_to_zero() -> None:
+    df = safe_dataframe_from_dict({})
+    assert df.shape[0] == 1
+    for col in FEATURE_COLS:
+        assert df[col].iloc[0] == 0.0
+
+
+def test_safe_dataframe_from_dict_negative_value_raises() -> None:
+    payload = {col: 1.0 for col in FEATURE_COLS}
+    payload[FEATURE_COLS[0]] = -1.0
+    with pytest.raises(ValueError):
+        safe_dataframe_from_dict(payload)
+
+
+def test_safe_dataframe_from_dict_non_numeric_string_raises() -> None:
+    payload = {col: 1.0 for col in FEATURE_COLS}
+    payload[FEATURE_COLS[0]] = "not_a_number"
+    with pytest.raises(ValueError):
+        safe_dataframe_from_dict(payload)
+
+
+@pytest.mark.parametrize("col", FEATURE_COLS)
+def test_safe_dataframe_from_dict_each_col_coerced(col: str) -> None:
+    payload = {c: 1.0 for c in FEATURE_COLS}
+    payload[col] = 42.0
+    df = safe_dataframe_from_dict(payload)
+    assert df[col].iloc[0] == pytest.approx(42.0)
