@@ -5,7 +5,6 @@ import pytest
 
 from app.validation import (
     FAULT_TYPES,
-    RANGES,
     REQUIRED_FIELDS,
     amplitudes_are_coherent,
     missing_fields,
