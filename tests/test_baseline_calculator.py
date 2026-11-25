@@ -142,3 +142,45 @@ class TestNormalisedSavingsPercent:
     )
     def test_parametrized(self, baseline: float, actual: float, expected: float) -> None:
         assert normalised_savings_percent(baseline, actual) == pytest.approx(expected)
+
+
+class TestBaselineCalculatorEdgeCases:
+    @pytest.mark.parametrize("x,y,reporting_x", [
+        ([1.0, 2.0, 3.0], [100.0, 200.0, 300.0], 4.0),
+        ([10.0, 20.0, 30.0], [500.0, 600.0, 700.0], 25.0),
+    ])
+    def test_build_regression_baseline_returns_model(
+        self, x: list, y: list, reporting_x: float
+    ) -> None:
+        from app.baseline_calculator import build_regression_baseline
+
+        model = build_regression_baseline(x, y, reporting_x)
+        assert hasattr(model, "baseline_kwh")
+
+    def test_mean_baseline_basic(self) -> None:
+        from app.baseline_calculator import mean_baseline
+
+        result = mean_baseline([100.0, 200.0, 300.0])
+        assert result == pytest.approx(200.0)
+
+    def test_energy_savings_positive_when_reduced(self) -> None:
+        from app.baseline_calculator import energy_savings
+
+        savings = energy_savings(300.0, 250.0)
+        assert savings > 0.0
+
+    def test_adjusted_baseline_basic(self) -> None:
+        from app.baseline_calculator import adjusted_baseline
+
+        result = adjusted_baseline(50.0, 2.0, 10.0)
+        assert result == pytest.approx(70.0)
+
+    @pytest.mark.parametrize("pre_kwh", [
+        [100.0, 110.0, 90.0],
+        [200.0, 200.0, 200.0],
+    ])
+    def test_mean_baseline_in_range(self, pre_kwh: list) -> None:
+        from app.baseline_calculator import mean_baseline
+
+        result = mean_baseline(pre_kwh)
+        assert min(pre_kwh) <= result <= max(pre_kwh)
