@@ -252,3 +252,41 @@ class TestFuelCellNewFunctions:
         from app.peak_shaving import revenue_from_peak_shaving
 
         assert revenue_from_peak_shaving(reduction, 15.0) >= 0.0
+
+
+class TestFuelCellEdgeCases:
+    @pytest.mark.parametrize("cell_v", [0.6, 0.7, 0.8])
+    def test_fuel_cell_efficiency_in_range(self, cell_v: float) -> None:
+        from app.fuel_cell import fuel_cell_efficiency
+
+        eff = fuel_cell_efficiency(cell_v)
+        assert 0.0 < eff <= 1.0
+
+    def test_cell_voltage_basic(self) -> None:
+        from app.fuel_cell import cell_voltage
+
+        v = cell_voltage(1.0, 0.1, 0.05)
+        assert v == pytest.approx(0.85)
+
+    @pytest.mark.parametrize("power_kw,eff", [
+        (10.0, 0.6),
+        (50.0, 0.5),
+        (100.0, 0.7),
+    ])
+    def test_hydrogen_consumption_positive(self, power_kw: float, eff: float) -> None:
+        from app.fuel_cell import hydrogen_consumption_rate
+
+        rate = hydrogen_consumption_rate(power_kw, eff)
+        assert rate > 0.0
+
+    def test_degradation_rate_non_negative(self) -> None:
+        from app.fuel_cell import degradation_rate_per_hour
+
+        rate = degradation_rate_per_hour(1000.0)
+        assert rate >= 0.0
+
+    def test_activation_overpotential_positive(self) -> None:
+        from app.fuel_cell import activation_overpotential
+
+        loss = activation_overpotential(0.5)
+        assert loss > 0.0
