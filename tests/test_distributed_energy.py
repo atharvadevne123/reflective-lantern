@@ -169,3 +169,47 @@ class TestSelfSufficiencyRate:
     )
     def test_parametrized(self, gen: float, load: float, expected: float) -> None:
         assert self_sufficiency_rate(gen, load) == pytest.approx(expected)
+
+
+class TestDistributedEnergyEdgeCases:
+    def test_grid_import_export_positive_when_deficit(self) -> None:
+        from app.distributed_energy import grid_import_export
+
+        result = grid_import_export(100.0, 50.0)
+        assert result > 0.0
+
+    def test_grid_import_export_negative_when_surplus(self) -> None:
+        from app.distributed_energy import grid_import_export
+
+        result = grid_import_export(50.0, 100.0)
+        assert result < 0.0
+
+    @pytest.mark.parametrize("actual_kwh,rated_kw,hours", [
+        (500.0, 100.0, 8760.0),
+        (1000.0, 200.0, 8760.0),
+    ])
+    def test_capacity_factor_in_range(
+        self, actual_kwh: float, rated_kw: float, hours: float
+    ) -> None:
+        from app.distributed_energy import capacity_factor
+
+        cf = capacity_factor(actual_kwh, rated_kw, hours)
+        assert 0.0 <= cf <= 1.0
+
+    def test_net_metering_credit_positive(self) -> None:
+        from app.distributed_energy import net_metering_credit
+
+        credit = net_metering_credit(100.0, 0.20, 0.10)
+        assert credit > 0.0
+
+    @pytest.mark.parametrize("exported,retail,nm_rate", [
+        (50.0, 0.25, 0.12),
+        (100.0, 0.30, 0.15),
+    ])
+    def test_net_metering_credit_parametrized(
+        self, exported: float, retail: float, nm_rate: float
+    ) -> None:
+        from app.distributed_energy import net_metering_credit
+
+        credit = net_metering_credit(exported, retail, nm_rate)
+        assert credit == pytest.approx(exported * nm_rate, rel=1e-3)
