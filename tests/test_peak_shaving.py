@@ -138,3 +138,52 @@ class TestDemandChargeReduction:
     )
     def test_parametrized(self, orig: float, shaved: float, rate: float, expected: float) -> None:
         assert demand_charge_reduction(orig, shaved, rate) == pytest.approx(expected)
+
+
+class TestPeakShavingEdgeCases:
+    @pytest.mark.parametrize("capacity,peak_load,threshold", [
+        (50.0, 100.0, 80.0),
+        (100.0, 150.0, 120.0),
+        (200.0, 300.0, 250.0),
+    ])
+    def test_run_peak_shaving_returns_result(
+        self, capacity: float, peak_load: float, threshold: float
+    ) -> None:
+        from app.peak_shaving import BatteryState, PeakShavingResult, run_peak_shaving
+
+        battery = BatteryState(
+            capacity_kwh=capacity,
+            soc_kwh=capacity * 0.5,
+            max_charge_rate_kw=capacity / 2,
+            max_discharge_rate_kw=capacity / 2,
+        )
+        load = [peak_load if i % 4 == 0 else 50.0 for i in range(96)]
+        result = run_peak_shaving(load, battery=battery, peak_threshold_kw=threshold)
+        assert isinstance(result, PeakShavingResult)
+
+    def test_optimal_threshold_returns_float(self) -> None:
+        from app.peak_shaving import optimal_threshold
+
+        load = [100.0 if i in range(8, 20) else 30.0 for i in range(24)]
+        threshold = optimal_threshold(load, battery_capacity_kwh=50.0, battery_power_kw=25.0)
+        assert isinstance(threshold, float)
+        assert threshold > 0.0
+
+    @pytest.mark.parametrize("orig,shaved,rate", [
+        (100.0, 90.0, 10.0),
+        (200.0, 180.0, 15.0),
+        (500.0, 400.0, 20.0),
+    ])
+    def test_demand_charge_reduction_positive(
+        self, orig: float, shaved: float, rate: float
+    ) -> None:
+        from app.peak_shaving import demand_charge_reduction
+
+        reduction = demand_charge_reduction(orig, shaved, rate)
+        assert reduction >= 0.0
+
+    def test_shaving_effectiveness_range(self) -> None:
+        from app.peak_shaving import shaving_effectiveness
+
+        effectiveness = shaving_effectiveness(100.0, 80.0)
+        assert 0.0 <= effectiveness <= 1.0
