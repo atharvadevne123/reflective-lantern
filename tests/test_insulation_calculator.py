@@ -166,3 +166,41 @@ class TestInsulationEdgeCases:
         improvement_small = 1.5 - 0.5
         if improvement_large > improvement_small:
             assert r_large.annual_energy_saved_kwh >= r_small.annual_energy_saved_kwh
+
+
+class TestInsulationCalculatorEdgeCases:
+    @pytest.mark.parametrize("u,area,delta_t", [
+        (0.3, 100.0, 15.0),
+        (1.0, 50.0, 10.0),
+        (2.5, 200.0, 20.0),
+    ])
+    def test_heat_loss_watts_positive(self, u: float, area: float, delta_t: float) -> None:
+        from app.insulation_calculator import heat_loss_watts
+
+        loss = heat_loss_watts(u, area, delta_t)
+        assert loss > 0.0
+
+    def test_r_value_from_u_basic(self) -> None:
+        from app.insulation_calculator import r_value_from_u
+
+        r = r_value_from_u(0.5)
+        assert r == pytest.approx(2.0)
+
+    def test_combined_u_value_less_than_min_layer(self) -> None:
+        from app.insulation_calculator import combined_u_value
+
+        layers = [1.0, 2.0, 3.0]
+        combined = combined_u_value(layers)
+        assert combined < min(layers)
+
+    def test_annual_heat_loss_positive(self) -> None:
+        from app.insulation_calculator import annual_heat_loss_kwh
+
+        kwh = annual_heat_loss_kwh(500.0)
+        assert kwh > 0.0
+
+    def test_analyse_insulation_upgrade_returns_result(self) -> None:
+        from app.insulation_calculator import analyse_insulation_upgrade
+
+        result = analyse_insulation_upgrade(100.0, 2.5, 0.3, 15.0, 5000.0)
+        assert hasattr(result, "annual_energy_saving_kwh")
