@@ -187,3 +187,45 @@ class TestCarbonBudgetEdgeCases:
         targets = [reduction_target_kg(1000.0, r) for r in [0.1, rate]]
         if rate > 0.1:
             assert targets[1] <= targets[0]
+
+
+class TestCarbonBudgetEdgeCases2:
+    def _make_entries(self) -> list:
+        from app.carbon_budget import EmissionEntry, ScopeCategory
+
+        return [
+            EmissionEntry("electricity", ScopeCategory.SCOPE_2, 100.0),
+            EmissionEntry("gas", ScopeCategory.SCOPE_1, 200.0),
+            EmissionEntry("travel", ScopeCategory.SCOPE_3, 50.0),
+        ]
+
+    def test_analyse_budget_returns_result(self) -> None:
+        from app.carbon_budget import analyse_budget
+
+        result = analyse_budget(self._make_entries(), annual_budget_kg=500.0)
+        assert hasattr(result, "total_kg_co2e")
+
+    def test_carbon_intensity_positive(self) -> None:
+        from app.carbon_budget import carbon_intensity
+
+        intensity = carbon_intensity(1000.0, 500.0)
+        assert intensity == pytest.approx(2.0)
+
+    @pytest.mark.parametrize("scope", ["SCOPE_1", "SCOPE_2", "SCOPE_3"])
+    def test_emissions_by_scope_non_negative(self, scope: str) -> None:
+        from app.carbon_budget import ScopeCategory, emissions_by_scope
+
+        result = emissions_by_scope(self._make_entries(), ScopeCategory[scope])
+        assert result >= 0.0
+
+    def test_linear_reduction_pathway_length(self) -> None:
+        from app.carbon_budget import linear_reduction_pathway
+
+        pathway = linear_reduction_pathway(1000.0, 0.0, 10)
+        assert len(pathway) == 11
+
+    def test_emissions_per_unit_basic(self) -> None:
+        from app.carbon_budget import emissions_per_unit
+
+        result = emissions_per_unit(500.0, 100.0)
+        assert result == pytest.approx(5.0)
