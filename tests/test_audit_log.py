@@ -262,3 +262,57 @@ class TestAuditLogClear:
         log.record("bob", "write", "doc/2")
         assert len(log) == 1
         assert log.actors() == ["bob"]
+
+
+class TestAuditLogEdgeCases:
+    @pytest.mark.parametrize("n_entries", [0, 1, 5, 10])
+    def test_count_matches_len(self, n_entries: int) -> None:
+        log = AuditLog()
+        for i in range(n_entries):
+            log.record(f"user{i}", "action", f"resource{i}")
+        assert log.count() == n_entries
+        assert len(log) == n_entries
+
+    def test_actors_deduplicates(self) -> None:
+        log = AuditLog()
+        log.record("alice", "read", "doc/1")
+        log.record("alice", "write", "doc/2")
+        log.record("bob", "read", "doc/1")
+        actors = log.actors()
+        assert sorted(actors) == ["alice", "bob"]
+
+    def test_actions_deduplicates(self) -> None:
+        log = AuditLog()
+        log.record("alice", "read", "doc/1")
+        log.record("bob", "read", "doc/2")
+        log.record("alice", "write", "doc/3")
+        actions = log.actions()
+        assert sorted(actions) == ["read", "write"]
+
+    def test_search_by_actor(self) -> None:
+        log = AuditLog()
+        log.record("alice", "read", "doc/1")
+        log.record("bob", "write", "doc/2")
+        results = log.search(actor="alice")
+        assert len(results) == 1
+        assert results[0].actor == "alice"
+
+    def test_search_by_action(self) -> None:
+        log = AuditLog()
+        log.record("alice", "read", "doc/1")
+        log.record("bob", "write", "doc/2")
+        log.record("carol", "read", "doc/3")
+        results = log.search(action="read")
+        assert len(results) == 2
+
+    def test_export_jsonl_format(self) -> None:
+        import json
+
+        log = AuditLog()
+        log.record("alice", "read", "doc/1")
+        jsonl = log.export_jsonl()
+        lines = [line for line in jsonl.strip().split("\n") if line]
+        assert len(lines) == 1
+        entry = json.loads(lines[0])
+        assert entry["actor"] == "alice"
+        assert entry["action"] == "read"
