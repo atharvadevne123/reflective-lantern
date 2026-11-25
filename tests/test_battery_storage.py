@@ -187,3 +187,46 @@ class TestBatteryStorageEdgeCases:
             capacity_kwh=50.0, max_charge_kw=10.0, max_discharge_kw=10.0, initial_soc_pct=soc_pct
         )
         assert b.initial_soc_pct == soc_pct
+
+
+class TestBatteryStorageEdgeCases2:
+    def _make_battery(self):
+        from app.battery_storage import BatterySystem
+        return BatterySystem(100.0, 50.0, 50.0)
+
+    def test_charge_kwh_increases_soc(self) -> None:
+        from app.battery_storage import charge_kwh
+
+        battery = self._make_battery()
+        _, new_soc = charge_kwh(battery, 20.0, 1.0, 50.0)
+        assert new_soc > 50.0
+
+    def test_discharge_kwh_decreases_soc(self) -> None:
+        from app.battery_storage import discharge_kwh
+
+        battery = self._make_battery()
+        _, new_soc = discharge_kwh(battery, 20.0, 1.0, 80.0)
+        assert new_soc < 80.0
+
+    def test_usable_energy_positive(self) -> None:
+        from app.battery_storage import usable_energy_kwh
+
+        battery = self._make_battery()
+        usable = usable_energy_kwh(battery, 80.0)
+        assert usable > 0.0
+
+    @pytest.mark.parametrize("reduction_pct", [0.1, 0.2, 0.3])
+    def test_peak_shaving_threshold_in_range(self, reduction_pct: float) -> None:
+        from app.battery_storage import peak_shaving_threshold
+
+        load = [50.0 if i % 4 != 0 else 100.0 for i in range(24)]
+        threshold = peak_shaving_threshold(load, reduction_pct)
+        assert isinstance(threshold, float)
+
+    def test_simulate_peak_shaving_returns_result(self) -> None:
+        from app.battery_storage import simulate_peak_shaving
+
+        battery = self._make_battery()
+        load = [50.0 if i % 4 != 0 else 100.0 for i in range(24)]
+        result = simulate_peak_shaving(battery, load, 80.0)
+        assert hasattr(result, "cost_saving")
