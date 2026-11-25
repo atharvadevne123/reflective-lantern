@@ -5,7 +5,12 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from app.features import ActuarialFeatureEngineer, build_feature_pipeline, get_feature_names, prepare_input
+from app.features import (
+    ActuarialFeatureEngineer,
+    build_feature_pipeline,
+    get_feature_names,
+    prepare_input,
+)
 
 
 def _base_row(**overrides) -> dict:
