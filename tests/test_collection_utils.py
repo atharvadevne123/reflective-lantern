@@ -295,3 +295,57 @@ class TestUniqueSorted:
         from app.collection_utils import unique_sorted
 
         assert unique_sorted(["banana", "apple", "apple"]) == ["apple", "banana"]
+
+
+class TestCollectionUtilsEdgeCases:
+    @pytest.mark.parametrize("items,size,expected_count", [
+        ([1, 2, 3, 4, 5], 2, 3),
+        ([1, 2, 3], 3, 1),
+        ([1], 1, 1),
+        ([], 2, 0),
+    ])
+    def test_chunk_count(self, items: list, size: int, expected_count: int) -> None:
+        from app.collection_utils import chunk
+
+        result = list(chunk(items, size))
+        assert len(result) == expected_count
+
+    def test_flatten_nested_list(self) -> None:
+        from app.collection_utils import flatten
+
+        result = list(flatten([[1, 2], [3, 4], [5]]))
+        assert result == [1, 2, 3, 4, 5]
+
+    def test_flatten_empty_sublists(self) -> None:
+        from app.collection_utils import flatten
+
+        result = list(flatten([[], [], []]))
+        assert result == []
+
+    def test_frequency_map_counts(self) -> None:
+        from app.collection_utils import frequency_map
+
+        result = frequency_map(["a", "b", "a", "c", "a"])
+        assert result["a"] == 3
+        assert result["b"] == 1
+
+    def test_partition_splits_correctly(self) -> None:
+        from app.collection_utils import partition
+
+        evens, odds = partition(list(range(6)), lambda x: x % 2 == 0)
+        assert evens == [0, 2, 4]
+        assert odds == [1, 3, 5]
+
+    @pytest.mark.parametrize("seq,size", [
+        ([1, 2, 3, 4], 2),
+        ([1, 2, 3], 1),
+        ([1, 2, 3, 4, 5], 3),
+    ])
+    def test_sliding_window_length(self, seq: list, size: int) -> None:
+        from app.collection_utils import sliding_window
+
+        windows = list(sliding_window(seq, size))
+        expected_len = max(0, len(seq) - size + 1)
+        assert len(windows) == expected_len
+        for w in windows:
+            assert len(w) == size
