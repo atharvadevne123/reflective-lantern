@@ -56,3 +56,53 @@ class TestLoadFromEnv:
         assert cfg.debug is True
         assert cfg.log_level == "DEBUG"
         assert cfg.max_workers == 8
+
+
+class TestEnvFloat:
+    def test_reads_float(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("TEST_FLOAT", "3.14")
+        from app.config_schema import env_float
+
+        assert env_float("TEST_FLOAT") == pytest.approx(3.14)
+
+    def test_missing_returns_default(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.delenv("TEST_FLOAT", raising=False)
+        from app.config_schema import env_float
+
+        assert env_float("TEST_FLOAT", default=2.71) == pytest.approx(2.71)
+
+
+class TestConfigSchemaAdditional:
+    def test_as_dict_returns_expected_keys(self) -> None:
+        cfg = ConfigSchema()
+        d = cfg.as_dict()
+        assert isinstance(d, dict)
+        assert "debug" in d
+        assert "log_level" in d
+
+    @pytest.mark.parametrize("log_level", ["DEBUG", "INFO", "WARNING", "ERROR"])
+    def test_valid_log_levels(self, log_level: str) -> None:
+        cfg = ConfigSchema(log_level=log_level)
+        assert cfg.log_level == log_level
+
+    def test_max_workers_positive(self) -> None:
+        cfg = ConfigSchema(max_workers=8)
+        assert cfg.max_workers == 8
+
+    def test_debug_true_overrides_default(self) -> None:
+        cfg = ConfigSchema(debug=True)
+        assert cfg.debug is True
+
+
+class TestEnvStr:
+    def test_reads_env_var(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("TEST_STR", "hello")
+        from app.config_schema import env_str
+
+        assert env_str("TEST_STR") == "hello"
+
+    def test_missing_returns_default(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.delenv("TEST_STR", raising=False)
+        from app.config_schema import env_str
+
+        assert env_str("TEST_STR", default="world") == "world"
