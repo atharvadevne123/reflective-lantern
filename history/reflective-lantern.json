@@ -946,6 +946,49 @@
       "pushed_to": "origin/main"
     }
   ],
-  "last_run": "2026-11-24",
-  "total_runs": 15
-}
+  ],
+  "last_run": "2026-11-25",
+  "total_runs": 16,
+  "latest_run": {
+    "date": "2026-11-25",
+    "mode": "IMPROVEMENT",
+    "commits": 60,
+    "commit_range": "test(30/60) to test(60/60)",
+    "focus": "Parametrized edge case test classes for 30 energy domain modules",
+    "test_files_expanded": [
+      "tests/test_hvac_estimator.py",
+      "tests/test_renewable_curtailment.py",
+      "tests/test_energy_poverty.py",
+      "tests/test_smart_meter_api.py",
+      "tests/test_baseline_calculator.py",
+      "tests/test_energy_storage_degradation.py",
+      "tests/test_meter_validation.py",
+      "tests/test_demand_response.py",
+      "tests/test_distributed_energy.py",
+      "tests/test_ev_charging.py",
+      "tests/test_carbon_budget.py",
+      "tests/test_battery_storage.py",
+      "tests/test_fuel_cell.py",
+      "tests/test_heat_pump.py",
+      "tests/test_insulation_calculator.py",
+      "tests/test_lighting_efficiency.py",
+      "tests/test_solar_pv.py",
+      "tests/test_thermal_comfort.py",
+      "tests/test_voltage_drop.py",
+      "tests/test_water_heating.py",
+      "tests/test_wind_power.py",
+      "tests/test_weather_normalization.py",
+      "tests/test_flexibility_score.py",
+      "tests/test_grid_balancing.py",
+      "tests/test_grid_stability.py",
+      "tests/test_load_profile.py",
+      "tests/test_power_quality.py",
+      "tests/test_occupancy_model.py",
+      "tests/test_data_quality.py",
+      "tests/test_data_augmentation.py"
+    ],
+    "ruff_clean": true,
+    "pushed_to": "origin/main",
+    "total_commits_ahead": 110,
+    "session": "https://claude.ai/code/session_01361EsWbtaBpV2W58A62pZ2"
+  }
