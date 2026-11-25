@@ -148,3 +148,47 @@ class TestDegradationReport:
         r0 = degradation_report(100.0, 0.0, 0.0)
         rc = degradation_report(100.0, cycles, 0.0)
         assert rc.capacity_fraction <= r0.capacity_fraction
+
+
+class TestEnergyStorageDegradationEdgeCases:
+    @pytest.mark.parametrize("cycles,nominal,dod", [
+        (0.0, 3000, 0.8),
+        (1500.0, 3000, 0.8),
+        (3000.0, 3000, 0.8),
+    ])
+    def test_cycle_degradation_between_zero_and_one(
+        self, cycles: float, nominal: int, dod: float
+    ) -> None:
+        from app.energy_storage_degradation import cycle_degradation
+
+        deg = cycle_degradation(cycles, nominal, dod)
+        assert 0.0 <= deg <= 1.0
+
+    @pytest.mark.parametrize("years", [0.0, 1.0, 5.0, 10.0])
+    def test_calendar_degradation_non_negative(self, years: float) -> None:
+        from app.energy_storage_degradation import calendar_degradation
+
+        deg = calendar_degradation(years)
+        assert deg >= 0.0
+
+    def test_degradation_report_capacity_fraction_bounded(self) -> None:
+        from app.energy_storage_degradation import degradation_report
+
+        result = degradation_report(100.0, 1000.0, 2.0)
+        assert 0.0 <= result.capacity_fraction <= 1.0
+
+    def test_energy_throughput_positive(self) -> None:
+        from app.energy_storage_degradation import energy_throughput_kwh
+
+        throughput = energy_throughput_kwh(100.0, 50.0, 0.8)
+        assert throughput > 0.0
+
+    @pytest.mark.parametrize("nameplate,cycles,years", [
+        (100.0, 500.0, 1.0),
+        (200.0, 1000.0, 3.0),
+    ])
+    def test_cycles_to_eol_positive(self, nameplate: float, cycles: float, years: float) -> None:
+        from app.energy_storage_degradation import cycles_to_eol
+
+        remaining = cycles_to_eol(3000, cycles, years)
+        assert isinstance(remaining, float)
