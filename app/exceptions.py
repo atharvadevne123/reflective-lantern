@@ -45,6 +45,13 @@ class RateLimitExceededError(LogisticsFlowError):
     def __init__(
         self, detail: str | None = None, *, limit: int = 0, retry_after_seconds: int = 0
     ) -> None:
+        """Initialise with optional detail, rate limit, and retry-after hint.
+
+        Args:
+            detail: Human-readable description; auto-generated when *limit* is provided.
+            limit: Configured request limit that was breached.
+            retry_after_seconds: Seconds until the client may retry.
+        """
         self.limit = limit
         self.retry_after_seconds = retry_after_seconds
         if limit and detail is None:
@@ -70,6 +77,12 @@ class FeatureValidationError(LogisticsFlowError):
     detail = "Feature validation failed"
 
     def __init__(self, field: str = "", reason: str = "") -> None:
+        """Initialise with optional field name and reason for validation failure.
+
+        Args:
+            field: Name of the offending input field.
+            reason: Short description of why validation failed.
+        """
         self.field = field
         self.reason = reason
         detail = (
@@ -109,6 +122,12 @@ class ExternalServiceError(LogisticsFlowError):
     detail = "External service error"
 
     def __init__(self, service: str = "", reason: str = "") -> None:
+        """Initialise with optional service name and failure reason.
+
+        Args:
+            service: Name of the external service that failed.
+            reason: Short description of the failure.
+        """
         self.service = service
         self.reason = reason
         detail = (
