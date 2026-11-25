@@ -248,3 +248,40 @@ class TestAugmentTextExt:
         cfg = AugmentationConfig(seed=42)
         result = augment_text(text, cfg)
         assert isinstance(result, str)
+
+
+class TestDataAugmentationEdgeCases:
+    def _make_config(self):
+        from app.data_augmentation import AugmentationConfig
+        return AugmentationConfig(seed=42)
+
+    def test_augment_text_returns_string(self) -> None:
+        from app.data_augmentation import augment_text
+
+        config = self._make_config()
+        result = augment_text("The quick brown fox jumps", config)
+        assert isinstance(result, str)
+
+    @pytest.mark.parametrize("n_augments", [1, 2, 3])
+    def test_augment_batch_length(self, n_augments: int) -> None:
+        from app.data_augmentation import augment_batch
+
+        config = self._make_config()
+        samples = ["Hello world", "Test sample"]
+        result = augment_batch(samples, config, n_augments=n_augments)
+        assert len(result) == len(samples) * n_augments
+
+    def test_make_rng_deterministic(self) -> None:
+        from app.data_augmentation import make_rng
+
+        rng1 = make_rng(42)
+        rng2 = make_rng(42)
+        assert rng1.random() == rng2.random()
+
+    def test_random_deletion_shorter_or_equal(self) -> None:
+        from app.data_augmentation import make_rng, random_deletion
+
+        rng = make_rng(42)
+        tokens = ["a", "b", "c", "d", "e"]
+        result = random_deletion(tokens, 0.5, rng)
+        assert len(result) <= len(tokens)
