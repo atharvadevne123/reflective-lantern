@@ -328,3 +328,58 @@ class TestCountWords:
         from app.string_utils import count_words
 
         assert count_words("python") == 1
+
+
+class TestStringUtilsEdgeCases:
+    @pytest.mark.parametrize("text,max_len,expected_end", [
+        ("Hello World", 5, "..."),
+        ("Hi", 10, "Hi"),
+        ("", 5, ""),
+    ])
+    def test_truncate_parametrized(self, text: str, max_len: int, expected_end: str) -> None:
+        from app.string_utils import truncate
+
+        result = truncate(text, max_len)
+        if len(text) <= max_len:
+            assert result == text
+        else:
+            assert result.endswith(expected_end)
+            assert len(result) <= max_len + len(expected_end)
+
+    @pytest.mark.parametrize("size,expected_prefix", [
+        (0, "0.00 B"),
+        (1023, "1023.00 B"),
+        (1024, "1.00 KB"),
+        (1024 * 1024, "1.00 MB"),
+    ])
+    def test_format_bytes_units(self, size: int, expected_prefix: str) -> None:
+        from app.string_utils import format_bytes
+
+        result = format_bytes(size)
+        assert result == expected_prefix
+
+    def test_is_palindrome_true(self) -> None:
+        from app.string_utils import is_palindrome
+
+        assert is_palindrome("racecar") is True
+        assert is_palindrome("madam") is True
+
+    def test_is_palindrome_false(self) -> None:
+        from app.string_utils import is_palindrome
+
+        assert is_palindrome("hello") is False
+
+    def test_remove_whitespace(self) -> None:
+        from app.string_utils import remove_whitespace
+
+        assert remove_whitespace("  hello   world  ") == "helloworld"
+
+    @pytest.mark.parametrize("snake,expected_camel", [
+        ("hello_world", "helloWorld"),
+        ("my_variable_name", "myVariableName"),
+        ("single", "single"),
+    ])
+    def test_snake_to_camel(self, snake: str, expected_camel: str) -> None:
+        from app.string_utils import snake_to_camel
+
+        assert snake_to_camel(snake) == expected_camel
