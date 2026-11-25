@@ -145,3 +145,47 @@ class TestAnalyseCurtailment:
         avail, disp = self._make_series()
         result = analyse_curtailment(avail, disp)
         assert 0 <= result.curtailment_rate_pct <= 100
+
+
+class TestRenewableCurtailmentEdgeCases:
+    @pytest.mark.parametrize("available,dispatched,duration", [
+        (100.0, 80.0, 0.5),
+        (200.0, 150.0, 1.0),
+        (500.0, 400.0, 0.5),
+    ])
+    def test_curtailed_energy_positive(
+        self, available: float, dispatched: float, duration: float
+    ) -> None:
+        from app.renewable_curtailment import curtailed_energy
+
+        energy = curtailed_energy(available, dispatched, duration)
+        assert energy >= 0.0
+
+    def test_curtailment_rate_between_zero_and_hundred(self) -> None:
+        from app.renewable_curtailment import curtailment_rate
+
+        rate = curtailment_rate(100.0, 20.0)
+        assert 0.0 <= rate <= 100.0
+
+    def test_carbon_abatement_lost_positive(self) -> None:
+        from app.renewable_curtailment import carbon_abatement_lost
+
+        loss = carbon_abatement_lost(1000.0)
+        assert loss > 0.0
+
+    @pytest.mark.parametrize("forecast,actual", [
+        (100.0, 100.0),
+        (90.0, 100.0),
+        (110.0, 100.0),
+    ])
+    def test_forecast_accuracy_range(self, forecast: float, actual: float) -> None:
+        from app.renewable_curtailment import curtailment_forecast_accuracy
+
+        accuracy = curtailment_forecast_accuracy(forecast, actual)
+        assert isinstance(accuracy, float)
+
+    def test_revenue_lost_positive(self) -> None:
+        from app.renewable_curtailment import revenue_lost
+
+        rev = revenue_lost(1000.0, 0.05)
+        assert rev > 0.0
