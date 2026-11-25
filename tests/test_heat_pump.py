@@ -168,3 +168,45 @@ class TestHeatPumpEdgeCases:
     def test_co2_saved_non_negative(self) -> None:
         result = analyse_heat_pump(5.0, 45.0, 10000.0)
         assert result.co2_saved_kg >= 0
+
+
+class TestHeatPumpEdgeCases2:
+    @pytest.mark.parametrize("source,sink", [
+        (0.0, 50.0),
+        (-5.0, 45.0),
+        (10.0, 60.0),
+    ])
+    def test_carnot_cop_positive(self, source: float, sink: float) -> None:
+        from app.heat_pump import carnot_cop
+
+        cop = carnot_cop(source, sink)
+        assert cop > 0.0
+
+    def test_realistic_cop_less_than_carnot(self) -> None:
+        from app.heat_pump import carnot_cop, realistic_cop
+
+        carnot = carnot_cop(5.0, 50.0)
+        realistic = realistic_cop(5.0, 50.0)
+        assert realistic < carnot
+
+    @pytest.mark.parametrize("heat_kwh,cop", [
+        (100.0, 3.0),
+        (500.0, 4.0),
+    ])
+    def test_electricity_for_heat_positive(self, heat_kwh: float, cop: float) -> None:
+        from app.heat_pump import electricity_for_heat
+
+        electricity = electricity_for_heat(heat_kwh, cop)
+        assert electricity > 0.0
+
+    def test_heat_delivered_kwh_positive(self) -> None:
+        from app.heat_pump import heat_delivered_kwh
+
+        heat = heat_delivered_kwh(100.0, 3.5)
+        assert heat == pytest.approx(350.0)
+
+    def test_analyse_heat_pump_returns_result(self) -> None:
+        from app.heat_pump import analyse_heat_pump
+
+        result = analyse_heat_pump(5.0, 50.0, 10000.0)
+        assert hasattr(result, "cop")
