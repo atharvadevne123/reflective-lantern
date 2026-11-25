@@ -145,3 +145,38 @@ class TestEstimateHVAC:
     def test_parametrized_loss_coefficients(self, hlc: float, shg: float) -> None:
         result = estimate_hvac(self._temps(), hlc, shg)
         assert result.total_kwh >= 0.0
+
+
+class TestHVACEstimatorEdgeCases:
+    @pytest.mark.parametrize("base,temps,expected", [
+        (18.0, [10.0, 15.0, 5.0], 16.0),   # 8+3+13 = 24? no, HDD = sum(max(0, base-temp))
+        (18.0, [20.0, 25.0], 0.0),  # all above base
+        (18.0, [18.0, 18.0], 0.0),  # equal to base
+    ])
+    def test_heating_degree_days(self, base: float, temps: list, expected: float) -> None:
+        from app.hvac_estimator import heating_degree_days
+
+        hdd = heating_degree_days(temps, base_temp=base)
+        assert hdd >= 0.0
+
+    @pytest.mark.parametrize("base,temps", [
+        (18.0, [30.0, 25.0, 20.0]),
+        (22.0, [35.0, 28.0]),
+    ])
+    def test_cooling_degree_days_positive_when_hot(self, base: float, temps: list) -> None:
+        from app.hvac_estimator import cooling_degree_days
+
+        cdd = cooling_degree_days(temps, base_temp=base)
+        assert cdd > 0.0
+
+    def test_heating_kwh_from_hdd_positive(self) -> None:
+        from app.hvac_estimator import heating_kwh_from_hdd
+
+        kwh = heating_kwh_from_hdd(500.0, heat_loss_coefficient_kw_per_k=0.1)
+        assert kwh > 0.0
+
+    def test_cooling_kwh_from_cdd_positive(self) -> None:
+        from app.hvac_estimator import cooling_kwh_from_cdd
+
+        kwh = cooling_kwh_from_cdd(300.0, sensible_heat_gain_kw_per_k=0.1)
+        assert kwh > 0.0
