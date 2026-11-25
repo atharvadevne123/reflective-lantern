@@ -1,12 +1,10 @@
 """Extended tests for synthetic claim data generation."""
 from __future__ import annotations
 
-import numpy as np
 import pandas as pd
 import pytest
 
 from app.data import generate_claim_dict, generate_claims
-
 
 REQUIRED_COLUMNS = [
     "claim_age_days",
