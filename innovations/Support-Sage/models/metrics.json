@@ -1,0 +1,12 @@
+{
+  "auc_mean": 1.0,
+  "auc_std": 0.0,
+  "n_features": 689,
+  "n_samples": 2000,
+  "classes": [
+    "critical",
+    "high",
+    "low",
+    "medium"
+  ]
+}
