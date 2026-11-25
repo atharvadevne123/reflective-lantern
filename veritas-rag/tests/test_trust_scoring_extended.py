@@ -5,6 +5,7 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
+from app.schemas import Chunk, ScoredChunk
 from app.scoring.trust import (
     SOURCE_QUALITY_PRIORS,
     above_threshold_ratio,
@@ -14,10 +15,8 @@ from app.scoring.trust import (
     normalize_trust_scores,
     source_quality_score,
     top_k_trust,
-    trust_tier,
     trust_variance,
 )
-from app.schemas import Chunk, ScoredChunk
 
 
 def _make_scored_chunk(trust: float = 0.5, rerank: float = 0.5) -> ScoredChunk:
