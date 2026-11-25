@@ -181,3 +181,36 @@ class TestFlexibilityScoreEdgeCases:
         r_low = assess_flexibility("a", self._profile(), 15, 1.0, 0.5)
         r_high = assess_flexibility("b", self._profile(), 15, dispatchable, sheddable)
         assert r_high.flexibility_score >= r_low.flexibility_score
+
+
+class TestFlexibilityScoreEdgeCases2:
+    def test_load_variability_score_positive(self) -> None:
+        from app.flexibility_score import load_variability_score
+
+        score = load_variability_score([50.0, 100.0, 30.0, 80.0, 60.0] * 5)
+        assert isinstance(score, float)
+
+    @pytest.mark.parametrize("var,readiness,peak", [
+        (0.5, 0.7, 0.3),
+        (0.8, 0.6, 0.5),
+        (0.3, 0.4, 0.8),
+    ])
+    def test_overall_flexibility_score_range(
+        self, var: float, readiness: float, peak: float
+    ) -> None:
+        from app.flexibility_score import overall_flexibility_score
+
+        score = overall_flexibility_score(var, readiness, peak)
+        assert 0.0 <= score <= 1.0
+
+    def test_assess_flexibility_returns_result(self) -> None:
+        from app.flexibility_score import assess_flexibility
+
+        result = assess_flexibility(
+            "asset1",
+            [50.0] * 24,
+            response_time_minutes=5,
+            shiftable_kwh=10.0,
+            controllable_kw=5.0,
+        )
+        assert hasattr(result, "flexibility_score")
