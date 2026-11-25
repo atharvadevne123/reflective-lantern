@@ -1,7 +1,6 @@
 """Extended anomaly utility tests for temporal-pulse with parametrize and boundary coverage."""
 from __future__ import annotations
 
-import numpy as np
 import pytest
 
 from app.anomaly import (
