@@ -219,3 +219,33 @@ class TestGridStabilityEdgeCases:
     def test_grid_metrics_zero_loads_ok(self) -> None:
         m = grid_metrics(230.0, 50.0, 0.0, 0.0)
         assert m.power_factor == 0.0
+
+
+class TestGridStabilityEdgeCases2:
+    @pytest.mark.parametrize("active,reactive", [
+        (100.0, 0.0),
+        (100.0, 50.0),
+        (0.0, 100.0),
+    ])
+    def test_apparent_power_non_negative(self, active: float, reactive: float) -> None:
+        from app.grid_stability import apparent_power_kva
+
+        kva = apparent_power_kva(active, reactive)
+        assert kva >= 0.0
+
+    def test_frequency_normal_within_tolerance(self) -> None:
+        from app.grid_stability import is_frequency_normal
+
+        assert is_frequency_normal(50.0)
+        assert is_frequency_normal(50.3)
+        assert not is_frequency_normal(51.0)
+
+    @pytest.mark.parametrize("active,reactive", [
+        (100.0, 0.0),
+        (80.0, 60.0),
+    ])
+    def test_grid_metrics_returns_result(self, active: float, reactive: float) -> None:
+        from app.grid_stability import grid_metrics
+
+        result = grid_metrics(230.0, 50.0, active, reactive)
+        assert hasattr(result, "power_factor")
