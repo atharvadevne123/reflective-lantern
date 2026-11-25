@@ -183,3 +183,50 @@ class TestEVChargingEdgeCases:
         session = ChargingSession(60.0, 0.2, 0.8, charger)
         result = simulate_session(session)
         assert result.duration_hours > 0
+
+
+class TestEVChargingEdgeCases2:
+    @pytest.mark.parametrize("start,target,capacity", [
+        (20.0, 80.0, 60.0),
+        (0.0, 100.0, 40.0),
+        (50.0, 90.0, 75.0),
+    ])
+    def test_energy_to_charge_positive(
+        self, start: float, target: float, capacity: float
+    ) -> None:
+        from app.ev_charging import energy_to_charge
+
+        energy = energy_to_charge(start, target, capacity)
+        assert energy > 0.0
+
+    def test_charging_cost_positive(self) -> None:
+        from app.ev_charging import charging_cost
+
+        cost = charging_cost(30.0, 0.15)
+        assert cost == pytest.approx(4.5)
+
+    @pytest.mark.parametrize("charger_level", ["LEVEL_1", "LEVEL_2", "DC_FAST"])
+    def test_charging_duration_positive(self, charger_level: str) -> None:
+        from app.ev_charging import ChargerLevel, charging_duration_hours
+
+        level = ChargerLevel[charger_level]
+        duration = charging_duration_hours(30.0, level)
+        assert duration > 0.0
+
+    def test_co2_saved_vs_ice_positive(self) -> None:
+        from app.ev_charging import co2_saved_vs_ice
+
+        saved = co2_saved_vs_ice(30.0)
+        assert isinstance(saved, float)
+
+    @pytest.mark.parametrize("num_vehicles,miles,eff", [
+        (10, 50.0, 4.0),
+        (5, 100.0, 3.5),
+    ])
+    def test_fleet_daily_demand_positive(
+        self, num_vehicles: int, miles: float, eff: float
+    ) -> None:
+        from app.ev_charging import fleet_daily_demand_kw
+
+        demand = fleet_daily_demand_kw(num_vehicles, miles, eff)
+        assert demand > 0.0
