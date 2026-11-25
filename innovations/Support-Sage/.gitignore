@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+.env
+.pytest_cache/
+dist/
+build/
+*.egg-info/
+models/*.joblib
+rag_index/
+*.db
+*.db-shm
+*.db-wal
