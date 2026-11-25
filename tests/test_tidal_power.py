@@ -131,3 +131,36 @@ class TestMinimumCutInSpeed:
         s1 = minimum_cut_in_speed(500.0, 10.0)
         s2 = minimum_cut_in_speed(500.0, 20.0)
         assert s2 < s1
+
+
+class TestTidalPowerEdgeCases:
+    @pytest.mark.parametrize("diameter,speed", [
+        (10.0, 1.0),
+        (25.0, 2.0),
+        (50.0, 3.5),
+    ])
+    def test_tidal_stream_power_positive(self, diameter: float, speed: float) -> None:
+        result = tidal_stream_power(diameter, speed)
+        assert result.actual_power_kw > 0.0
+
+    def test_tidal_stream_power_scales_with_cube_of_speed(self) -> None:
+        r1 = tidal_stream_power(10.0, 1.0)
+        r2 = tidal_stream_power(10.0, 2.0)
+        assert r2.theoretical_power_kw == pytest.approx(r1.theoretical_power_kw * 8, rel=1e-2)
+
+    def test_annual_tidal_energy_kwh_positive(self) -> None:
+        from app.tidal_power import annual_tidal_energy_kwh
+
+        energy = annual_tidal_energy_kwh(100.0, capacity_factor=0.35)
+        assert energy > 0.0
+
+    @pytest.mark.parametrize("speed", [0.5, 1.0, 2.0, 3.0])
+    def test_current_power_density_increases_with_speed(self, speed: float) -> None:
+        density = current_power_density(speed)
+        assert density > 0.0
+
+    def test_tidal_resource_score_range(self) -> None:
+        from app.tidal_power import tidal_resource_score
+
+        score = tidal_resource_score(2.5)
+        assert 0 <= score <= 100
