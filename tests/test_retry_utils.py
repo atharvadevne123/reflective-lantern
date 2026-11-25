@@ -232,3 +232,52 @@ class TestBoundedRetry:
 
         result = bounded_retry(lambda x, y: x + y, 3, 4)
         assert result == 7
+
+
+class TestRetryEdgeCases:
+    def test_single_attempt_succeeds(self) -> None:
+        from app.retry_utils import retry
+
+        result = retry(lambda: "ok", attempts=1)
+        assert result == "ok"
+
+    def test_retry_zero_attempts_raises_value_error(self) -> None:
+        from app.retry_utils import retry
+
+        with pytest.raises(ValueError, match="attempts"):
+            retry(lambda: None, attempts=0)
+
+    @pytest.mark.parametrize("attempts", [1, 2, 3, 5])
+    def test_retry_always_fails_uses_all_attempts(self, attempts: int) -> None:
+        from app.retry_utils import RetryError, retry
+
+        call_count = [0]
+
+        def counter() -> None:
+            call_count[0] += 1
+            raise RuntimeError("always")
+
+        with pytest.raises(RetryError):
+            retry(counter, attempts=attempts)
+        assert call_count[0] == attempts
+
+    def test_retry_passes_kwargs_to_func(self) -> None:
+        from app.retry_utils import retry
+
+        def adder(x: int, y: int = 0) -> int:
+            return x + y
+
+        result = retry(adder, 10, attempts=1, y=5)
+        assert result == 15
+
+    def test_compute_backoff_capped_at_max(self) -> None:
+        from app.retry_utils import compute_backoff_seconds
+
+        result = compute_backoff_seconds(100, base=1.0, multiplier=2.0, cap=30.0)
+        assert result == 30.0
+
+    def test_compute_backoff_first_attempt_equals_base(self) -> None:
+        from app.retry_utils import compute_backoff_seconds
+
+        result = compute_backoff_seconds(1, base=2.5)
+        assert result == 2.5
