@@ -140,3 +140,45 @@ class TestAssessHousehold:
     def test_parametrized(self, cost: float, income: float, expected_poor: bool) -> None:
         result = assess_household("Z", cost, income, 35, False, "C")
         assert result.is_fuel_poor is expected_poor
+
+
+class TestEnergyPovertyEdgeCases:
+    @pytest.mark.parametrize("cost,income", [
+        (1500.0, 20000.0),
+        (3000.0, 15000.0),
+        (500.0, 50000.0),
+    ])
+    def test_energy_cost_ratio_positive(self, cost: float, income: float) -> None:
+        from app.energy_poverty import energy_cost_ratio
+
+        ratio = energy_cost_ratio(cost, income)
+        assert ratio > 0.0
+
+    def test_assess_ten_percent_true_when_poor(self) -> None:
+        from app.energy_poverty import assess_ten_percent
+
+        assert assess_ten_percent(3000.0, 15000.0) is True
+
+    def test_assess_ten_percent_false_when_not_poor(self) -> None:
+        from app.energy_poverty import assess_ten_percent
+
+        assert assess_ten_percent(500.0, 50000.0) is False
+
+    def test_after_fuel_costs_income_less_than_income(self) -> None:
+        from app.energy_poverty import after_fuel_costs_income
+
+        result = after_fuel_costs_income(30000.0, 2000.0)
+        assert result < 30000.0
+
+    @pytest.mark.parametrize("epc,is_poor,has_disability", [
+        ("G", True, False),
+        ("A", False, False),
+        ("D", True, True),
+    ])
+    def test_recommended_interventions_returns_list(
+        self, epc: str, is_poor: bool, has_disability: bool
+    ) -> None:
+        from app.energy_poverty import recommended_interventions
+
+        interventions = recommended_interventions(epc, is_poor, has_disability)
+        assert isinstance(interventions, list)
