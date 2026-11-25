@@ -154,3 +154,44 @@ class TestValidateReadings:
     ) -> None:
         result = validate_readings(readings)
         assert result.status == expected_status
+
+
+class TestMeterValidationEdgeCases:
+    @pytest.mark.parametrize("readings", [
+        [1.0, 2.0, 3.0],
+        [0.0, 0.0, 1.0],
+        [100.0, 200.0, 50.0],
+    ])
+    def test_validate_readings_returns_report(self, readings: list) -> None:
+        from app.meter_validation import validate_readings
+
+        result = validate_readings(readings)
+        assert hasattr(result, "status")
+
+    def test_check_negatives_finds_negatives(self) -> None:
+        from app.meter_validation import check_negatives
+
+        issues = check_negatives([1.0, -2.0, 3.0])
+        assert len(issues) > 0
+
+    def test_check_negatives_empty_for_valid(self) -> None:
+        from app.meter_validation import check_negatives
+
+        issues = check_negatives([1.0, 2.0, 3.0])
+        assert len(issues) == 0
+
+    def test_check_upper_bound_finds_violations(self) -> None:
+        from app.meter_validation import check_upper_bound
+
+        issues = check_upper_bound([100.0, 600.0, 200.0], upper=500.0)
+        assert len(issues) > 0
+
+    @pytest.mark.parametrize("max_zeros,readings", [
+        (4, [0.0] * 5),
+        (2, [0.0, 0.0, 0.0]),
+    ])
+    def test_check_zeros_finds_long_runs(self, max_zeros: int, readings: list) -> None:
+        from app.meter_validation import check_zeros
+
+        issues = check_zeros(readings, max_consecutive_zeros=max_zeros)
+        assert len(issues) > 0
