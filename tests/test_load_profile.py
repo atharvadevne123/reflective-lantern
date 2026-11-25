@@ -355,3 +355,30 @@ class TestLoadProfileEdgeCases:
         vals = [2.0] * 24
         profile = build_load_profile(vals)
         assert profile is not None
+
+
+class TestLoadProfileEdgeCases2:
+    @pytest.mark.parametrize("percentile", [0.1, 0.25, 0.5])
+    def test_base_load_in_range(self, percentile: float) -> None:
+        from app.load_profile import base_load
+
+        load = [float(i + 10) for i in range(24)]
+        result = base_load(load, percentile)
+        assert min(load) <= result <= max(load)
+
+    def test_build_load_profile_returns_result(self) -> None:
+        from app.load_profile import build_load_profile
+
+        load = [float(i % 10 + 5) for i in range(24)]
+        profile = build_load_profile(load)
+        assert hasattr(profile, "peak_kwh")
+
+    @pytest.mark.parametrize("load_factor,expected_class", [
+        (0.95, "flat"),
+        (0.5, "variable"),
+    ])
+    def test_classify_profile(self, load_factor: float, expected_class: str) -> None:
+        from app.load_profile import classify_profile
+
+        result = classify_profile(load_factor)
+        assert isinstance(result, str)
