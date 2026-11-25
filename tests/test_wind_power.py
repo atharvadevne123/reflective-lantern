@@ -190,3 +190,44 @@ class TestWindPowerEdgeCases:
     def test_capacity_factor_in_range(self) -> None:
         result = analyse_turbine(80.0, 2000.0, 7.0)
         assert 0 <= result.capacity_factor <= 1
+
+
+class TestWindPowerEdgeCases2:
+    @pytest.mark.parametrize("speed,diameter", [
+        (5.0, 10.0),
+        (8.0, 15.0),
+        (12.0, 20.0),
+    ])
+    def test_turbine_power_positive(self, speed: float, diameter: float) -> None:
+        from app.wind_power import turbine_power_kw
+
+        power = turbine_power_kw(speed, diameter)
+        assert power > 0.0
+
+    def test_annual_energy_output_positive(self) -> None:
+        from app.wind_power import annual_energy_output_kwh
+
+        kwh = annual_energy_output_kwh(100.0, 0.3)
+        assert kwh > 0.0
+
+    def test_rotor_swept_area_positive(self) -> None:
+        from app.wind_power import rotor_swept_area
+
+        area = rotor_swept_area(10.0)
+        assert area > 0.0
+
+    @pytest.mark.parametrize("diameter", [5.0, 10.0, 20.0])
+    def test_rotor_area_scales_with_diameter_squared(self, diameter: float) -> None:
+        import math
+
+        from app.wind_power import rotor_swept_area
+
+        area = rotor_swept_area(diameter)
+        expected = math.pi * (diameter / 2) ** 2
+        assert area == pytest.approx(expected, rel=1e-3)
+
+    def test_analyse_turbine_returns_result(self) -> None:
+        from app.wind_power import analyse_turbine
+
+        result = analyse_turbine(15.0, 50.0, 7.0)
+        assert hasattr(result, "annual_kwh")
