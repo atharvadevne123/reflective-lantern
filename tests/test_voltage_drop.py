@@ -159,3 +159,49 @@ class TestVoltageDropEdgeCases:
     def test_cable_resistance_zero_length_raises(self) -> None:
         with pytest.raises((ValueError, ZeroDivisionError)):
             cable_resistance(0.0, 2.5)
+
+
+class TestVoltageDropEdgeCases2:
+    @pytest.mark.parametrize("length,current,cross_section", [
+        (100.0, 10.0, 2.5),
+        (50.0, 20.0, 4.0),
+        (200.0, 5.0, 1.5),
+    ])
+    def test_cable_resistance_positive(
+        self, length: float, current: float, cross_section: float
+    ) -> None:
+        from app.voltage_drop import cable_resistance
+
+        resistance = cable_resistance(length, cross_section)
+        assert resistance > 0.0
+
+    def test_voltage_drop_percent_basic(self) -> None:
+        from app.voltage_drop import voltage_drop_percent
+
+        pct = voltage_drop_percent(5.0, 230.0)
+        assert pct == pytest.approx(5.0 / 230.0 * 100, rel=1e-3)
+
+    def test_voltage_drop_single_phase_positive(self) -> None:
+        from app.voltage_drop import voltage_drop_single_phase
+
+        drop = voltage_drop_single_phase(10.0, 1.0)
+        assert drop > 0.0
+
+    def test_analyse_cable_returns_result(self) -> None:
+        from app.voltage_drop import analyse_cable
+
+        result = analyse_cable(100.0, 10.0, 2.5, 230.0)
+        assert hasattr(result, "voltage_drop_v")
+
+    @pytest.mark.parametrize("current,resistance", [
+        (5.0, 1.0),
+        (10.0, 0.5),
+        (20.0, 0.2),
+    ])
+    def test_voltage_drop_scales_with_current(
+        self, current: float, resistance: float
+    ) -> None:
+        from app.voltage_drop import voltage_drop_single_phase
+
+        drop = voltage_drop_single_phase(current, resistance)
+        assert drop > 0.0
