@@ -134,3 +134,43 @@ class TestPeakShiftingSavings:
     def test_parametrized_savings_positive(self, shift: float, from_h: int, to_h: int) -> None:
         savings = peak_shifting_savings([1.0] * 24, shift, from_h, to_h)
         assert savings >= 0.0
+
+
+class TestTariffEngineEdgeCases:
+    def test_simulate_bill_all_zeros_gives_zero_energy_cost(self) -> None:
+        from app.tariff_engine import simulate_bill
+
+        bill = simulate_bill([0.0] * 24)
+        assert bill.energy_cost == pytest.approx(0.0)
+
+    def test_simulate_bill_returns_bill_estimate(self) -> None:
+        from app.tariff_engine import BillEstimate, simulate_bill
+
+        bill = simulate_bill([1.0] * 24)
+        assert isinstance(bill, BillEstimate)
+
+    def test_simulate_bill_total_cost_positive(self) -> None:
+        from app.tariff_engine import simulate_bill
+
+        bill = simulate_bill([1.0] * 24)
+        assert bill.total_cost > 0.0
+
+    def test_simulate_bill_total_equals_energy_plus_standing(self) -> None:
+        from app.tariff_engine import simulate_bill
+
+        bill = simulate_bill([1.0] * 24)
+        assert bill.total_cost == pytest.approx(bill.energy_cost + bill.standing_charge, rel=1e-6)
+
+    @pytest.mark.parametrize("n_days", [1, 7, 30])
+    def test_simulate_bill_days_scales_standing_charge(self, n_days: int) -> None:
+        from app.tariff_engine import simulate_bill
+
+        bill = simulate_bill([0.0] * 24, days=n_days)
+        assert bill.standing_charge == pytest.approx(0.3 * n_days, rel=1e-3)
+
+    def test_simulate_bill_has_kwh_by_period(self) -> None:
+        from app.tariff_engine import simulate_bill
+
+        bill = simulate_bill([1.0] * 24)
+        assert isinstance(bill.kwh_by_period, dict)
+        assert sum(bill.kwh_by_period.values()) == pytest.approx(24.0, rel=1e-3)
