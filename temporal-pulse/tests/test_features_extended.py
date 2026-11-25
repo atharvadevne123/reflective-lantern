@@ -6,8 +6,8 @@ import pandas as pd
 import pytest
 
 from app.features import (
-    WINDOW_SIZES,
     LAG_STEPS,
+    WINDOW_SIZES,
     add_lag_features,
     add_rate_of_change,
     add_rolling_statistics,
