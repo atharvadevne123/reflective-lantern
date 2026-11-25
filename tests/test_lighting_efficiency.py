@@ -171,3 +171,40 @@ class TestLightingEdgeCases:
     def test_annual_kwh_scales_with_hours(self, hours: float) -> None:
         kwh = annual_kwh(100.0, hours)
         assert kwh > 0.0
+
+
+class TestLightingEfficiencyEdgeCases:
+    @pytest.mark.parametrize("lumens,watts", [
+        (1000.0, 10.0),
+        (2000.0, 20.0),
+        (500.0, 5.0),
+    ])
+    def test_luminous_efficacy_basic(self, lumens: float, watts: float) -> None:
+        from app.lighting_efficiency import luminous_efficacy
+
+        efficacy = luminous_efficacy(lumens, watts)
+        assert efficacy == pytest.approx(lumens / watts, rel=1e-3)
+
+    def test_annual_kwh_positive(self) -> None:
+        from app.lighting_efficiency import annual_kwh
+
+        kwh = annual_kwh(100.0, 8.0)
+        assert kwh > 0.0
+
+    @pytest.mark.parametrize("old_w,new_w,hours,rate,capex", [
+        (100.0, 10.0, 8.0, 0.15, 50.0),
+        (60.0, 9.0, 10.0, 0.20, 30.0),
+    ])
+    def test_upgrade_savings_positive(
+        self, old_w: float, new_w: float, hours: float, rate: float, capex: float
+    ) -> None:
+        from app.lighting_efficiency import upgrade_savings
+
+        annual_saving, payback = upgrade_savings(old_w, new_w, hours, rate, capex)
+        assert annual_saving > 0.0
+
+    def test_power_for_target_lux_positive(self) -> None:
+        from app.lighting_efficiency import power_for_target_lux
+
+        power = power_for_target_lux(50.0, 500.0, 0.8, 0.6)
+        assert power > 0.0
