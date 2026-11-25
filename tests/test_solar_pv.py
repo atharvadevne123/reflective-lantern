@@ -160,3 +160,34 @@ class TestSolarPVEdgeCases:
         r1 = analyse_pv_system(10, 400.0, 4.5)
         r2 = analyse_pv_system(20, 400.0, 4.5)
         assert r2.co2_saved_kg == pytest.approx(r1.co2_saved_kg * 2, rel=1e-3)
+
+
+class TestSolarPVEdgeCases2:
+    @pytest.mark.parametrize("panels,wp,psh", [
+        (10, 400, 4.0),
+        (20, 350, 5.0),
+        (5, 500, 3.5),
+    ])
+    def test_annual_yield_positive(self, panels: int, wp: float, psh: float) -> None:
+        from app.solar_pv import annual_yield_kwh
+
+        kwh = annual_yield_kwh(panels * wp / 1000, psh)
+        assert kwh > 0.0
+
+    def test_capacity_factor_in_range(self) -> None:
+        from app.solar_pv import capacity_factor
+
+        cf = capacity_factor(1000.0, 1.0)
+        assert 0.0 <= cf <= 1.0
+
+    def test_array_power_positive(self) -> None:
+        from app.solar_pv import array_power_kw
+
+        power = array_power_kw(10, 400, 25.0, 1000.0)
+        assert power > 0.0
+
+    def test_analyse_pv_system_returns_result(self) -> None:
+        from app.solar_pv import analyse_pv_system
+
+        result = analyse_pv_system(10, 400, 4.5)
+        assert hasattr(result, "annual_yield_kwh")
