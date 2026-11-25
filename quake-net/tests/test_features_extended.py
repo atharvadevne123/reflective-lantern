@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from app.features import GeoFeatureEngineer, FaultTypeEncoder
+from app.features import FaultTypeEncoder, GeoFeatureEngineer
 
 
 def _base_row(**overrides) -> dict:
