@@ -313,3 +313,55 @@ def test_cost_per_unit_positive_units() -> None:
     spec = ResourceSpec(cpu_cores=2, memory_gb=4, duration_hours=1)
     bd = estimate_cost(spec)
     assert cost_per_unit(bd, 100) > 0.0
+
+
+class TestCostEstimatorEdgeCases:
+    @pytest.mark.parametrize("cpu,mem,hours", [
+        (1, 1, 1),
+        (4, 16, 8),
+        (8, 32, 24),
+        (16, 64, 720),
+    ])
+    def test_estimate_cost_returns_positive(self, cpu: int, mem: int, hours: float) -> None:
+        from app.cost_estimator import ResourceSpec, estimate_cost
+
+        spec = ResourceSpec(cpu_cores=cpu, memory_gb=mem, duration_hours=hours)
+        bd = estimate_cost(spec)
+        assert bd.total_usd > 0.0
+
+    def test_monthly_estimate_scales_with_daily(self) -> None:
+        from app.cost_estimator import ResourceSpec, estimate_cost, monthly_estimate
+
+        spec = ResourceSpec(cpu_cores=2, memory_gb=4, duration_hours=1)
+        daily = estimate_cost(spec)
+        monthly = monthly_estimate(spec)
+        assert monthly.total_usd > daily.total_usd
+
+    def test_compare_specs_returns_all(self) -> None:
+        from app.cost_estimator import ResourceSpec, compare_specs
+
+        specs = [
+            ResourceSpec(cpu_cores=1, memory_gb=2, duration_hours=1),
+            ResourceSpec(cpu_cores=2, memory_gb=4, duration_hours=1),
+            ResourceSpec(cpu_cores=4, memory_gb=8, duration_hours=1),
+        ]
+        results = compare_specs(specs)
+        assert len(results) == 3
+
+    def test_cheapest_spec_returns_lowest_cost(self) -> None:
+        from app.cost_estimator import ResourceSpec, cheapest_spec
+
+        specs = [
+            ResourceSpec(cpu_cores=1, memory_gb=1, duration_hours=1),
+            ResourceSpec(cpu_cores=8, memory_gb=32, duration_hours=24),
+        ]
+        cheapest = cheapest_spec(specs)
+        assert cheapest.cpu_cores == 1
+
+    def test_to_dict_has_expected_keys(self) -> None:
+        from app.cost_estimator import ResourceSpec, estimate_cost
+
+        spec = ResourceSpec(cpu_cores=2, memory_gb=4, duration_hours=1)
+        bd = estimate_cost(spec)
+        d = bd.to_dict()
+        assert "total_usd" in d or "compute_usd" in d
