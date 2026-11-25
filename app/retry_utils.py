@@ -139,7 +139,10 @@ def retry_on_exception(
     from typing import Any as _Any
 
     def decorator(func: Any) -> Any:
+        """Wrap *func* with retry-on-exception logic."""
+
         def wrapper(*args: _Any, **kwargs: _Any) -> _Any:
+            """Execute *func* with up to *attempts* retries on *exceptions*."""
             last_exc: Exception | None = None
             for i in range(1, attempts + 1):
                 try:
