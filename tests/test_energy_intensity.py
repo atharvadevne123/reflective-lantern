@@ -141,3 +141,39 @@ class TestSavingsPotential:
         result = savings_potential(200.0, 150.0, 500.0)
         assert result["co2_kg"] > 0
         assert result["cost_dollars"] > 0
+
+
+class TestEnergyIntensityEdgeCases:
+    @pytest.mark.parametrize("kwh,sqm", [
+        (10000.0, 100.0),
+        (50000.0, 500.0),
+        (1000.0, 10.0),
+    ])
+    def test_energy_use_intensity_basic(self, kwh: float, sqm: float) -> None:
+        from app.energy_intensity import energy_use_intensity
+
+        result = energy_use_intensity(kwh, sqm)
+        assert result == pytest.approx(kwh / sqm, rel=1e-3)
+
+    def test_energy_use_intensity_zero_area_raises(self) -> None:
+        from app.energy_intensity import energy_use_intensity
+
+        with pytest.raises(ValueError):
+            energy_use_intensity(1000.0, 0.0)
+
+    @pytest.mark.parametrize("eui,target_eui", [
+        (200.0, 150.0),
+        (300.0, 100.0),
+        (150.0, 120.0),
+    ])
+    def test_eui_reduction_needed_positive(self, eui: float, target_eui: float) -> None:
+        from app.energy_intensity import eui_reduction_needed
+
+        reduction = eui_reduction_needed(eui, target_eui)
+        assert reduction > 0.0
+
+    def test_carbon_from_eui_positive(self) -> None:
+        from app.energy_intensity import carbon_from_eui
+
+        carbon = carbon_from_eui(100.0, 1000.0)
+        assert carbon > 0.0
