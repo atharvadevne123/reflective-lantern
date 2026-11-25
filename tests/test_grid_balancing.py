@@ -155,3 +155,40 @@ class TestAncillaryServiceValue:
     def test_negative_price_raises(self) -> None:
         with pytest.raises(ValueError):
             ancillary_service_value("bat1", 10.0, "FFR", 0.5, 30.0, -10.0)
+
+
+class TestGridBalancingEdgeCases:
+    @pytest.mark.parametrize("freq_dev,capacity", [
+        (0.1, 100.0),
+        (0.5, 50.0),
+        (-0.2, 100.0),
+    ])
+    def test_droop_response_proportional(self, freq_dev: float, capacity: float) -> None:
+        from app.grid_balancing import droop_response_kw
+
+        response = droop_response_kw(freq_dev, capacity)
+        assert isinstance(response, float)
+
+    def test_classify_frequency_event_returns_event(self) -> None:
+        from app.grid_balancing import classify_frequency_event
+
+        event = classify_frequency_event(49.5, 0.5)
+        assert hasattr(event, "severity")
+
+    def test_ancillary_service_bid_returns_result(self) -> None:
+        from app.grid_balancing import ancillary_service_value
+
+        bid = ancillary_service_value("asset1", 10.0, "FFR", 1.0, 30.0, 10.0)
+        assert hasattr(bid, "total_value")
+
+    @pytest.mark.parametrize("capacity_mw,price", [
+        (5.0, 10.0),
+        (10.0, 15.0),
+    ])
+    def test_ancillary_value_scales_with_capacity(
+        self, capacity_mw: float, price: float
+    ) -> None:
+        from app.grid_balancing import ancillary_service_value
+
+        bid = ancillary_service_value("a", capacity_mw, "FFR", 1.0, 30.0, price)
+        assert bid.total_value > 0.0
