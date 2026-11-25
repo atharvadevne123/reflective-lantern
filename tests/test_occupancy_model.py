@@ -184,3 +184,42 @@ class TestOccupancyModelEdgeCases:
 
     def test_residential_schedule_has_24_hours(self) -> None:
         assert len(RESIDENTIAL_BASE_SCHEDULE) == 24
+
+
+class TestOccupancyModelEdgeCases2:
+    def _make_schedule(self) -> dict:
+        return {h: 1.0 if 8 <= h < 18 else 0.0 for h in range(24)}
+
+    def test_build_occupancy_profile_returns_result(self) -> None:
+        from app.occupancy_model import build_occupancy_profile
+
+        profile = build_occupancy_profile(self._make_schedule())
+        assert hasattr(profile, "occupied_hours")
+
+    def test_annual_occupied_hours_positive(self) -> None:
+        from app.occupancy_model import annual_occupied_hours
+
+        schedule = self._make_schedule()
+        hours = annual_occupied_hours(schedule)
+        assert hours > 0
+
+    @pytest.mark.parametrize("occupied,unoccupied,fraction", [
+        (21.0, 15.0, 1.0),
+        (21.0, 15.0, 0.0),
+        (21.0, 15.0, 0.5),
+    ])
+    def test_occupancy_adjusted_setpoint_in_range(
+        self, occupied: float, unoccupied: float, fraction: float
+    ) -> None:
+        from app.occupancy_model import occupancy_adjusted_setpoint
+
+        setpoint = occupancy_adjusted_setpoint(occupied, unoccupied, fraction)
+        assert min(occupied, unoccupied) <= setpoint <= max(occupied, unoccupied)
+
+    def test_energy_with_occupancy_less_than_base(self) -> None:
+        from app.occupancy_model import energy_with_occupancy
+
+        base = [10.0] * 24
+        fractions = [0.5] * 24
+        result = energy_with_occupancy(base, fractions)
+        assert sum(result) < sum(base)
