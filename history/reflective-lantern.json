@@ -990,5 +990,7 @@
     "ruff_clean": true,
     "pushed_to": "origin/main",
     "total_commits_ahead": 110,
+    "email_status": "network_blocked",
+    "email_note": "PDF generated; smtp.gmail.com port 587 not reachable from sandbox (SMTP not proxied)",
     "session": "https://claude.ai/code/session_01361EsWbtaBpV2W58A62pZ2"
   }
