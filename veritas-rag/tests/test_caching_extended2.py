@@ -1,8 +1,6 @@
 """Extended caching tests with parametrize and boundary coverage."""
 from __future__ import annotations
 
-import time
-
 import pytest
 
 from app.caching import (
