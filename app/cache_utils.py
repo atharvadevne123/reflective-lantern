@@ -100,9 +100,11 @@ def memoize_ttl(ttl: float = 60.0) -> Any:
     """
 
     def decorator(func: Any) -> Any:
+        """Wrap *func* with a TTL-keyed cache."""
         cache: TTLCache = TTLCache(ttl=ttl)
 
         def wrapper(*args: Any) -> Any:
+            """Return cached result for *args* or compute and store it."""
             key = str(args)
             result = cache.get(key, _SENTINEL)
             if result is _SENTINEL:
@@ -167,6 +169,7 @@ def memoize(func: Any) -> Any:
     _cache: dict[tuple[Any, ...], Any] = {}
 
     def wrapper(*args: Any) -> Any:
+        """Return cached result for *args* or compute and store it permanently."""
         if args not in _cache:
             _cache[args] = func(*args)
         return _cache[args]
