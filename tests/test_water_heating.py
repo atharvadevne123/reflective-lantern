@@ -184,3 +184,37 @@ class TestWaterHeatingEdgeCases:
 
         r = estimate_dhw(100.0)
         assert r.annual_cost == pytest.approx(r.daily_cost * 365, rel=1e-4)
+
+
+class TestWaterHeatingEdgeCases2:
+    @pytest.mark.parametrize("litres,cold,hot", [
+        (100.0, 10.0, 60.0),
+        (200.0, 15.0, 55.0),
+        (50.0, 5.0, 65.0),
+    ])
+    def test_energy_to_heat_water_positive(
+        self, litres: float, cold: float, hot: float
+    ) -> None:
+        from app.water_heating import energy_to_heat_water
+
+        energy = energy_to_heat_water(litres, cold, hot)
+        assert energy > 0.0
+
+    def test_boiler_consumption_greater_than_useful(self) -> None:
+        from app.water_heating import boiler_consumption
+
+        consumed = boiler_consumption(100.0, 0.9)
+        assert consumed > 100.0
+
+    def test_estimate_dhw_boiler_returns_result(self) -> None:
+        from app.water_heating import estimate_dhw
+
+        result = estimate_dhw(150.0)
+        assert hasattr(result, "daily_kwh_consumed")
+
+    @pytest.mark.parametrize("daily_litres", [50.0, 100.0, 200.0])
+    def test_compare_technologies_has_boiler(self, daily_litres: float) -> None:
+        from app.water_heating import compare_technologies
+
+        results = compare_technologies(daily_litres)
+        assert "boiler" in results
