@@ -130,3 +130,37 @@ class TestCharacteriseResource:
         r1 = characterise_resource(1000.0)
         r2 = characterise_resource(3000.0)
         assert r2.temperature_c > r1.temperature_c
+
+
+class TestGeothermalEdgeCases:
+    @pytest.mark.parametrize("depth,surface_temp,gradient", [
+        (500.0, 10.0, 20.0),
+        (1000.0, 20.0, 30.0),
+        (5000.0, 5.0, 25.0),
+    ])
+    def test_reservoir_temperature_increases_with_depth(
+        self, depth: float, surface_temp: float, gradient: float
+    ) -> None:
+        t = reservoir_temperature(depth, surface_temperature_c=surface_temp, gradient_c_per_km=gradient)
+        assert t > surface_temp
+
+    @pytest.mark.parametrize("flow,inlet,outlet", [
+        (1.0, 100.0, 50.0),
+        (2.0, 150.0, 80.0),
+        (0.5, 90.0, 40.0),
+    ])
+    def test_thermal_power_scales_with_flow(
+        self, flow: float, inlet: float, outlet: float
+    ) -> None:
+        p1 = thermal_power_from_flow(flow, inlet, outlet)
+        p2 = thermal_power_from_flow(flow * 2, inlet, outlet)
+        assert pytest.approx(p2, rel=1e-3) == p1 * 2
+
+    def test_characterise_resource_temperature_in_range(self) -> None:
+        resource = characterise_resource(2000.0)
+        assert resource.temperature_c > 0.0
+
+    def test_plant_efficiency_one_half_reduces_output(self) -> None:
+        full = geothermal_plant(200.0, plant_efficiency_fraction=1.0)
+        half = geothermal_plant(200.0, plant_efficiency_fraction=0.5)
+        assert half.electrical_power_kw < full.electrical_power_kw
