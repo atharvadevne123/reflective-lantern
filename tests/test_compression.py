@@ -327,3 +327,53 @@ class TestEncodeDecodeBase64:
 
         result = encode_to_base64(b"test")
         assert isinstance(result, str)
+
+
+class TestCompressionEdgeCases:
+    @pytest.mark.parametrize("data", [
+        b"hello world",
+        b"" * 0,
+        b"a" * 1000,
+        b"\x00\x01\x02\x03",
+    ])
+    def test_zlib_roundtrip_parametrized(self, data: bytes) -> None:
+        from app.compression import zlib_compress, zlib_decompress
+
+        compressed = zlib_compress(data)
+        assert zlib_decompress(compressed) == data
+
+    @pytest.mark.parametrize("data", [
+        b"test gzip data",
+        b"repeated" * 100,
+    ])
+    def test_gzip_roundtrip_parametrized(self, data: bytes) -> None:
+        from app.compression import gzip_compress, gzip_decompress
+
+        compressed = gzip_compress(data)
+        assert gzip_decompress(compressed) == data
+
+    def test_is_gzip_identifies_gzip_data(self) -> None:
+        from app.compression import gzip_compress, is_gzip
+
+        compressed = gzip_compress(b"test")
+        assert is_gzip(compressed) is True
+
+    def test_is_gzip_rejects_zlib_data(self) -> None:
+        from app.compression import is_gzip, zlib_compress
+
+        compressed = zlib_compress(b"test")
+        assert is_gzip(compressed) is False
+
+    def test_compress_json_roundtrip(self) -> None:
+        from app.compression import compress_json, decompress_json
+
+        data = {"key": "value", "numbers": [1, 2, 3]}
+        compressed = compress_json(data)
+        assert decompress_json(compressed) == data
+
+    def test_compression_ratio_less_than_one_for_compressible_data(self) -> None:
+        from app.compression import compression_ratio
+
+        data = b"a" * 10000
+        ratio = compression_ratio(data)
+        assert ratio < 1.0
