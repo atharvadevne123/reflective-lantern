@@ -145,3 +145,44 @@ class TestConsumptionStats:
         readings = [_make_reading(i, float(i)) for i in range(n)]
         stats = consumption_stats(readings)
         assert stats["max_kwh"] >= stats["min_kwh"]
+
+
+class TestSmartMeterAPIEdgeCases:
+    def _make_readings(self, n: int = 5) -> list:
+        from datetime import datetime, timezone
+
+        from app.smart_meter_api import MeterReading
+
+        base = datetime(2024, 1, 1, tzinfo=timezone.utc)
+        from datetime import timedelta
+        return [MeterReading(base + timedelta(minutes=30 * i), float(i + 1)) for i in range(n)]
+
+    @pytest.mark.parametrize("n", [1, 5, 48])
+    def test_aggregate_to_daily_returns_list(self, n: int) -> None:
+        from app.smart_meter_api import aggregate_to_daily
+
+        readings = self._make_readings(n)
+        result = aggregate_to_daily(readings)
+        assert isinstance(result, list)
+
+    def test_consumption_stats_has_expected_keys(self) -> None:
+        from app.smart_meter_api import consumption_stats
+
+        readings = self._make_readings(5)
+        stats = consumption_stats(readings)
+        assert "max_kwh" in stats
+        assert "min_kwh" in stats
+
+    def test_fill_missing_intervals_same_or_longer(self) -> None:
+        from app.smart_meter_api import fill_missing_intervals
+
+        readings = self._make_readings(3)
+        filled = fill_missing_intervals(readings)
+        assert len(filled) >= len(readings)
+
+    def test_parse_hh_readings_returns_list(self) -> None:
+        from app.smart_meter_api import parse_hh_readings
+
+        raw = [{"timestamp": "2024-01-01T00:00:00Z", "value": 1.5}]
+        result = parse_hh_readings(raw)
+        assert isinstance(result, list)
