@@ -286,3 +286,51 @@ class TestMemoize:
 
         wrapped = memoize(original)
         assert wrapped.__wrapped__ is original
+
+
+class TestTTLCacheEdgeCases:
+    def test_set_stores_none_value(self) -> None:
+        cache = TTLCache(ttl=60)
+        cache.set("null_key", None)
+        assert cache.get("null_key", "sentinel") is None
+
+    def test_delete_nonexistent_key_returns_false(self) -> None:
+        cache = TTLCache(ttl=60)
+        assert cache.delete("ghost") is False
+
+    def test_delete_existing_key_returns_true(self) -> None:
+        cache = TTLCache(ttl=60)
+        cache.set("x", 1)
+        assert cache.delete("x") is True
+
+    def test_len_includes_all_stored_entries(self) -> None:
+        cache = TTLCache(ttl=60)
+        for i in range(5):
+            cache.set(str(i), i)
+        assert len(cache) == 5
+
+    def test_clear_empties_all_entries(self) -> None:
+        cache = TTLCache(ttl=60)
+        for i in range(3):
+            cache.set(str(i), i)
+        cache.clear()
+        assert len(cache) == 0
+
+    @pytest.mark.parametrize("key,value", [
+        ("str_key", "string_value"),
+        ("int_key", 42),
+        ("list_key", [1, 2, 3]),
+        ("dict_key", {"a": 1}),
+    ])
+    def test_various_value_types(self, key: str, value: object) -> None:
+        cache = TTLCache(ttl=60)
+        cache.set(key, value)
+        assert cache.get(key) == value
+
+    def test_max_size_evicts_oldest_on_overflow(self) -> None:
+        cache = TTLCache(ttl=60, max_size=2)
+        cache.set("a", 1)
+        cache.set("b", 2)
+        cache.set("c", 3)
+        assert len(cache) == 2
+        assert cache.get("c") == 3
