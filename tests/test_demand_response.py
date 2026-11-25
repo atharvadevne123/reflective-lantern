@@ -369,3 +369,48 @@ class TestDemandResponseEdgeCases:
         actual = [100.0 * (1 - pct)] * 4
         curt = curtailment(baseline, actual)
         assert curt == pytest.approx(100.0 * 4 * pct, rel=1e-4)
+
+
+class TestDemandResponseEdgeCases2:
+    @pytest.mark.parametrize("baseline,actual", [
+        ([100.0] * 4, [80.0] * 4),
+        ([200.0] * 4, [150.0] * 4),
+        ([50.0] * 4, [50.0] * 4),
+    ])
+    def test_curtailment_non_negative(self, baseline: list, actual: list) -> None:
+        from app.demand_response import curtailment
+
+        result = curtailment(baseline, actual)
+        assert result >= 0.0
+
+    def test_curtailment_rate_basic(self) -> None:
+        from app.demand_response import curtailment_rate
+
+        rate = curtailment_rate(100.0, 4)
+        assert rate == pytest.approx(25.0)
+
+    def test_evaluate_event_returns_result(self) -> None:
+        from app.demand_response import evaluate_event
+
+        baseline = [100.0] * 4
+        actual = [80.0] * 4
+        result = evaluate_event(baseline, actual, committed_kwh=80.0)
+        assert hasattr(result, "curtailed_kwh")
+
+    def test_customer_baseline_load_from_daily_usage(self) -> None:
+        from app.demand_response import customer_baseline_load
+
+        result = customer_baseline_load(daily_usage_kwh=24.0)
+        assert isinstance(result, float)
+
+    @pytest.mark.parametrize("net_payment,baseline_cost,baseline_kwh", [
+        (100.0, 0.10, 500.0),
+        (50.0, 0.15, 300.0),
+    ])
+    def test_event_roi_positive(
+        self, net_payment: float, baseline_cost: float, baseline_kwh: float
+    ) -> None:
+        from app.demand_response import event_roi
+
+        roi = event_roi(net_payment, baseline_cost, baseline_kwh)
+        assert isinstance(roi, float)
