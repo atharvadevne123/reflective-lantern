@@ -7,7 +7,6 @@ import pytest
 
 from app.forecasting import (
     DEFAULT_C,
-    DEFAULT_P,
     decay_half_life,
     expected_count,
     forecast_sequence,
