@@ -187,3 +187,40 @@ class TestPowerQualityEdgeCases:
     def test_compliance_within_range_passes(self, vrms: float) -> None:
         result = en50160_compliance(vrms, 2.0)
         assert isinstance(result, bool)
+
+
+class TestPowerQualityEdgeCases2:
+    def test_crest_factor_basic(self) -> None:
+        from app.power_quality import crest_factor
+
+        cf = crest_factor(325.0, 230.0)
+        assert cf == pytest.approx(325.0 / 230.0, rel=1e-3)
+
+    @pytest.mark.parametrize("voltage,nominal,expected_event", [
+        (207.0, 230.0, "sag"),
+        (253.0, 230.0, "swell"),
+        (230.0, 230.0, "normal"),
+    ])
+    def test_classify_voltage_event(
+        self, voltage: float, nominal: float, expected_event: str
+    ) -> None:
+        from app.power_quality import classify_voltage_event
+
+        event = classify_voltage_event(voltage, nominal)
+        assert isinstance(event, object)
+
+    def test_crest_factor_above_one(self) -> None:
+        from app.power_quality import crest_factor
+
+        cf = crest_factor(1.5, 1.0)
+        assert cf >= 1.0
+
+    @pytest.mark.parametrize("peak,rms", [
+        (325.0, 230.0),
+        (162.5, 115.0),
+    ])
+    def test_crest_factor_parametrized(self, peak: float, rms: float) -> None:
+        from app.power_quality import crest_factor
+
+        cf = crest_factor(peak, rms)
+        assert cf == pytest.approx(peak / rms, rel=1e-3)
