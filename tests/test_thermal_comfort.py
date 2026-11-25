@@ -194,3 +194,38 @@ class TestThermalComfortEdgeCases:
     def test_assess_comfort_is_comfortable_at_neutral(self) -> None:
         result = assess_comfort(22.0, 22.0, 0.1, 50.0)
         assert result.is_comfortable is True
+
+
+class TestThermalComfortEdgeCases2:
+    @pytest.mark.parametrize("air_temp,mrt,velocity,rh", [
+        (22.0, 22.0, 0.1, 50.0),
+        (25.0, 25.0, 0.2, 60.0),
+        (20.0, 18.0, 0.1, 40.0),
+    ])
+    def test_pmv_returns_float(
+        self, air_temp: float, mrt: float, velocity: float, rh: float
+    ) -> None:
+        from app.thermal_comfort import pmv
+
+        result = pmv(air_temp, mrt, velocity, rh)
+        assert isinstance(result, float)
+
+    def test_ppd_at_zero_pmv_minimum(self) -> None:
+        from app.thermal_comfort import ppd
+
+        result = ppd(0.0)
+        assert result >= 5.0
+
+    @pytest.mark.parametrize("pmv_val", [-3.0, -1.5, 0.0, 1.5, 3.0])
+    def test_ppd_in_valid_range(self, pmv_val: float) -> None:
+        from app.thermal_comfort import ppd
+
+        result = ppd(pmv_val)
+        assert 5.0 <= result <= 100.0
+
+    def test_assess_comfort_returns_result(self) -> None:
+        from app.thermal_comfort import assess_comfort
+
+        result = assess_comfort(22.0, 22.0, 0.1, 50.0)
+        assert hasattr(result, "pmv")
+        assert hasattr(result, "ppd")
