@@ -203,4 +203,4 @@ class TestInsulationCalculatorEdgeCases:
         from app.insulation_calculator import analyse_insulation_upgrade
 
         result = analyse_insulation_upgrade(100.0, 2.5, 0.3, 15.0, 5000.0)
-        assert hasattr(result, "annual_energy_saving_kwh")
+        assert hasattr(result, "annual_energy_saved_kwh")
