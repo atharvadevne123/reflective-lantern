@@ -148,3 +148,49 @@ class TestAnalyseCHP:
         result = analyse_chp(1000.0, elec_eff, therm_eff)
         assert result.electrical_efficiency == pytest.approx(elec_eff)
         assert result.thermal_efficiency == pytest.approx(therm_eff)
+
+
+class TestCogenerationEdgeCases:
+    @pytest.mark.parametrize("fuel_input,elec_eff,therm_eff", [
+        (500.0, 0.30, 0.50),
+        (2000.0, 0.40, 0.40),
+        (10000.0, 0.35, 0.45),
+    ])
+    def test_analyse_chp_total_efficiency_bounded(
+        self, fuel_input: float, elec_eff: float, therm_eff: float
+    ) -> None:
+        from app.cogeneration import analyse_chp
+
+        result = analyse_chp(fuel_input, elec_eff, therm_eff)
+        assert 0.0 < result.total_efficiency <= 1.0
+
+    def test_heat_to_power_ratio_basic(self) -> None:
+        from app.cogeneration import heat_to_power_ratio
+
+        # (thermal_output_kw, electrical_output_kw)
+        ratio = heat_to_power_ratio(450.0, 350.0)
+        assert ratio == pytest.approx(450.0 / 350.0, rel=1e-3)
+
+    def test_total_cogeneration_efficiency_sum(self) -> None:
+        from app.cogeneration import total_cogeneration_efficiency
+
+        # elec + heat / fuel
+        total = total_cogeneration_efficiency(350.0, 450.0, 1000.0)
+        assert total == pytest.approx(0.80, rel=1e-3)
+
+    def test_co2_savings_positive(self) -> None:
+        from app.cogeneration import co2_savings
+
+        savings = co2_savings(1000.0, 0.35, 0.45)
+        assert savings > 0.0
+
+    @pytest.mark.parametrize("elec_output,fuel_input", [
+        (350.0, 1000.0),
+        (140.0, 400.0),
+        (700.0, 2000.0),
+    ])
+    def test_chp_electrical_efficiency_ratio(self, elec_output: float, fuel_input: float) -> None:
+        from app.cogeneration import chp_electrical_efficiency
+
+        eff = chp_electrical_efficiency(elec_output, fuel_input)
+        assert eff == pytest.approx(elec_output / fuel_input, rel=1e-3)
