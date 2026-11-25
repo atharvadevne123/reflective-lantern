@@ -314,3 +314,65 @@ class TestLogBase:
 
         with pytest.raises(ValueError):
             log_base(10.0, 1.0)
+
+
+class TestMathUtilsEdgeCases:
+    @pytest.mark.parametrize("value,lo,hi,expected", [
+        (5, 0, 10, 5),
+        (-5, 0, 10, 0),
+        (15, 0, 10, 10),
+        (0, 0, 10, 0),
+        (10, 0, 10, 10),
+    ])
+    def test_clamp_parametrized(self, value: float, lo: float, hi: float, expected: float) -> None:
+        from app.math_utils import clamp
+
+        assert clamp(value, lo, hi) == expected
+
+    @pytest.mark.parametrize("a,b,expected", [
+        (10.0, 2.0, 5.0),
+        (0.0, 5.0, 0.0),
+        (7.0, 0.0, 0.0),  # safe divide by zero returns 0
+    ])
+    def test_safe_divide_parametrized(self, a: float, b: float, expected: float) -> None:
+        from app.math_utils import safe_divide
+
+        assert safe_divide(a, b) == expected
+
+    def test_moving_average_basic(self) -> None:
+        from app.math_utils import moving_average
+
+        result = moving_average([1.0, 2.0, 3.0, 4.0, 5.0], window=3)
+        assert len(result) == 5
+        assert result[2] == pytest.approx(2.0)
+        assert result[3] == pytest.approx(3.0)
+        assert result[4] == pytest.approx(4.0)
+
+    @pytest.mark.parametrize("values,expected", [
+        ([2.0, 8.0], pytest.approx(4.0)),
+        ([1.0, 1.0, 1.0], pytest.approx(1.0)),
+        ([4.0, 9.0], pytest.approx(6.0)),
+    ])
+    def test_geometric_mean_parametrized(self, values: list, expected: object) -> None:
+        from app.math_utils import geometric_mean
+
+        assert geometric_mean(values) == expected
+
+    def test_normalize_min_max_range(self) -> None:
+        from app.math_utils import normalize
+
+        values = [0.0, 5.0, 10.0]
+        result = normalize(values)
+        assert result[0] == pytest.approx(0.0)
+        assert result[1] == pytest.approx(0.5)
+        assert result[2] == pytest.approx(1.0)
+
+    def test_safe_sqrt_zero(self) -> None:
+        from app.math_utils import safe_sqrt
+
+        assert safe_sqrt(0.0) == 0.0
+
+    def test_safe_sqrt_negative_returns_zero(self) -> None:
+        from app.math_utils import safe_sqrt
+
+        assert safe_sqrt(-1.0) == 0.0
