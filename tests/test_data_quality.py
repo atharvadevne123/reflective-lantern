@@ -1316,3 +1316,38 @@ class TestHasDuplicates:
         from app.data_quality import has_duplicates
 
         assert has_duplicates(values) is expected
+
+
+class TestDataQualityEdgeCases:
+    def test_completeness_score_all_present(self) -> None:
+        from app.data_quality import completeness_score
+
+        records = [{"a": 1, "b": 2}, {"a": 3, "b": 4}]
+        score = completeness_score(records, ["a", "b"])
+        assert score == pytest.approx(1.0)
+
+    def test_completeness_score_partial(self) -> None:
+        from app.data_quality import completeness_score
+
+        records = [{"a": 1, "b": None}, {"a": 3, "b": 4}]
+        score = completeness_score(records, ["a", "b"])
+        assert 0.0 < score < 1.0
+
+    @pytest.mark.parametrize("values,expected", [
+        ([1.0, None, None, 2.0], 2),
+        ([1.0, 2.0, 3.0], 0),
+        ([None, None, None], 3),
+    ])
+    def test_consecutive_missing_count(self, values: list, expected: int) -> None:
+        from app.data_quality import consecutive_missing_count
+
+        result = consecutive_missing_count(values)
+        assert result == expected
+
+    def test_column_cardinality_basic(self) -> None:
+        from app.data_quality import column_cardinality
+
+        records = [{"a": 1, "b": "x"}, {"a": 2, "b": "x"}, {"a": 1, "b": "y"}]
+        cardinality = column_cardinality(records)
+        assert cardinality["a"] == 2
+        assert cardinality["b"] == 2
