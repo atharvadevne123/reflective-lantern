@@ -1,6 +1,5 @@
 """Monitoring and drift detection tests for News-Guard."""
 
-
 import pytest
 
 from app.monitoring import compute_drift, get_monitoring_summary
@@ -8,6 +7,7 @@ from app.monitoring import compute_drift, get_monitoring_summary
 
 def test_drift_detected_with_different_distributions():
     import numpy as np
+
     rng = np.random.default_rng(42)
     reference = list(rng.beta(2, 5, 200))
     current = list(rng.beta(5, 2, 200))
@@ -18,6 +18,7 @@ def test_drift_detected_with_different_distributions():
 
 def test_no_drift_with_same_distribution():
     import numpy as np
+
     rng = np.random.default_rng(42)
     reference = list(rng.normal(0.5, 0.1, 200))
     current = list(rng.normal(0.5, 0.1, 200))
@@ -51,10 +52,13 @@ def test_monitoring_summary_fake_rate_bounds(db_session):
     assert 0.0 <= summary["fake_rate"] <= 1.0
 
 
-@pytest.mark.parametrize("ref,curr,expect_drift", [
-    ([0.1] * 100, [0.9] * 100, True),
-    ([0.5] * 100, [0.5] * 100, False),
-])
+@pytest.mark.parametrize(
+    "ref,curr,expect_drift",
+    [
+        ([0.1] * 100, [0.9] * 100, True),
+        ([0.5] * 100, [0.5] * 100, False),
+    ],
+)
 def test_drift_parametrized(ref, curr, expect_drift):
     result = compute_drift(ref, curr)
     assert result["drift_detected"] == expect_drift

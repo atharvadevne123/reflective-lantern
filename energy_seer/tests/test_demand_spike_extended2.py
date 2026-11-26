@@ -1,4 +1,5 @@
 """Extended demand spike tests with parametrize and boundary coverage."""
+
 from __future__ import annotations
 
 import pytest
@@ -40,6 +41,7 @@ def test_detect_spike_has_required_keys() -> None:
 @pytest.mark.parametrize("z_threshold", [1.5, 2.0, 2.5, 3.0])
 def test_detect_spike_stricter_threshold_fewer_spikes(z_threshold: float) -> None:
     import random
+
     rng = random.Random(42)
     values = [rng.gauss(10, 2) for _ in range(100)]
     values[50] = 100.0
@@ -52,12 +54,15 @@ def test_spike_severity_normal_below_threshold() -> None:
     assert spike_severity(5.0, 5.0, 1.0) == "normal"
 
 
-@pytest.mark.parametrize("z_distance,expected", [
-    (1.0, "normal"),
-    (2.5 + 0.1, "moderate"),
-    (5.0 + 0.1, "high"),
-    (7.5 + 0.1, "critical"),
-])
+@pytest.mark.parametrize(
+    "z_distance,expected",
+    [
+        (1.0, "normal"),
+        (2.5 + 0.1, "moderate"),
+        (5.0 + 0.1, "high"),
+        (7.5 + 0.1, "critical"),
+    ],
+)
 def test_spike_severity_parametrized(z_distance: float, expected: str) -> None:
     mean = 0.0
     std = 1.0
@@ -85,10 +90,13 @@ def test_demand_percentile_out_of_range_raises() -> None:
         demand_percentile([1.0, 2.0, 3.0], percentile=101.0)
 
 
-@pytest.mark.parametrize("percentile,expected", [
-    (100.0, 10.0),
-    (50.0, 5.0),
-])
+@pytest.mark.parametrize(
+    "percentile,expected",
+    [
+        (100.0, 10.0),
+        (50.0, 5.0),
+    ],
+)
 def test_demand_percentile_parametrized(percentile: float, expected: float) -> None:
     values = [float(i) for i in range(1, 11)]
     result = demand_percentile(values, percentile)

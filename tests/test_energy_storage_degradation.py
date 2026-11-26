@@ -151,11 +151,14 @@ class TestDegradationReport:
 
 
 class TestEnergyStorageDegradationEdgeCases:
-    @pytest.mark.parametrize("cycles,nominal,dod", [
-        (0.0, 3000, 0.8),
-        (1500.0, 3000, 0.8),
-        (3000.0, 3000, 0.8),
-    ])
+    @pytest.mark.parametrize(
+        "cycles,nominal,dod",
+        [
+            (0.0, 3000, 0.8),
+            (1500.0, 3000, 0.8),
+            (3000.0, 3000, 0.8),
+        ],
+    )
     def test_cycle_degradation_between_zero_and_one(
         self, cycles: float, nominal: int, dod: float
     ) -> None:
@@ -183,10 +186,13 @@ class TestEnergyStorageDegradationEdgeCases:
         throughput = energy_throughput_kwh(100.0, 50.0, 0.8)
         assert throughput > 0.0
 
-    @pytest.mark.parametrize("nameplate,cycles,years", [
-        (100.0, 500.0, 1.0),
-        (200.0, 1000.0, 3.0),
-    ])
+    @pytest.mark.parametrize(
+        "nameplate,cycles,years",
+        [
+            (100.0, 500.0, 1.0),
+            (200.0, 1000.0, 3.0),
+        ],
+    )
     def test_cycles_to_eol_positive(self, nameplate: float, cycles: float, years: float) -> None:
         from app.energy_storage_degradation import cycles_to_eol
 

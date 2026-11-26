@@ -151,11 +151,14 @@ class TestAnalyseCHP:
 
 
 class TestCogenerationEdgeCases:
-    @pytest.mark.parametrize("fuel_input,elec_eff,therm_eff", [
-        (500.0, 0.30, 0.50),
-        (2000.0, 0.40, 0.40),
-        (10000.0, 0.35, 0.45),
-    ])
+    @pytest.mark.parametrize(
+        "fuel_input,elec_eff,therm_eff",
+        [
+            (500.0, 0.30, 0.50),
+            (2000.0, 0.40, 0.40),
+            (10000.0, 0.35, 0.45),
+        ],
+    )
     def test_analyse_chp_total_efficiency_bounded(
         self, fuel_input: float, elec_eff: float, therm_eff: float
     ) -> None:
@@ -184,11 +187,14 @@ class TestCogenerationEdgeCases:
         savings = co2_savings(1000.0, 0.35, 0.45)
         assert savings > 0.0
 
-    @pytest.mark.parametrize("elec_output,fuel_input", [
-        (350.0, 1000.0),
-        (140.0, 400.0),
-        (700.0, 2000.0),
-    ])
+    @pytest.mark.parametrize(
+        "elec_output,fuel_input",
+        [
+            (350.0, 1000.0),
+            (140.0, 400.0),
+            (700.0, 2000.0),
+        ],
+    )
     def test_chp_electrical_efficiency_ratio(self, elec_output: float, fuel_input: float) -> None:
         from app.cogeneration import chp_electrical_efficiency
 

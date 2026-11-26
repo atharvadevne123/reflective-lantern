@@ -37,9 +37,14 @@ class TestInitDb:
 
 def _make_pred_log(**kwargs):
     defaults = dict(
-        src_bytes=100.0, dst_bytes=200.0, duration=1.0,
-        protocol_type="tcp", service="http", flag="SF",
-        prediction="normal", confidence=0.95,
+        src_bytes=100.0,
+        dst_bytes=200.0,
+        duration=1.0,
+        protocol_type="tcp",
+        service="http",
+        flag="SF",
+        prediction="normal",
+        confidence=0.95,
     )
     defaults.update(kwargs)
     return PredictionLog(**defaults)
@@ -79,18 +84,16 @@ class TestPredictionLogQueries:
         for pred in ["normal", "anomaly", "normal"]:
             db_session.add(_make_pred_log(prediction=pred))
         db_session.commit()
-        normals = db_session.query(PredictionLog).filter(
-            PredictionLog.prediction == "normal"
-        ).count()
+        normals = (
+            db_session.query(PredictionLog).filter(PredictionLog.prediction == "normal").count()
+        )
         assert normals == 2
 
     def test_filter_by_confidence_threshold(self, db_session: Session) -> None:
         for conf in [0.3, 0.6, 0.9]:
             db_session.add(_make_pred_log(confidence=conf))
         db_session.commit()
-        high_conf = db_session.query(PredictionLog).filter(
-            PredictionLog.confidence >= 0.5
-        ).count()
+        high_conf = db_session.query(PredictionLog).filter(PredictionLog.confidence >= 0.5).count()
         assert high_conf == 2
 
     def test_model_version_default(self, db_session: Session) -> None:

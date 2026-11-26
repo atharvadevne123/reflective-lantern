@@ -316,22 +316,29 @@ class TestFeaturePipelineParametrized:
         pipeline.fit(df)
         return pipeline
 
-    @pytest.mark.parametrize("cpu,mem", [
-        (10.0, 20.0),
-        (50.0, 50.0),
-        (90.0, 90.0),
-        (0.1, 0.1),
-    ])
-    def test_pipeline_produces_expected_columns(self, fitted_pipeline, cpu: float, mem: float) -> None:
+    @pytest.mark.parametrize(
+        "cpu,mem",
+        [
+            (10.0, 20.0),
+            (50.0, 50.0),
+            (90.0, 90.0),
+            (0.1, 0.1),
+        ],
+    )
+    def test_pipeline_produces_expected_columns(
+        self, fitted_pipeline, cpu: float, mem: float
+    ) -> None:
         """Pipeline output has exactly the ENGINEERED_COLS columns."""
-        row = dataframe_from_dict({
-            "cpu_usage_pct": cpu,
-            "memory_usage_pct": mem,
-            "error_rate_per_min": 1.0,
-            "latency_p99_ms": 100.0,
-            "request_rate_per_sec": 50.0,
-            "disk_io_util_pct": 20.0,
-        })
+        row = dataframe_from_dict(
+            {
+                "cpu_usage_pct": cpu,
+                "memory_usage_pct": mem,
+                "error_rate_per_min": 1.0,
+                "latency_p99_ms": 100.0,
+                "request_rate_per_sec": 50.0,
+                "disk_io_util_pct": 20.0,
+            }
+        )
         X = fitted_pipeline.transform(row)
         assert X.shape[1] == len(ENGINEERED_COLS)
 

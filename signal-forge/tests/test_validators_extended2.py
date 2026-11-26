@@ -1,4 +1,5 @@
 """Extended input validator tests for signal-forge — second pass."""
+
 from __future__ import annotations
 
 import pytest

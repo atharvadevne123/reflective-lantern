@@ -1,4 +1,5 @@
 """Extended trend scorer tests with parametrize and boundary coverage."""
+
 from __future__ import annotations
 
 import pytest
@@ -23,13 +24,16 @@ def _make_score(post_id: str = "P1", trend: float = 0.5, tier: str = "Medium") -
     )
 
 
-@pytest.mark.parametrize("viral_prob,followers,hashtags,has_media,mentions", [
-    (0.9, 100_000, 3, True, 2),
-    (0.1, 100, 0, False, 0),
-    (0.5, 10_000, 2, True, 1),
-    (0.0, 0, 0, False, 0),
-    (1.0, 1_000_000, 5, True, 3),
-])
+@pytest.mark.parametrize(
+    "viral_prob,followers,hashtags,has_media,mentions",
+    [
+        (0.9, 100_000, 3, True, 2),
+        (0.1, 100, 0, False, 0),
+        (0.5, 10_000, 2, True, 1),
+        (0.0, 0, 0, False, 0),
+        (1.0, 1_000_000, 5, True, 3),
+    ],
+)
 def test_score_post_trend_in_zero_one(
     viral_prob: float, followers: int, hashtags: int, has_media: bool, mentions: int
 ) -> None:
@@ -37,16 +41,19 @@ def test_score_post_trend_in_zero_one(
     assert 0.0 <= result.trend_score <= 1.0
 
 
-@pytest.mark.parametrize("score,expected_tier", [
-    (0.0, "Low"),
-    (0.24, "Low"),
-    (0.25, "Medium"),
-    (0.49, "Medium"),
-    (0.50, "High"),
-    (0.74, "High"),
-    (0.75, "Viral"),
-    (1.0, "Viral"),
-])
+@pytest.mark.parametrize(
+    "score,expected_tier",
+    [
+        (0.0, "Low"),
+        (0.24, "Low"),
+        (0.25, "Medium"),
+        (0.49, "Medium"),
+        (0.50, "High"),
+        (0.74, "High"),
+        (0.75, "Viral"),
+        (1.0, "Viral"),
+    ],
+)
 def test_score_post_tier_thresholds(score: float, expected_tier: str) -> None:
     result = score_post("x", score, 0, 0, False, 0, probability_weight=1.0)
     assert result.tier == expected_tier

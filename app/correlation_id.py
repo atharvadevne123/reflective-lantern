@@ -152,5 +152,5 @@ def parse_correlation_id(header_value: str, prefix: str = "req-") -> str:
         prefix is absent.
     """
     if header_value.startswith(prefix):
-        return header_value[len(prefix):]
+        return header_value[len(prefix) :]
     return header_value

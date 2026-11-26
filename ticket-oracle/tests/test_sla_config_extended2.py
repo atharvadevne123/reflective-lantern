@@ -1,4 +1,5 @@
 """Extended SLA configuration tests — second pass with parametrize and boundary coverage."""
+
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
@@ -49,16 +50,19 @@ def test_sla_deadline_defaults_to_now_when_no_created_at() -> None:
     assert before < deadline < after + timedelta(hours=25)
 
 
-@pytest.mark.parametrize("priority,tier,expected_hours", [
-    ("P1", "Gold", 0.5),
-    ("P1", "Silver", 0.75),
-    ("P1", "Standard", 1.0),
-    ("P2", "Gold", 2.0),
-    ("P2", "Standard", 4.0),
-    ("P3", "Standard", 24.0),
-    ("P4", "Standard", 72.0),
-    ("P4", "Bronze", 90.0),
-])
+@pytest.mark.parametrize(
+    "priority,tier,expected_hours",
+    [
+        ("P1", "Gold", 0.5),
+        ("P1", "Silver", 0.75),
+        ("P1", "Standard", 1.0),
+        ("P2", "Gold", 2.0),
+        ("P2", "Standard", 4.0),
+        ("P3", "Standard", 24.0),
+        ("P4", "Standard", 72.0),
+        ("P4", "Bronze", 90.0),
+    ],
+)
 def test_time_to_breach_zero_age_equals_window(
     priority: str, tier: str, expected_hours: float
 ) -> None:

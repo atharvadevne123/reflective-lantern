@@ -1,4 +1,5 @@
 """Structured logging configuration for Support-Sage."""
+
 import logging
 import sys
 

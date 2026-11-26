@@ -1,4 +1,5 @@
 """Feature importance extraction from the trained ensemble."""
+
 from __future__ import annotations
 
 import logging

@@ -330,22 +330,28 @@ class TestEncodeDecodeBase64:
 
 
 class TestCompressionEdgeCases:
-    @pytest.mark.parametrize("data", [
-        b"hello world",
-        b"" * 0,
-        b"a" * 1000,
-        b"\x00\x01\x02\x03",
-    ])
+    @pytest.mark.parametrize(
+        "data",
+        [
+            b"hello world",
+            b"" * 0,
+            b"a" * 1000,
+            b"\x00\x01\x02\x03",
+        ],
+    )
     def test_zlib_roundtrip_parametrized(self, data: bytes) -> None:
         from app.compression import zlib_compress, zlib_decompress
 
         compressed = zlib_compress(data)
         assert zlib_decompress(compressed) == data
 
-    @pytest.mark.parametrize("data", [
-        b"test gzip data",
-        b"repeated" * 100,
-    ])
+    @pytest.mark.parametrize(
+        "data",
+        [
+            b"test gzip data",
+            b"repeated" * 100,
+        ],
+    )
     def test_gzip_roundtrip_parametrized(self, data: bytes) -> None:
         from app.compression import gzip_compress, gzip_decompress
 

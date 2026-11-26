@@ -1,4 +1,5 @@
 """Detailed health check utilities."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -12,6 +13,7 @@ def check_model_files() -> dict[str, bool]:
         "resolution_model": Path("models/resolution_model.joblib").exists(),
         "metrics": Path("models/metrics.json").exists(),
     }
+
 
 def check_rag_index() -> dict[str, bool]:
     """Return whether FAISS index files exist."""

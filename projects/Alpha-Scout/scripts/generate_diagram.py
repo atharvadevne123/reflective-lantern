@@ -1,4 +1,5 @@
 """Generate Alpha-Scout architecture diagram as SVG."""
+
 from __future__ import annotations
 
 import os

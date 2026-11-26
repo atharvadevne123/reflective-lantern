@@ -1,4 +1,5 @@
 """Extended portfolio risk analytics tests — second pass with parametrize."""
+
 from __future__ import annotations
 
 import numpy as np

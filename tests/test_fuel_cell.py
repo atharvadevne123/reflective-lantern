@@ -268,11 +268,14 @@ class TestFuelCellEdgeCases:
         v = cell_voltage(1.0, 0.1, 0.05)
         assert v == pytest.approx(0.85)
 
-    @pytest.mark.parametrize("power_kw,eff", [
-        (10.0, 0.6),
-        (50.0, 0.5),
-        (100.0, 0.7),
-    ])
+    @pytest.mark.parametrize(
+        "power_kw,eff",
+        [
+            (10.0, 0.6),
+            (50.0, 0.5),
+            (100.0, 0.7),
+        ],
+    )
     def test_hydrogen_consumption_positive(self, power_kw: float, eff: float) -> None:
         from app.fuel_cell import hydrogen_consumption_rate
 

@@ -1,4 +1,5 @@
 """Extended experiment tracking tests with parametrize and boundary coverage."""
+
 from __future__ import annotations
 
 import pytest
@@ -15,6 +16,7 @@ from app.experiment_tracking import (
 @pytest.fixture(autouse=True)
 def use_tmp_experiment_dir(tmp_path, monkeypatch):
     import app.experiment_tracking as et
+
     monkeypatch.setattr(et, "EXPERIMENT_DIR", tmp_path)
 
 
@@ -33,6 +35,7 @@ def test_log_run_run_id_unique() -> None:
 @pytest.mark.parametrize("experiment_name", ["exp_a", "exp_b", "model_v1"])
 def test_log_run_creates_jsonl_file(tmp_path, experiment_name: str) -> None:
     import app.experiment_tracking as et
+
     log_run(experiment_name, {}, {"r2": 0.5})
     assert (et.EXPERIMENT_DIR / f"{experiment_name}.jsonl").exists()
 

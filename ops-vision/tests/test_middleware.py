@@ -208,7 +208,9 @@ class TestRateLimitMiddlewareParametrized:
     @pytest.mark.parametrize("max_requests", [1, 5, 10, 50])
     def test_allows_exactly_max_requests(self, max_requests: int) -> None:
         """Should allow exactly max_requests before throttling."""
-        client = TestClient(_build_app(RateLimitMiddleware, max_requests=max_requests, window_seconds=60))
+        client = TestClient(
+            _build_app(RateLimitMiddleware, max_requests=max_requests, window_seconds=60)
+        )
         for _ in range(max_requests):
             resp = client.get("/ping")
             assert resp.status_code == 200
@@ -223,13 +225,18 @@ class TestRateLimitMiddlewareParametrized:
         resp = client.get(path)
         assert resp.status_code != 429
 
-    @pytest.mark.parametrize("max_bytes,content_len,expected_status", [
-        (100, 50, 200),
-        (100, 100, 200),
-        (100, 101, 413),
-        (1024, 512, 200),
-    ])
-    def test_size_limit_boundary(self, max_bytes: int, content_len: int, expected_status: int) -> None:
+    @pytest.mark.parametrize(
+        "max_bytes,content_len,expected_status",
+        [
+            (100, 50, 200),
+            (100, 100, 200),
+            (100, 101, 413),
+            (1024, 512, 200),
+        ],
+    )
+    def test_size_limit_boundary(
+        self, max_bytes: int, content_len: int, expected_status: int
+    ) -> None:
         """RequestSizeLimitMiddleware respects byte boundaries correctly."""
         app = FastAPI()
         app.add_middleware(RequestSizeLimitMiddleware, max_bytes=max_bytes)

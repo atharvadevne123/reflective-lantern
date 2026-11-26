@@ -1,4 +1,5 @@
 """Extended feature importance tests with parametrize and boundary coverage."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -28,10 +29,12 @@ def _make_lr_pipeline(n_features: int = 5) -> Pipeline:
     X = np.random.default_rng(0).random((100, n_features))
     y = (X[:, 0] > 0.5).astype(int)
     names = [f"feat_{i}" for i in range(n_features)]
-    pipe = Pipeline([
-        ("scaler", StandardScaler()),
-        ("lr", LogisticRegression(random_state=0)),
-    ])
+    pipe = Pipeline(
+        [
+            ("scaler", StandardScaler()),
+            ("lr", LogisticRegression(random_state=0)),
+        ]
+    )
     pipe.fit(X, y)
     return pipe, names
 

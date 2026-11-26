@@ -1,4 +1,5 @@
 """Drift detection and monitoring tests."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -32,10 +33,13 @@ def test_compute_drift_insufficient_samples():
     assert result["drift_detected"] is False
 
 
-@pytest.mark.parametrize("ref_mean,cur_mean,expect_drift", [
-    (10, 10, False),
-    (10, 100, True),
-])
+@pytest.mark.parametrize(
+    "ref_mean,cur_mean,expect_drift",
+    [
+        (10, 10, False),
+        (10, 100, True),
+    ],
+)
 def test_drift_parametrised(ref_mean, cur_mean, expect_drift):
     rng = np.random.default_rng(42)
     ref = rng.normal(ref_mean, 1, 200).tolist()
@@ -73,6 +77,7 @@ def test_ks_statistic_bounded():
 
 def test_pipeline_health_check_fitted(trained_pipeline):
     from app.monitoring import check_pipeline_health
+
     result = check_pipeline_health(trained_pipeline)
     assert result["healthy"] is True
     assert result["issues"] == []

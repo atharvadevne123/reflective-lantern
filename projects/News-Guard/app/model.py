@@ -46,10 +46,12 @@ def _build_pipeline() -> Pipeline:
         voting="soft",
         weights=[2, 1],
     )
-    return Pipeline([
-        ("scaler", StandardScaler()),
-        ("model", ensemble),
-    ])
+    return Pipeline(
+        [
+            ("scaler", StandardScaler()),
+            ("model", ensemble),
+        ]
+    )
 
 
 def generate_synthetic_data(n_samples: int = 2000) -> tuple[pd.DataFrame, np.ndarray]:
@@ -59,10 +61,14 @@ def generate_synthetic_data(n_samples: int = 2000) -> tuple[pd.DataFrame, np.nda
     labels = []
 
     fake_headlines = [
-        "You Won't Believe What Happened Next!", "SHOCKING: Secret Government Plot Exposed!",
-        "Scientists Baffled by This One Weird Trick", "Breaking: Explosive Revelation!!!",
-        "They Don't Want You to Know This", "This Will Blow Your Mind",
-        "Government Hides the Truth About", "BOMBSHELL: What They're Not Telling You",
+        "You Won't Believe What Happened Next!",
+        "SHOCKING: Secret Government Plot Exposed!",
+        "Scientists Baffled by This One Weird Trick",
+        "Breaking: Explosive Revelation!!!",
+        "They Don't Want You to Know This",
+        "This Will Blow Your Mind",
+        "Government Hides the Truth About",
+        "BOMBSHELL: What They're Not Telling You",
     ]
     real_headlines = [
         "Reuters: Central bank holds interest rates steady",
@@ -88,13 +94,15 @@ def generate_synthetic_data(n_samples: int = 2000) -> tuple[pd.DataFrame, np.nda
             source = reliable[i % len(reliable)]
             body = "According to sources, " + " ".join(["data"] * rng.integers(50, 200))
 
-        rows.append({
-            "headline": headline,
-            "body": body,
-            "source_domain": source,
-            "publication_hour": int(rng.integers(0, 24)),
-            "share_count": int(rng.integers(0, 10000)),
-        })
+        rows.append(
+            {
+                "headline": headline,
+                "body": body,
+                "source_domain": source,
+                "publication_hour": int(rng.integers(0, 24)),
+                "share_count": int(rng.integers(0, 10000)),
+            }
+        )
         labels.append(int(label))
 
     return pd.DataFrame(rows), np.array(labels)

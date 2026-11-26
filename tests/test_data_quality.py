@@ -1333,11 +1333,14 @@ class TestDataQualityEdgeCases:
         score = completeness_score(records, ["a", "b"])
         assert 0.0 < score < 1.0
 
-    @pytest.mark.parametrize("values,expected", [
-        ([1.0, None, None, 2.0], 2),
-        ([1.0, 2.0, 3.0], 0),
-        ([None, None, None], 3),
-    ])
+    @pytest.mark.parametrize(
+        "values,expected",
+        [
+            ([1.0, None, None, 2.0], 2),
+            ([1.0, 2.0, 3.0], 0),
+            ([None, None, None], 3),
+        ],
+    )
     def test_consecutive_missing_count(self, values: list, expected: int) -> None:
         from app.data_quality import consecutive_missing_count
 

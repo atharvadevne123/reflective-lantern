@@ -1,4 +1,5 @@
 """Extended feature engineering tests for quake-net with boundary and parametrize coverage."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -30,16 +31,18 @@ def _make_df(rows: list[dict]) -> pd.DataFrame:
 @pytest.mark.parametrize("n", [1, 10, 100])
 def test_geo_feature_engineer_row_count(n: int) -> None:
     rng = np.random.default_rng(n)
-    df = pd.DataFrame({
-        "latitude": rng.uniform(-90, 90, n),
-        "longitude": rng.uniform(-180, 180, n),
-        "depth_km": rng.uniform(0, 300, n),
-        "station_count": rng.integers(1, 50, n).astype(float),
-        "p_wave_amplitude": rng.exponential(100, n),
-        "s_wave_amplitude": rng.exponential(150, n),
-        "epicentral_distance_km": rng.uniform(1, 500, n),
-        "fault_type": "strike_slip",
-    })
+    df = pd.DataFrame(
+        {
+            "latitude": rng.uniform(-90, 90, n),
+            "longitude": rng.uniform(-180, 180, n),
+            "depth_km": rng.uniform(0, 300, n),
+            "station_count": rng.integers(1, 50, n).astype(float),
+            "p_wave_amplitude": rng.exponential(100, n),
+            "s_wave_amplitude": rng.exponential(150, n),
+            "epicentral_distance_km": rng.uniform(1, 500, n),
+            "fault_type": "strike_slip",
+        }
+    )
     eng = GeoFeatureEngineer()
     out = eng.fit_transform(df)
     assert out.shape[0] == n
@@ -52,12 +55,15 @@ def test_dist_to_equator_is_abs_latitude() -> None:
     assert out["dist_to_equator"].iloc[1] == 35.0
 
 
-@pytest.mark.parametrize("lat,expected", [
-    (0.0, 0.0),
-    (45.0, 45.0),
-    (-60.0, 60.0),
-    (90.0, 90.0),
-])
+@pytest.mark.parametrize(
+    "lat,expected",
+    [
+        (0.0, 0.0),
+        (45.0, 45.0),
+        (-60.0, 60.0),
+        (90.0, 90.0),
+    ],
+)
 def test_dist_to_equator_values(lat: float, expected: float) -> None:
     df = _make_df([_base_row(latitude=lat)])
     out = GeoFeatureEngineer().fit_transform(df)
@@ -105,28 +111,33 @@ def test_station_density_formula() -> None:
 def test_no_nans_in_geo_features() -> None:
     rng = np.random.default_rng(42)
     n = 200
-    df = pd.DataFrame({
-        "latitude": rng.uniform(-90, 90, n),
-        "longitude": rng.uniform(-180, 180, n),
-        "depth_km": rng.uniform(0, 300, n),
-        "station_count": rng.integers(1, 50, n).astype(float),
-        "p_wave_amplitude": rng.exponential(100, n),
-        "s_wave_amplitude": rng.exponential(150, n),
-        "epicentral_distance_km": rng.uniform(1, 500, n),
-        "fault_type": "strike_slip",
-    })
+    df = pd.DataFrame(
+        {
+            "latitude": rng.uniform(-90, 90, n),
+            "longitude": rng.uniform(-180, 180, n),
+            "depth_km": rng.uniform(0, 300, n),
+            "station_count": rng.integers(1, 50, n).astype(float),
+            "p_wave_amplitude": rng.exponential(100, n),
+            "s_wave_amplitude": rng.exponential(150, n),
+            "epicentral_distance_km": rng.uniform(1, 500, n),
+            "fault_type": "strike_slip",
+        }
+    )
     out = GeoFeatureEngineer().fit_transform(df)
     numeric_cols = out.select_dtypes(include=[np.number]).columns
     assert not out[numeric_cols].isnull().any().any()
 
 
-@pytest.mark.parametrize("fault_type,expected_score", [
-    ("reverse", 0.9),
-    ("strike_slip", 0.75),
-    ("oblique", 0.6),
-    ("normal", 0.5),
-    ("unknown", 0.4),
-])
+@pytest.mark.parametrize(
+    "fault_type,expected_score",
+    [
+        ("reverse", 0.9),
+        ("strike_slip", 0.75),
+        ("oblique", 0.6),
+        ("normal", 0.5),
+        ("unknown", 0.4),
+    ],
+)
 def test_fault_type_seismicity_scores(fault_type: str, expected_score: float) -> None:
     df = _make_df([_base_row(fault_type=fault_type)])
     enc = FaultTypeEncoder()
@@ -138,7 +149,8 @@ def test_fault_type_one_hot_columns_exist() -> None:
     df = _make_df([_base_row(fault_type="reverse")])
     enc = FaultTypeEncoder()
     out = enc.fit_transform(df)
-    expected_cols = [f"fault_{ft}" for ft in ["strike_slip", "reverse", "normal", "oblique", "unknown"]]
+    fault_types = ["strike_slip", "reverse", "normal", "oblique", "unknown"]
+    expected_cols = [f"fault_{ft}" for ft in fault_types]
     for col in expected_cols:
         assert col in out.columns
 

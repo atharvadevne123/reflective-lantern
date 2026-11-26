@@ -192,6 +192,7 @@ class TestBatteryStorageEdgeCases:
 class TestBatteryStorageEdgeCases2:
     def _make_battery(self):
         from app.battery_storage import BatterySystem
+
         return BatterySystem(100.0, 50.0, 50.0)
 
     def test_charge_kwh_increases_soc(self) -> None:

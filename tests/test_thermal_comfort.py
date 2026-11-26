@@ -197,11 +197,14 @@ class TestThermalComfortEdgeCases:
 
 
 class TestThermalComfortEdgeCases2:
-    @pytest.mark.parametrize("air_temp,mrt,velocity,rh", [
-        (22.0, 22.0, 0.1, 50.0),
-        (25.0, 25.0, 0.2, 60.0),
-        (20.0, 18.0, 0.1, 40.0),
-    ])
+    @pytest.mark.parametrize(
+        "air_temp,mrt,velocity,rh",
+        [
+            (22.0, 22.0, 0.1, 50.0),
+            (25.0, 25.0, 0.2, 60.0),
+            (20.0, 18.0, 0.1, 40.0),
+        ],
+    )
     def test_pmv_returns_float(
         self, air_temp: float, mrt: float, velocity: float, rh: float
     ) -> None:

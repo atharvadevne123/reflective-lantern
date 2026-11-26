@@ -68,10 +68,16 @@ class TestSettingsSummary:
         s = Settings()
         summary = settings_summary(s)
         expected = {
-            "embedding_dim", "chunk_size", "chunk_overlap",
-            "bm25_top_k", "vector_top_k", "final_top_k",
-            "confidence_threshold", "chunk_trust_floor",
-            "generator_backend", "near_dup_threshold",
+            "embedding_dim",
+            "chunk_size",
+            "chunk_overlap",
+            "bm25_top_k",
+            "vector_top_k",
+            "final_top_k",
+            "confidence_threshold",
+            "chunk_trust_floor",
+            "generator_backend",
+            "near_dup_threshold",
         }
         assert expected.issubset(summary.keys())
 

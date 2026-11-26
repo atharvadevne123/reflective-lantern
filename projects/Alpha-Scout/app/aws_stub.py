@@ -1,4 +1,5 @@
 """AWS S3 model artefact storage stub."""
+
 from __future__ import annotations
 
 import logging
@@ -9,6 +10,7 @@ logger = logging.getLogger(__name__)
 
 try:
     import boto3  # type: ignore[import-untyped]
+
     _BOTO3_ENABLED = True
 except ImportError:
     _BOTO3_ENABLED = False

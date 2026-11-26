@@ -235,8 +235,33 @@ def sentiment_score(text: str) -> float:
         Float in [-1, 1] where positive values indicate positive sentiment.
     """
     lower = text.lower()
-    positives = {"great", "love", "awesome", "amazing", "excellent", "good", "happy", "win", "best", "🎉", "😀", "🚀"}
-    negatives = {"hate", "terrible", "awful", "bad", "worst", "fail", "broken", "sad", "😢", "😡", "💔"}
+    positives = {
+        "great",
+        "love",
+        "awesome",
+        "amazing",
+        "excellent",
+        "good",
+        "happy",
+        "win",
+        "best",
+        "🎉",
+        "😀",
+        "🚀",
+    }
+    negatives = {
+        "hate",
+        "terrible",
+        "awful",
+        "bad",
+        "worst",
+        "fail",
+        "broken",
+        "sad",
+        "😢",
+        "😡",
+        "💔",
+    }
     words = set(re.findall(r"\w+|[^\w\s]", lower))
     pos = len(words & positives)
     neg = len(words & negatives)

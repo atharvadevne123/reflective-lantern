@@ -1,4 +1,5 @@
 """Feature engineering pipeline for IT helpdesk ticket classification."""
+
 import re
 from typing import Any
 
@@ -53,10 +54,7 @@ class TextMetaExtractor(BaseEstimator, TransformerMixin):
             has_medium = int(any(kw in combined for kw in PRIORITY_KEYWORDS["medium"]))
             has_low = int(any(kw in combined for kw in PRIORITY_KEYWORDS["low"]))
 
-            category_counts = [
-                sum(1 for kw in kws if kw in combined)
-                for kws in CATEGORY_KEYWORDS.values()
-            ]
+            category_counts = [sum(1 for kw in kws if kw in combined) for kws in CATEGORY_KEYWORDS.values()]
 
             has_question = int("?" in combined)
             has_exclamation = int("!" in combined)
@@ -66,10 +64,22 @@ class TextMetaExtractor(BaseEstimator, TransformerMixin):
             has_url = int(bool(re.search(r"https?://|www\.", combined)))
 
             features = [
-                subject_len, desc_len, word_count, char_count, avg_word_len,
-                sentence_count, has_urgent, has_high, has_medium, has_low,
-                has_question, has_exclamation, caps_ratio, digit_ratio,
-                has_error_keyword, has_url,
+                subject_len,
+                desc_len,
+                word_count,
+                char_count,
+                avg_word_len,
+                sentence_count,
+                has_urgent,
+                has_high,
+                has_medium,
+                has_low,
+                has_question,
+                has_exclamation,
+                caps_ratio,
+                digit_ratio,
+                has_error_keyword,
+                has_url,
                 *category_counts,
             ]
             rows.append(features)
@@ -99,20 +109,26 @@ def build_feature_pipeline() -> FeatureUnion:
         strip_accents="unicode",
     )
 
-    text_pipeline = Pipeline([
-        ("extractor", CombinedTextExtractor()),
-        ("tfidf", tfidf),
-    ])
+    text_pipeline = Pipeline(
+        [
+            ("extractor", CombinedTextExtractor()),
+            ("tfidf", tfidf),
+        ]
+    )
 
-    meta_pipeline = Pipeline([
-        ("meta", TextMetaExtractor()),
-        ("scaler", StandardScaler()),
-    ])
+    meta_pipeline = Pipeline(
+        [
+            ("meta", TextMetaExtractor()),
+            ("scaler", StandardScaler()),
+        ]
+    )
 
-    return FeatureUnion([
-        ("text", text_pipeline),
-        ("meta", meta_pipeline),
-    ])
+    return FeatureUnion(
+        [
+            ("text", text_pipeline),
+            ("meta", meta_pipeline),
+        ]
+    )
 
 
 def generate_synthetic_data(n_samples: int = 2000) -> pd.DataFrame:
@@ -138,12 +154,15 @@ def generate_synthetic_data(n_samples: int = 2000) -> pd.DataFrame:
         desc_kw = rng.choice(kws) if kws else "general issue"
         resolution_base = {"critical": 2, "high": 8, "medium": 24, "low": 72}[priority]
         resolution_hours = float(rng.lognormal(np.log(resolution_base), 0.5))
-        rows.append({
-            "subject": subject,
-            "description": f"User reports {desc_kw} issue. " + " ".join(rng.choice(kws, min(3, len(kws)), replace=False)),
-            "priority": priority,
-            "category": category,
-            "resolution_hours": resolution_hours,
-        })
+        rows.append(
+            {
+                "subject": subject,
+                "description": f"User reports {desc_kw} issue. "
+                + " ".join(rng.choice(kws, min(3, len(kws)), replace=False)),
+                "priority": priority,
+                "category": category,
+                "resolution_hours": resolution_hours,
+            }
+        )
 
     return pd.DataFrame(rows)

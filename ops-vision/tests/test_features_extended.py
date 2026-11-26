@@ -1,4 +1,5 @@
 """Extended ops-vision features tests with parametrize and boundary coverage."""
+
 from __future__ import annotations
 
 import pandas as pd
@@ -12,12 +13,15 @@ from app.features import (
 )
 
 
-@pytest.mark.parametrize("value,expected", [
-    (0.0, 0.0),
-    (1.0, 1.0),
-    (5.0, 5.0),
-    (100.0, 100.0),
-])
+@pytest.mark.parametrize(
+    "value,expected",
+    [
+        (0.0, 0.0),
+        (1.0, 1.0),
+        (5.0, 5.0),
+        (100.0, 100.0),
+    ],
+)
 def test_validate_positive_float_valid(value: float, expected: float) -> None:
     assert validate_positive_float(value, "field") == pytest.approx(expected)
 
@@ -34,13 +38,16 @@ def test_validate_positive_float_non_finite_raises(bad_value: float) -> None:
         validate_positive_float(bad_value, "field")
 
 
-@pytest.mark.parametrize("value,expected", [
-    (-5.0, 0.0),
-    (0.0, 0.0),
-    (0.5, 0.5),
-    (1.0, 1.0),
-    (5.0, 1.0),
-])
+@pytest.mark.parametrize(
+    "value,expected",
+    [
+        (-5.0, 0.0),
+        (0.0, 0.0),
+        (0.5, 0.5),
+        (1.0, 1.0),
+        (5.0, 1.0),
+    ],
+)
 def test_clip_to_unit_interval_parametrized(value: float, expected: float) -> None:
     assert clip_to_unit_interval(value) == pytest.approx(expected)
 

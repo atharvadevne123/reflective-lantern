@@ -54,10 +54,13 @@ def test_predict_short_headline_rejected(api_client):
 
 
 def test_metrics_endpoint(api_client):
-    api_client.post("/api/v1/predict", json={
-        "headline": "Test article for metrics endpoint check",
-        "source_domain": "example.com",
-    })
+    api_client.post(
+        "/api/v1/predict",
+        json={
+            "headline": "Test article for metrics endpoint check",
+            "source_domain": "example.com",
+        },
+    )
     resp = api_client.get("/api/v1/metrics")
     assert resp.status_code == 200
     data = resp.json()
@@ -73,15 +76,23 @@ def test_drift_endpoint(api_client):
     assert "ks_statistic" in data or "note" in data
 
 
-@pytest.mark.parametrize("hour,share_count", [
-    (0, 0), (12, 500), (23, 99999),
-])
+@pytest.mark.parametrize(
+    "hour,share_count",
+    [
+        (0, 0),
+        (12, 500),
+        (23, 99999),
+    ],
+)
 def test_predict_parametrized_inputs(api_client, hour, share_count):
-    resp = api_client.post("/api/v1/predict", json={
-        "headline": "Breaking: Latest news story from reputable source",
-        "source_domain": "bbc.com",
-        "publication_hour": hour,
-        "share_count": share_count,
-    })
+    resp = api_client.post(
+        "/api/v1/predict",
+        json={
+            "headline": "Breaking: Latest news story from reputable source",
+            "source_domain": "bbc.com",
+            "publication_hour": hour,
+            "share_count": share_count,
+        },
+    )
     assert resp.status_code == 200
     assert resp.json()["prediction"] in ("FAKE", "REAL")

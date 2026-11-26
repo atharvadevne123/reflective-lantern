@@ -185,7 +185,9 @@ def avg_score(scores: list[TrendScore]) -> float:
     return sum(s.trend_score for s in scores) / len(scores)
 
 
-def get_trending_hashtags(scores: list[TrendScore], posts: list[dict[str, Any]], top_k: int = 5) -> list[str]:
+def get_trending_hashtags(
+    scores: list[TrendScore], posts: list[dict[str, Any]], top_k: int = 5
+) -> list[str]:
     """Return the most common hashtags among the top-scoring posts.
 
     Args:

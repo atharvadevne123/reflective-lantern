@@ -1,4 +1,5 @@
 """Extended forecasting tests with parametrize and boundary coverage."""
+
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta

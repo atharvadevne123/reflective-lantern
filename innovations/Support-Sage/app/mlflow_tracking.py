@@ -1,4 +1,5 @@
 """MLflow experiment tracking for model training runs."""
+
 from __future__ import annotations
 
 import logging
@@ -8,6 +9,7 @@ logger = logging.getLogger(__name__)
 
 try:
     import mlflow
+
     _MLFLOW_AVAILABLE = True
 except ImportError:
     _MLFLOW_AVAILABLE = False

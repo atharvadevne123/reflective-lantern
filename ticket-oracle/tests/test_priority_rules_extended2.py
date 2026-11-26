@@ -1,4 +1,5 @@
 """Extended priority rules tests with parametrize and edge cases."""
+
 from __future__ import annotations
 
 import pytest
@@ -50,9 +51,7 @@ def test_no_p1_keyword_does_not_override() -> None:
 
 def test_gold_tier_outage_forces_p1() -> None:
     pred = _base_prediction(priority="P3")
-    result = apply_priority_rules(
-        pred, _base_payload(customer_tier="Gold", incident_type="outage")
-    )
+    result = apply_priority_rules(pred, _base_payload(customer_tier="Gold", incident_type="outage"))
     assert result["priority"] == "P1"
 
 

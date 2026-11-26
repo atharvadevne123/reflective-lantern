@@ -126,7 +126,9 @@ class PostIndex:
         logger.info("Index loaded from %s (%d vectors)", path, len(inst._vectors))
         return inst
 
-    def bulk_add(self, vectors: list[np.ndarray], metadatas: list[dict[str, Any]] | None = None) -> int:
+    def bulk_add(
+        self, vectors: list[np.ndarray], metadatas: list[dict[str, Any]] | None = None
+    ) -> int:
         """Add multiple vectors to the index in a single call.
 
         Args:

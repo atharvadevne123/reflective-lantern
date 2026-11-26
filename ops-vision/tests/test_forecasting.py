@@ -526,6 +526,7 @@ class TestIncidentRateBufferLastTimestamp:
     def test_last_timestamp_returns_datetime(self) -> None:
         """last_timestamp returns a datetime after a record is added."""
         from datetime import datetime
+
         buf = IncidentRateBuffer()
         ts = datetime(2024, 1, 1, 12, 0)
         buf.record(ts, 3)
@@ -534,6 +535,7 @@ class TestIncidentRateBufferLastTimestamp:
     def test_last_timestamp_is_max_of_recorded_timestamps(self) -> None:
         """last_timestamp equals the latest recorded timestamp."""
         from datetime import datetime, timedelta
+
         buf = IncidentRateBuffer()
         t0 = datetime(2024, 1, 1, 10, 0)
         t1 = t0 + timedelta(hours=1)
@@ -547,6 +549,7 @@ class TestIncidentRateBufferLastTimestamp:
     def test_last_timestamp_advances_parametrized(self, hours_offset: int) -> None:
         """last_timestamp moves forward when a later record is added."""
         from datetime import datetime, timedelta
+
         buf = IncidentRateBuffer()
         t0 = datetime(2024, 6, 1, 0, 0)
         t1 = t0 + timedelta(hours=hours_offset)

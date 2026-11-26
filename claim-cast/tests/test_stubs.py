@@ -1,4 +1,5 @@
 """Tests for MLflow and S3 stubs."""
+
 from __future__ import annotations
 
 import pytest

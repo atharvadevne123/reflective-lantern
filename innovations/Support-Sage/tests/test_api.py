@@ -1,4 +1,5 @@
 """API endpoint tests for Support-Sage."""
+
 import pytest
 
 
@@ -56,11 +57,23 @@ def test_response_time_header(client):
     assert "X-Response-Time-Ms" in response.headers
 
 
-@pytest.mark.parametrize("ticket", [
-    {"subject": "Password reset request for user john.doe", "description": "User john.doe has forgotten their password and needs a reset link sent to their corporate email address."},
-    {"subject": "New software installation request", "description": "Please install Adobe Acrobat Pro on my laptop. License has been approved by my manager. Asset tag: LT-2024-99."},
-    {"subject": "Internet connectivity issues in conference room B", "description": "The wifi in conference room B is very slow and dropping packets. Affecting all meetings scheduled there today."},
-])
+@pytest.mark.parametrize(
+    "ticket",
+    [
+        {
+            "subject": "Password reset request for user john.doe",
+            "description": "User john.doe has forgotten their password and needs a reset link sent to their corporate email address.",
+        },
+        {
+            "subject": "New software installation request",
+            "description": "Please install Adobe Acrobat Pro on my laptop. License has been approved by my manager. Asset tag: LT-2024-99.",
+        },
+        {
+            "subject": "Internet connectivity issues in conference room B",
+            "description": "The wifi in conference room B is very slow and dropping packets. Affecting all meetings scheduled there today.",
+        },
+    ],
+)
 def test_predict_various_tickets(client, ticket):
     response = client.post("/api/v1/predict", json=ticket)
     assert response.status_code == 200

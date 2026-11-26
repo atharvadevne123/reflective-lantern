@@ -22,7 +22,9 @@ def in_memory_db(tmp_path):
     engine = create_engine(test_url, connect_args={"check_same_thread": False})
     with (
         patch.object(db_module, "engine", engine),
-        patch.object(db_module, "SessionLocal", sessionmaker(autocommit=False, autoflush=False, bind=engine)),
+        patch.object(
+            db_module, "SessionLocal", sessionmaker(autocommit=False, autoflush=False, bind=engine)
+        ),
     ):
         Base.metadata.create_all(bind=engine)
         yield engine
@@ -92,7 +94,9 @@ def test_insert_energy_reading(in_memory_db):
 def test_insert_anomaly_log(in_memory_db):
     Session = sessionmaker(bind=in_memory_db)
     session = Session()
-    log = AnomalyLog(meter_id="m2", consumption_kwh=100.0, anomaly_score=0.9, is_anomaly=True, severity="high")
+    log = AnomalyLog(
+        meter_id="m2", consumption_kwh=100.0, anomaly_score=0.9, is_anomaly=True, severity="high"
+    )
     session.add(log)
     session.commit()
     result = session.query(AnomalyLog).filter_by(meter_id="m2").first()

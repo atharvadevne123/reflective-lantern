@@ -93,6 +93,7 @@ def test_retry_backoff_increases_delay():
     delays = []
 
     with patch("time.sleep", side_effect=lambda d: delays.append(d)):
+
         @retry(max_attempts=3, base_delay=1.0, backoff=2.0)
         def always_fail():
             raise ValueError("x")

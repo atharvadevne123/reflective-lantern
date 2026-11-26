@@ -157,11 +157,14 @@ class TestValidateReadings:
 
 
 class TestMeterValidationEdgeCases:
-    @pytest.mark.parametrize("readings", [
-        [1.0, 2.0, 3.0],
-        [0.0, 0.0, 1.0],
-        [100.0, 200.0, 50.0],
-    ])
+    @pytest.mark.parametrize(
+        "readings",
+        [
+            [1.0, 2.0, 3.0],
+            [0.0, 0.0, 1.0],
+            [100.0, 200.0, 50.0],
+        ],
+    )
     def test_validate_readings_returns_report(self, readings: list) -> None:
         from app.meter_validation import validate_readings
 
@@ -186,10 +189,13 @@ class TestMeterValidationEdgeCases:
         issues = check_upper_bound([100.0, 600.0, 200.0], upper=500.0)
         assert len(issues) > 0
 
-    @pytest.mark.parametrize("max_zeros,readings", [
-        (4, [0.0] * 5),
-        (2, [0.0, 0.0, 0.0]),
-    ])
+    @pytest.mark.parametrize(
+        "max_zeros,readings",
+        [
+            (4, [0.0] * 5),
+            (2, [0.0, 0.0, 0.0]),
+        ],
+    )
     def test_check_zeros_finds_long_runs(self, max_zeros: int, readings: list) -> None:
         from app.meter_validation import check_zeros
 

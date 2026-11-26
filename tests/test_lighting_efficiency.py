@@ -174,11 +174,14 @@ class TestLightingEdgeCases:
 
 
 class TestLightingEfficiencyEdgeCases:
-    @pytest.mark.parametrize("lumens,watts", [
-        (1000.0, 10.0),
-        (2000.0, 20.0),
-        (500.0, 5.0),
-    ])
+    @pytest.mark.parametrize(
+        "lumens,watts",
+        [
+            (1000.0, 10.0),
+            (2000.0, 20.0),
+            (500.0, 5.0),
+        ],
+    )
     def test_luminous_efficacy_basic(self, lumens: float, watts: float) -> None:
         from app.lighting_efficiency import luminous_efficacy
 
@@ -191,10 +194,13 @@ class TestLightingEfficiencyEdgeCases:
         kwh = annual_kwh(100.0, 8.0)
         assert kwh > 0.0
 
-    @pytest.mark.parametrize("old_w,new_w,hours,rate,capex", [
-        (100.0, 10.0, 8.0, 0.15, 50.0),
-        (60.0, 9.0, 10.0, 0.20, 30.0),
-    ])
+    @pytest.mark.parametrize(
+        "old_w,new_w,hours,rate,capex",
+        [
+            (100.0, 10.0, 8.0, 0.15, 50.0),
+            (60.0, 9.0, 10.0, 0.20, 30.0),
+        ],
+    )
     def test_upgrade_savings_positive(
         self, old_w: float, new_w: float, hours: float, rate: float, capex: float
     ) -> None:

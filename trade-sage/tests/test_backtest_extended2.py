@@ -1,4 +1,5 @@
 """Extended backtest tests with parametrize and boundary coverage."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -95,8 +96,15 @@ def test_summarise_backtest_has_all_keys() -> None:
     signals = np.ones(50, dtype=int)
     result = run_backtest(prices, signals)
     summary = summarise_backtest(result)
-    for key in ("total_return_pct", "annualised_return_pct", "max_drawdown_pct",
-                "sharpe_ratio", "n_trades", "win_rate_pct", "equity_curve_length"):
+    for key in (
+        "total_return_pct",
+        "annualised_return_pct",
+        "max_drawdown_pct",
+        "sharpe_ratio",
+        "n_trades",
+        "win_rate_pct",
+        "equity_curve_length",
+    ):
         assert key in summary
 
 

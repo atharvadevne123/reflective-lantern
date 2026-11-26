@@ -104,7 +104,9 @@ class TestRagPipelineIngestAPI:
     def test_ingest_same_twice_status_unchanged(self) -> None:
         p = RagPipeline()
         p.ingest(b"Jupiter is the largest planet in the solar system.", source="jupiter.txt")
-        result = p.ingest(b"Jupiter is the largest planet in the solar system.", source="jupiter.txt")
+        result = p.ingest(
+            b"Jupiter is the largest planet in the solar system.", source="jupiter.txt"
+        )
         assert result["status"] == "unchanged"
 
     def test_ingest_adds_chunks_to_index(self) -> None:

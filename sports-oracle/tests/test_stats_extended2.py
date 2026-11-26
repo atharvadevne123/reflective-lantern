@@ -1,4 +1,5 @@
 """Extended metrics collector tests with parametrize and thread-safety checks."""
+
 from __future__ import annotations
 
 import threading
@@ -17,13 +18,16 @@ def test_initial_counters_zero() -> None:
     assert snap["health_checks"] == 0
 
 
-@pytest.mark.parametrize("counter,n", [
-    ("predict_total", 1),
-    ("predict_errors", 5),
-    ("health_checks", 10),
-    ("drift_checks", 3),
-    ("retrains", 2),
-])
+@pytest.mark.parametrize(
+    "counter,n",
+    [
+        ("predict_total", 1),
+        ("predict_errors", 5),
+        ("health_checks", 10),
+        ("drift_checks", 3),
+        ("retrains", 2),
+    ],
+)
 def test_inc_increments_counter(counter: str, n: int) -> None:
     mc = MetricsCollector()
     mc.inc(counter, n)
@@ -107,9 +111,18 @@ def test_uptime_seconds_increases() -> None:
 def test_snapshot_has_all_expected_keys() -> None:
     mc = MetricsCollector()
     snap = mc.snapshot()
-    for key in ("predict_total", "predict_errors", "health_checks", "drift_checks",
-                "retrains", "uptime_seconds", "latency_p50_ms", "latency_p95_ms",
-                "latency_p99_ms", "latency_samples"):
+    for key in (
+        "predict_total",
+        "predict_errors",
+        "health_checks",
+        "drift_checks",
+        "retrains",
+        "uptime_seconds",
+        "latency_p50_ms",
+        "latency_p95_ms",
+        "latency_p99_ms",
+        "latency_samples",
+    ):
         assert key in snap
 
 

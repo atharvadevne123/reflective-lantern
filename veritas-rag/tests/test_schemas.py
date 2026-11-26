@@ -150,26 +150,42 @@ class TestTypeAliases:
 class TestDocumentDefaults:
     def test_content_hash_default_empty(self) -> None:
         doc = Document(
-            doc_id="d", source="s", source_type="text",
-            text="t", pages=["t"], created_at="2024-01-01",
+            doc_id="d",
+            source="s",
+            source_type="text",
+            text="t",
+            pages=["t"],
+            created_at="2024-01-01",
         )
         assert doc.content_hash == ""
 
     def test_version_default_one(self) -> None:
         doc = Document(
-            doc_id="d", source="s", source_type="text",
-            text="t", pages=["t"], created_at="2024-01-01",
+            doc_id="d",
+            source="s",
+            source_type="text",
+            text="t",
+            pages=["t"],
+            created_at="2024-01-01",
         )
         assert doc.version == 1
 
     def test_metadata_mutable_default(self) -> None:
         doc1 = Document(
-            doc_id="d1", source="s", source_type="text",
-            text="t", pages=["t"], created_at="2024-01-01",
+            doc_id="d1",
+            source="s",
+            source_type="text",
+            text="t",
+            pages=["t"],
+            created_at="2024-01-01",
         )
         doc2 = Document(
-            doc_id="d2", source="s", source_type="text",
-            text="t", pages=["t"], created_at="2024-01-01",
+            doc_id="d2",
+            source="s",
+            source_type="text",
+            text="t",
+            pages=["t"],
+            created_at="2024-01-01",
         )
         doc1.metadata["key"] = "value"
         assert "key" not in doc2.metadata
@@ -178,8 +194,14 @@ class TestDocumentDefaults:
 class TestScoredChunkAPI:
     def test_default_scores_zero(self) -> None:
         chunk = Chunk(
-            chunk_id="d:1:0", doc_id="d", source="f", source_type="text",
-            page=1, seq=0, text="t", created_at="2024-01-01",
+            chunk_id="d:1:0",
+            doc_id="d",
+            source="f",
+            source_type="text",
+            page=1,
+            seq=0,
+            text="t",
+            created_at="2024-01-01",
         )
         sc = ScoredChunk(chunk=chunk)
         assert sc.fused_score == 0.0
@@ -188,8 +210,14 @@ class TestScoredChunkAPI:
 
     def test_repr_contains_chunk_id(self) -> None:
         chunk = Chunk(
-            chunk_id="myid:1:0", doc_id="d", source="f", source_type="text",
-            page=1, seq=0, text="t", created_at="2024-01-01",
+            chunk_id="myid:1:0",
+            doc_id="d",
+            source="f",
+            source_type="text",
+            page=1,
+            seq=0,
+            text="t",
+            created_at="2024-01-01",
         )
         sc = ScoredChunk(chunk=chunk, trust=0.5)
         assert "myid:1:0" in repr(sc)

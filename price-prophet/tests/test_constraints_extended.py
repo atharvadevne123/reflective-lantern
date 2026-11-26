@@ -1,4 +1,5 @@
 """Extended pricing constraints tests with parametrize and boundary coverage."""
+
 from __future__ import annotations
 
 import pytest
@@ -12,14 +13,17 @@ from app.pricing.constraints import (
 )
 
 
-@pytest.mark.parametrize("price,base,max_change_pct,expected", [
-    (110.0, 100.0, 50.0, 110.0),
-    (200.0, 100.0, 50.0, 150.0),
-    (40.0, 100.0, 50.0, 50.0),
-    (100.0, 100.0, 10.0, 100.0),
-    (120.0, 100.0, 10.0, 110.0),
-    (80.0, 100.0, 10.0, 90.0),
-])
+@pytest.mark.parametrize(
+    "price,base,max_change_pct,expected",
+    [
+        (110.0, 100.0, 50.0, 110.0),
+        (200.0, 100.0, 50.0, 150.0),
+        (40.0, 100.0, 50.0, 50.0),
+        (100.0, 100.0, 10.0, 100.0),
+        (120.0, 100.0, 10.0, 110.0),
+        (80.0, 100.0, 10.0, 90.0),
+    ],
+)
 def test_apply_constraints_max_change_pct(
     price: float, base: float, max_change_pct: float, expected: float
 ) -> None:
@@ -46,13 +50,16 @@ def test_apply_constraints_zero_base_no_change_guard() -> None:
     assert result <= c.max_price
 
 
-@pytest.mark.parametrize("price,base,max_change_pct,expected_violation", [
-    (110.0, 100.0, 50.0, False),
-    (200.0, 100.0, 50.0, True),
-    (50.0, 100.0, 50.0, False),
-    (40.0, 100.0, 50.0, True),
-    (100.0, 100.0, 0.0, False),
-])
+@pytest.mark.parametrize(
+    "price,base,max_change_pct,expected_violation",
+    [
+        (110.0, 100.0, 50.0, False),
+        (200.0, 100.0, 50.0, True),
+        (50.0, 100.0, 50.0, False),
+        (40.0, 100.0, 50.0, True),
+        (100.0, 100.0, 0.0, False),
+    ],
+)
 def test_violates_constraints_parametrized(
     price: float, base: float, max_change_pct: float, expected_violation: bool
 ) -> None:

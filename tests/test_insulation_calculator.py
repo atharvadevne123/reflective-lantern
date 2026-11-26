@@ -169,11 +169,14 @@ class TestInsulationEdgeCases:
 
 
 class TestInsulationCalculatorEdgeCases:
-    @pytest.mark.parametrize("u,area,delta_t", [
-        (0.3, 100.0, 15.0),
-        (1.0, 50.0, 10.0),
-        (2.5, 200.0, 20.0),
-    ])
+    @pytest.mark.parametrize(
+        "u,area,delta_t",
+        [
+            (0.3, 100.0, 15.0),
+            (1.0, 50.0, 10.0),
+            (2.5, 200.0, 20.0),
+        ],
+    )
     def test_heat_loss_watts_positive(self, u: float, area: float, delta_t: float) -> None:
         from app.insulation_calculator import heat_loss_watts
 

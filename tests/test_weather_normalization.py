@@ -326,10 +326,13 @@ def test_normalization_factor_parametrized(
 
 
 class TestWeatherNormalizationEdgeCases:
-    @pytest.mark.parametrize("temps,base", [
-        ([10.0, 12.0, 8.0], 18.0),
-        ([20.0, 22.0, 25.0], 18.0),
-    ])
+    @pytest.mark.parametrize(
+        "temps,base",
+        [
+            ([10.0, 12.0, 8.0], 18.0),
+            ([20.0, 22.0, 25.0], 18.0),
+        ],
+    )
     def test_heating_degree_days_non_negative(self, temps: list, base: float) -> None:
         from app.weather_normalization import heating_degree_days
 
@@ -342,11 +345,14 @@ class TestWeatherNormalizationEdgeCases:
         cdd = cooling_degree_days([25.0, 30.0, 28.0], 18.0)
         assert cdd > 0.0
 
-    @pytest.mark.parametrize("current,baseline", [
-        (200.0, 200.0),
-        (180.0, 200.0),
-        (220.0, 200.0),
-    ])
+    @pytest.mark.parametrize(
+        "current,baseline",
+        [
+            (200.0, 200.0),
+            (180.0, 200.0),
+            (220.0, 200.0),
+        ],
+    )
     def test_degree_day_ratio_basic(self, current: float, baseline: float) -> None:
         from app.weather_normalization import degree_day_ratio
 

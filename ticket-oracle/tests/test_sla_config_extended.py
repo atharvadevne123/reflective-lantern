@@ -1,4 +1,5 @@
 """Extended SLA configuration tests with parametrize and boundary coverage."""
+
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
@@ -14,12 +15,15 @@ from app.sla_config import (
 )
 
 
-@pytest.mark.parametrize("priority,hours", [
-    ("P1", 1.0),
-    ("P2", 4.0),
-    ("P3", 24.0),
-    ("P4", 72.0),
-])
+@pytest.mark.parametrize(
+    "priority,hours",
+    [
+        ("P1", 1.0),
+        ("P2", 4.0),
+        ("P3", 24.0),
+        ("P4", 72.0),
+    ],
+)
 def test_sla_deadline_base_hours(priority: str, hours: float) -> None:
     created = datetime(2024, 1, 1, 0, 0, 0, tzinfo=UTC)
     deadline = sla_deadline(priority, "Standard", created_at=created)
@@ -27,12 +31,15 @@ def test_sla_deadline_base_hours(priority: str, hours: float) -> None:
     assert deadline == expected
 
 
-@pytest.mark.parametrize("tier,multiplier", [
-    ("Gold", 0.5),
-    ("Silver", 0.75),
-    ("Standard", 1.0),
-    ("Bronze", 1.25),
-])
+@pytest.mark.parametrize(
+    "tier,multiplier",
+    [
+        ("Gold", 0.5),
+        ("Silver", 0.75),
+        ("Standard", 1.0),
+        ("Bronze", 1.25),
+    ],
+)
 def test_sla_deadline_tier_multipliers(tier: str, multiplier: float) -> None:
     created = datetime(2024, 1, 1, 0, 0, 0, tzinfo=UTC)
     deadline = sla_deadline("P3", tier, created_at=created)
@@ -69,16 +76,17 @@ def test_sla_deadline_defaults_to_now_when_no_created_at() -> None:
     assert expected_min <= deadline <= expected_max
 
 
-@pytest.mark.parametrize("priority,tier,age_min,expected_sign", [
-    ("P3", "Standard", 60.0, 1),
-    ("P3", "Standard", 1440.0, 1),
-    ("P3", "Standard", 1441.0, -1),
-    ("P1", "Gold", 29.0, 1),
-    ("P1", "Gold", 31.0, -1),
-])
-def test_time_to_breach_sign(
-    priority: str, tier: str, age_min: float, expected_sign: int
-) -> None:
+@pytest.mark.parametrize(
+    "priority,tier,age_min,expected_sign",
+    [
+        ("P3", "Standard", 60.0, 1),
+        ("P3", "Standard", 1440.0, 1),
+        ("P3", "Standard", 1441.0, -1),
+        ("P1", "Gold", 29.0, 1),
+        ("P1", "Gold", 31.0, -1),
+    ],
+)
+def test_time_to_breach_sign(priority: str, tier: str, age_min: float, expected_sign: int) -> None:
     remaining = time_to_breach(priority, tier, age_min)
     assert (remaining > 0) == (expected_sign > 0)
 
@@ -110,12 +118,15 @@ def test_sla_summary_breached_true_when_over_window() -> None:
     assert result["breached"] is True
 
 
-@pytest.mark.parametrize("priority,tier", [
-    ("P1", "Gold"),
-    ("P2", "Silver"),
-    ("P3", "Standard"),
-    ("P4", "Bronze"),
-])
+@pytest.mark.parametrize(
+    "priority,tier",
+    [
+        ("P1", "Gold"),
+        ("P2", "Silver"),
+        ("P3", "Standard"),
+        ("P4", "Bronze"),
+    ],
+)
 def test_sla_summary_window_hours_matches_calculation(priority: str, tier: str) -> None:
     result = sla_summary(priority, tier, 0.0)
     expected = SLA_HOURS[priority] * TIER_MULTIPLIERS[tier]

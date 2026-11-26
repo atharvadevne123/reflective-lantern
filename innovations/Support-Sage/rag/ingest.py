@@ -1,4 +1,5 @@
 """Ingest historical tickets into the FAISS vector index."""
+
 import logging
 from pathlib import Path
 
@@ -18,14 +19,17 @@ def embed_text(texts: list[str]) -> np.ndarray:
 
     embedder_path = INDEX_DIR / "embedder.joblib"
     import joblib
+
     if embedder_path.exists():
         embedder = joblib.load(embedder_path)
         return embedder.transform(texts).astype(np.float32)
 
-    embedder = Pipeline([
-        ("tfidf", TfidfVectorizer(max_features=10000, ngram_range=(1, 2), sublinear_tf=True)),
-        ("svd", TruncatedSVD(n_components=128, random_state=42)),
-    ])
+    embedder = Pipeline(
+        [
+            ("tfidf", TfidfVectorizer(max_features=10000, ngram_range=(1, 2), sublinear_tf=True)),
+            ("svd", TruncatedSVD(n_components=128, random_state=42)),
+        ]
+    )
     vectors = embedder.fit_transform(texts).astype(np.float32)
     INDEX_DIR.mkdir(exist_ok=True)
     joblib.dump(embedder, embedder_path)
@@ -53,6 +57,7 @@ def ingest_tickets(df: pd.DataFrame) -> int:
 
     metadata = df[["subject", "priority", "category"]].fillna("").to_dict(orient="records")
     import json
+
     (INDEX_DIR / "metadata.json").write_text(json.dumps(metadata, indent=2))
 
     logger.info("FAISS index built with %d tickets (dim=%d)", len(df), dim)

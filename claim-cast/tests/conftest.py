@@ -1,4 +1,5 @@
 """Pytest fixtures and test database setup."""
+
 from __future__ import annotations
 
 import pytest

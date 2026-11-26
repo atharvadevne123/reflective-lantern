@@ -141,11 +141,14 @@ class TestDemandChargeReduction:
 
 
 class TestPeakShavingEdgeCases:
-    @pytest.mark.parametrize("capacity,peak_load,threshold", [
-        (50.0, 100.0, 80.0),
-        (100.0, 150.0, 120.0),
-        (200.0, 300.0, 250.0),
-    ])
+    @pytest.mark.parametrize(
+        "capacity,peak_load,threshold",
+        [
+            (50.0, 100.0, 80.0),
+            (100.0, 150.0, 120.0),
+            (200.0, 300.0, 250.0),
+        ],
+    )
     def test_run_peak_shaving_returns_result(
         self, capacity: float, peak_load: float, threshold: float
     ) -> None:
@@ -169,11 +172,14 @@ class TestPeakShavingEdgeCases:
         assert isinstance(threshold, float)
         assert threshold > 0.0
 
-    @pytest.mark.parametrize("orig,shaved,rate", [
-        (100.0, 90.0, 10.0),
-        (200.0, 180.0, 15.0),
-        (500.0, 400.0, 20.0),
-    ])
+    @pytest.mark.parametrize(
+        "orig,shaved,rate",
+        [
+            (100.0, 90.0, 10.0),
+            (200.0, 180.0, 15.0),
+            (500.0, 400.0, 20.0),
+        ],
+    )
     def test_demand_charge_reduction_positive(
         self, orig: float, shaved: float, rate: float
     ) -> None:

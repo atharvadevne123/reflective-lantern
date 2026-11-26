@@ -1,4 +1,5 @@
 """AWS S3 stub for model artifact upload and download."""
+
 from __future__ import annotations
 
 import logging
@@ -9,6 +10,7 @@ logger = logging.getLogger(__name__)
 
 try:
     import boto3
+
     _BOTO3_AVAILABLE = True
 except ImportError:
     _BOTO3_AVAILABLE = False

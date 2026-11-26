@@ -1,4 +1,5 @@
 """Pytest fixtures and test database setup."""
+
 from __future__ import annotations
 
 import pytest
@@ -64,6 +65,7 @@ def client(engine):
     app.dependency_overrides[get_db] = override_get_db
 
     import app.main as main_module
+
     X, y = prepare_training_data(n_tickers=2)
     pipe = _build_pipeline()
     pipe.fit(X, y)
@@ -79,4 +81,5 @@ def client(engine):
 def settings():
     """Override settings for tests."""
     from app.config import Settings
+
     return Settings(DATABASE_URL="sqlite://", LOG_LEVEL="WARNING")

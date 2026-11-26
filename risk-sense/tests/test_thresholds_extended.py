@@ -1,4 +1,5 @@
 """Extended threshold optimisation tests with parametrize and edge cases."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -58,13 +59,16 @@ def test_find_optimal_threshold_all_negatives() -> None:
     assert isinstance(t, float)
 
 
-@pytest.mark.parametrize("threshold,expected_pred", [
-    (0.5, [0, 0, 1, 1]),
-    (0.3, [0, 1, 1, 1]),
-    (0.7, [0, 0, 1, 0]),
-    (0.0, [1, 1, 1, 1]),
-    (1.0, [0, 0, 0, 0]),
-])
+@pytest.mark.parametrize(
+    "threshold,expected_pred",
+    [
+        (0.5, [0, 0, 1, 1]),
+        (0.3, [0, 1, 1, 1]),
+        (0.7, [0, 0, 1, 0]),
+        (0.0, [1, 1, 1, 1]),
+        (1.0, [0, 0, 0, 0]),
+    ],
+)
 def test_apply_threshold(threshold: float, expected_pred: list[int]) -> None:
     scores = np.array([0.2, 0.4, 0.8, 0.6])
     preds = apply_threshold(scores, threshold)

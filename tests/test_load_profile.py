@@ -373,10 +373,13 @@ class TestLoadProfileEdgeCases2:
         profile = build_load_profile(load)
         assert hasattr(profile, "peak_kwh")
 
-    @pytest.mark.parametrize("load_factor,expected_class", [
-        (0.95, "flat"),
-        (0.5, "variable"),
-    ])
+    @pytest.mark.parametrize(
+        "load_factor,expected_class",
+        [
+            (0.95, "flat"),
+            (0.5, "variable"),
+        ],
+    )
     def test_classify_profile(self, load_factor: float, expected_class: str) -> None:
         from app.load_profile import classify_profile
 

@@ -1,4 +1,5 @@
 """Model training and prediction tests."""
+
 from __future__ import annotations
 
 import pandas as pd

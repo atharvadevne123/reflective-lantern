@@ -1,4 +1,5 @@
 """API endpoint tests."""
+
 from __future__ import annotations
 
 import pytest
@@ -66,6 +67,7 @@ def test_metrics_endpoint(client):
 
 def test_drift_check_endpoint(client):
     import numpy as np
+
     rng = np.random.default_rng(1)
     values = rng.normal(50, 10, 50).tolist()
     resp = client.post("/api/v1/drift", json={"feature_name": "alpha_score", "values": values})

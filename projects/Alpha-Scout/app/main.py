@@ -1,4 +1,5 @@
 """FastAPI application with /predict, /health, /metrics, /drift endpoints."""
+
 from __future__ import annotations
 
 import logging
@@ -115,7 +116,12 @@ async def predict(payload: OHLCVInput, db: Session = Depends(get_db)) -> Predict
     )
 
 
-@app.get("/api/v1/metrics", response_model=MetricsResponse, tags=["Operations"], summary="Prediction aggregate metrics")
+@app.get(
+    "/api/v1/metrics",
+    response_model=MetricsResponse,
+    tags=["Operations"],
+    summary="Prediction aggregate metrics",
+)
 async def metrics(db: Session = Depends(get_db)) -> MetricsResponse:
     return MetricsResponse(**get_prediction_metrics(db))
 
@@ -139,12 +145,14 @@ RATE_LIMIT_WINDOW = 60.0
 @app.middleware("http")
 async def rate_limit_middleware(request: Request, call_next):
     import time as _time
+
     client_ip = request.client.host if request.client else "unknown"
     now = _time.monotonic()
     hits = _rate_limit_store.setdefault(client_ip, [])
     _rate_limit_store[client_ip] = [t for t in hits if now - t < RATE_LIMIT_WINDOW]
     if len(_rate_limit_store[client_ip]) >= RATE_LIMIT_REQUESTS:
         from fastapi.responses import JSONResponse
+
         return JSONResponse(status_code=429, content={"detail": "rate limit exceeded"})
     _rate_limit_store[client_ip].append(now)
     return await call_next(request)
@@ -162,16 +170,27 @@ class RankedSecurity(BaseModel):
     rank: int
 
 
-@app.post("/api/v1/rank", response_model=list[RankedSecurity], tags=["Scoring"], summary="Rank a portfolio")
-async def rank_portfolio(payload: PortfolioRankRequest, db: Session = Depends(get_db)) -> list[RankedSecurity]:
+@app.post(
+    "/api/v1/rank",
+    response_model=list[RankedSecurity],
+    tags=["Scoring"],
+    summary="Rank a portfolio",
+)
+async def rank_portfolio(
+    payload: PortfolioRankRequest, db: Session = Depends(get_db)
+) -> list[RankedSecurity]:
     if _model is None:
         raise HTTPException(status_code=503, detail="model not loaded")
     results = []
     for sec in payload.securities:
         history = make_sample_ohlcv(60, ticker=sec.ticker)
         history.iloc[-1] = {
-            "ticker": sec.ticker, "close": sec.close, "open": sec.open,
-            "high": sec.high, "low": sec.low, "volume": sec.volume,
+            "ticker": sec.ticker,
+            "close": sec.close,
+            "open": sec.open,
+            "high": sec.high,
+            "low": sec.low,
+            "volume": sec.volume,
         }
         if sec.pe_ratio is not None:
             history["pe_ratio"] = sec.pe_ratio
@@ -184,8 +203,13 @@ async def rank_portfolio(payload: PortfolioRankRequest, db: Session = Depends(ge
         results.append(result | {"ticker": sec.ticker})
     results.sort(key=lambda r: r["alpha_score"], reverse=True)
     return [
-        RankedSecurity(rank=i + 1, ticker=r["ticker"], alpha_score=r["alpha_score"],
-                       return_prediction=r["return_prediction"], confidence=r["confidence"])
+        RankedSecurity(
+            rank=i + 1,
+            ticker=r["ticker"],
+            alpha_score=r["alpha_score"],
+            return_prediction=r["return_prediction"],
+            confidence=r["confidence"],
+        )
         for i, r in enumerate(results)
     ]
 
@@ -198,6 +222,7 @@ async def feature_importance() -> dict:
     if xgb_model is None or not hasattr(xgb_model, "feature_importances_"):
         raise HTTPException(status_code=500, detail="model does not expose feature importances")
     from app.features import FEATURE_COLUMNS
+
     importances = xgb_model.feature_importances_
     n = min(len(importances), len(FEATURE_COLUMNS))
     pairs = sorted(
@@ -211,10 +236,15 @@ async def feature_importance() -> dict:
 @app.post("/api/v1/anomaly", tags=["Monitoring"], summary="Detect anomalous input rows")
 async def anomaly_check(payload: OHLCVInput) -> dict:
     from app.anomaly import predict_anomaly
+
     history = make_sample_ohlcv(100, ticker=payload.ticker)
     history.iloc[-1] = {
-        "ticker": payload.ticker, "close": payload.close, "open": payload.open,
-        "high": payload.high, "low": payload.low, "volume": payload.volume,
+        "ticker": payload.ticker,
+        "close": payload.close,
+        "open": payload.open,
+        "high": payload.high,
+        "low": payload.low,
+        "volume": payload.volume,
     }
     eng = StockFeatureEngineer()
     eng.fit(history)
@@ -225,6 +255,7 @@ async def anomaly_check(payload: OHLCVInput) -> dict:
 @app.get("/api/v1/pipeline-health", tags=["Operations"], summary="Check ML pipeline health")
 async def pipeline_health() -> dict:
     from app.monitoring import check_pipeline_health
+
     if _model is None:
         return {"healthy": False, "issues": ["no model loaded"]}
     return check_pipeline_health(_model)
@@ -233,12 +264,8 @@ async def pipeline_health() -> dict:
 @app.get("/api/v1/predictions/export", tags=["Operations"], summary="Export recent predictions as JSON")
 async def export_predictions(limit: int = 100, db: Session = Depends(get_db)) -> dict:
     from app.database import PredictionLog
-    rows = (
-        db.query(PredictionLog)
-        .order_by(PredictionLog.created_at.desc())
-        .limit(min(limit, 1000))
-        .all()
-    )
+
+    rows = db.query(PredictionLog).order_by(PredictionLog.created_at.desc()).limit(min(limit, 1000)).all()
     return {
         "count": len(rows),
         "predictions": [

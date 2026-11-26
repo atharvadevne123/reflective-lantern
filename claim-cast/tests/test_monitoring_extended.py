@@ -1,4 +1,5 @@
 """Extended monitoring tests: drift detection edge cases and parametrize."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -7,12 +8,15 @@ import pytest
 from app.monitoring import compute_drift
 
 
-@pytest.mark.parametrize("ref_size,cur_size", [
-    (0, 0),
-    (5, 5),
-    (9, 10),
-    (10, 9),
-])
+@pytest.mark.parametrize(
+    "ref_size,cur_size",
+    [
+        (0, 0),
+        (5, 5),
+        (9, 10),
+        (10, 9),
+    ],
+)
 def test_compute_drift_insufficient_samples(ref_size: int, cur_size: int) -> None:
     ref = list(np.random.default_rng(1).uniform(0, 1, ref_size))
     cur = list(np.random.default_rng(2).uniform(0, 1, cur_size))

@@ -1,4 +1,5 @@
 """Extended cost optimizer tests with parametrize and boundary coverage."""
+
 from __future__ import annotations
 
 import math
@@ -36,12 +37,15 @@ def test_total_repair_cost_includes_downtime() -> None:
     assert total_repair_cost(option, model) == pytest.approx(100.0 + 2.0 * 200.0)
 
 
-@pytest.mark.parametrize("cost,downtime,expected", [
-    (0.0, 0.0, 0.0),
-    (500.0, 0.0, 500.0),
-    (0.0, 4.0, 800.0),
-    (100.0, 1.0, 300.0),
-])
+@pytest.mark.parametrize(
+    "cost,downtime,expected",
+    [
+        (0.0, 0.0, 0.0),
+        (500.0, 0.0, 500.0),
+        (0.0, 4.0, 800.0),
+        (100.0, 1.0, 300.0),
+    ],
+)
 def test_total_repair_cost_parametrized(cost: float, downtime: float, expected: float) -> None:
     option = _option(cost=cost, downtime=downtime)
     model = _model(downtime_cost=200.0)
@@ -103,11 +107,14 @@ def test_rank_options_single_option() -> None:
     assert rank_options(options, _model()) == options
 
 
-@pytest.mark.parametrize("vehicles,avg_cost,contingency,expected", [
-    (10, 1000.0, 0.10, 11000.0),
-    (100, 500.0, 0.0, 50000.0),
-    (1, 2000.0, 0.20, 2400.0),
-])
+@pytest.mark.parametrize(
+    "vehicles,avg_cost,contingency,expected",
+    [
+        (10, 1000.0, 0.10, 11000.0),
+        (100, 500.0, 0.0, 50000.0),
+        (1, 2000.0, 0.20, 2400.0),
+    ],
+)
 def test_annual_maintenance_budget(
     vehicles: int, avg_cost: float, contingency: float, expected: float
 ) -> None:
@@ -125,11 +132,14 @@ def test_break_even_km_no_saving_returns_zero() -> None:
     assert result == pytest.approx(0.0)
 
 
-@pytest.mark.parametrize("reactive,preventive,cost_per_km,expected_km", [
-    (1000.0, 400.0, 0.1, 6000.0),
-    (500.0, 100.0, 0.5, 800.0),
-    (200.0, 50.0, 0.3, 500.0),
-])
+@pytest.mark.parametrize(
+    "reactive,preventive,cost_per_km,expected_km",
+    [
+        (1000.0, 400.0, 0.1, 6000.0),
+        (500.0, 100.0, 0.5, 800.0),
+        (200.0, 50.0, 0.3, 500.0),
+    ],
+)
 def test_break_even_km_various(
     reactive: float, preventive: float, cost_per_km: float, expected_km: float
 ) -> None:

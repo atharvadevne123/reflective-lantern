@@ -1,4 +1,5 @@
 """Feature engineering pipeline tests."""
+
 import pandas as pd
 import pytest
 
@@ -11,10 +12,12 @@ from app.features import (
 
 
 def test_meta_extractor_shape():
-    df = pd.DataFrame([
-        {"subject": "VPN issue urgent", "description": "Cannot connect to VPN error 800"},
-        {"subject": "Password reset", "description": "User forgot password, needs reset"},
-    ])
+    df = pd.DataFrame(
+        [
+            {"subject": "VPN issue urgent", "description": "Cannot connect to VPN error 800"},
+            {"subject": "Password reset", "description": "User forgot password, needs reset"},
+        ]
+    )
     extractor = TextMetaExtractor()
     result = extractor.fit_transform(df)
     assert result.shape[0] == 2

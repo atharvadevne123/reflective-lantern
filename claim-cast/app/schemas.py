@@ -1,4 +1,5 @@
 """Pydantic v2 request/response schemas."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -8,12 +9,22 @@ from pydantic import BaseModel, Field, field_validator
 
 class ClaimRequest(BaseModel):
     claim_id: str = Field(..., description="Unique claim identifier")
-    claim_age_days: float = Field(0.0, ge=0, le=36500, description="Days since incident to report date")
-    policy_limit: float = Field(100_000.0, gt=0, le=10_000_000, description="Policy coverage limit in USD")
+    claim_age_days: float = Field(
+        0.0, ge=0, le=36500, description="Days since incident to report date"
+    )
+    policy_limit: float = Field(
+        100_000.0, gt=0, le=10_000_000, description="Policy coverage limit in USD"
+    )
     claimed_amount: float = Field(10_000.0, ge=0, description="Amount claimed in USD")
-    num_prior_claims: float = Field(0.0, ge=0, le=100, description="Number of prior claims on policy")
-    policy_tenure_years: float = Field(1.0, gt=0, le=50, description="Years the policy has been active")
-    geo_risk_tier: float = Field(2.5, ge=1.0, le=5.0, description="Geographic risk tier (1=low, 5=high)")
+    num_prior_claims: float = Field(
+        0.0, ge=0, le=100, description="Number of prior claims on policy"
+    )
+    policy_tenure_years: float = Field(
+        1.0, gt=0, le=50, description="Years the policy has been active"
+    )
+    geo_risk_tier: float = Field(
+        2.5, ge=1.0, le=5.0, description="Geographic risk tier (1=low, 5=high)"
+    )
     days_since_last_claim: float = Field(365.0, ge=0, description="Days since last prior claim")
     policy_type: str = Field("auto", description="Policy type: home, auto, life, commercial")
 

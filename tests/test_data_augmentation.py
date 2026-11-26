@@ -253,6 +253,7 @@ class TestAugmentTextExt:
 class TestDataAugmentationEdgeCases:
     def _make_config(self):
         from app.data_augmentation import AugmentationConfig
+
         return AugmentationConfig(seed=42)
 
     def test_augment_text_returns_string(self) -> None:

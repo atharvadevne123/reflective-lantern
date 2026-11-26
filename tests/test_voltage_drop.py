@@ -162,11 +162,14 @@ class TestVoltageDropEdgeCases:
 
 
 class TestVoltageDropEdgeCases2:
-    @pytest.mark.parametrize("length,current,cross_section", [
-        (100.0, 10.0, 2.5),
-        (50.0, 20.0, 4.0),
-        (200.0, 5.0, 1.5),
-    ])
+    @pytest.mark.parametrize(
+        "length,current,cross_section",
+        [
+            (100.0, 10.0, 2.5),
+            (50.0, 20.0, 4.0),
+            (200.0, 5.0, 1.5),
+        ],
+    )
     def test_cable_resistance_positive(
         self, length: float, current: float, cross_section: float
     ) -> None:
@@ -193,14 +196,15 @@ class TestVoltageDropEdgeCases2:
         result = analyse_cable(100.0, 10.0, 2.5, 230.0)
         assert hasattr(result, "voltage_drop_v")
 
-    @pytest.mark.parametrize("current,resistance", [
-        (5.0, 1.0),
-        (10.0, 0.5),
-        (20.0, 0.2),
-    ])
-    def test_voltage_drop_scales_with_current(
-        self, current: float, resistance: float
-    ) -> None:
+    @pytest.mark.parametrize(
+        "current,resistance",
+        [
+            (5.0, 1.0),
+            (10.0, 0.5),
+            (20.0, 0.2),
+        ],
+    )
+    def test_voltage_drop_scales_with_current(self, current: float, resistance: float) -> None:
         from app.voltage_drop import voltage_drop_single_phase
 
         drop = voltage_drop_single_phase(current, resistance)

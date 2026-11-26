@@ -57,9 +57,7 @@ class TestSpikeSeverity:
             (12.0, 1.0, 1.0, "critical"),
         ],
     )
-    def test_severity_levels(
-        self, value: float, mean: float, std: float, expected: str
-    ) -> None:
+    def test_severity_levels(self, value: float, mean: float, std: float, expected: str) -> None:
         assert spike_severity(value, mean, std, z_threshold=2.5) == expected
 
     def test_zero_std_returns_normal(self) -> None:

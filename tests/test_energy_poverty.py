@@ -143,11 +143,14 @@ class TestAssessHousehold:
 
 
 class TestEnergyPovertyEdgeCases:
-    @pytest.mark.parametrize("cost,income", [
-        (1500.0, 20000.0),
-        (3000.0, 15000.0),
-        (500.0, 50000.0),
-    ])
+    @pytest.mark.parametrize(
+        "cost,income",
+        [
+            (1500.0, 20000.0),
+            (3000.0, 15000.0),
+            (500.0, 50000.0),
+        ],
+    )
     def test_energy_cost_ratio_positive(self, cost: float, income: float) -> None:
         from app.energy_poverty import energy_cost_ratio
 
@@ -170,11 +173,14 @@ class TestEnergyPovertyEdgeCases:
         result = after_fuel_costs_income(30000.0, 2000.0)
         assert result < 30000.0
 
-    @pytest.mark.parametrize("epc,is_poor,has_disability", [
-        ("G", True, False),
-        ("A", False, False),
-        ("D", True, True),
-    ])
+    @pytest.mark.parametrize(
+        "epc,is_poor,has_disability",
+        [
+            ("G", True, False),
+            ("A", False, False),
+            ("D", True, True),
+        ],
+    )
     def test_recommended_interventions_returns_list(
         self, epc: str, is_poor: bool, has_disability: bool
     ) -> None:

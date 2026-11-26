@@ -1,4 +1,5 @@
 """Tests for synthetic data generation utilities."""
+
 from __future__ import annotations
 
 import pytest
@@ -34,9 +35,17 @@ def test_generate_claims_reproducible():
 
 def test_generate_claim_dict_has_required_keys():
     claim = generate_claim_dict(seed=7)
-    required = {"claim_id", "claim_age_days", "policy_limit", "claimed_amount",
-                "num_prior_claims", "policy_tenure_years", "geo_risk_tier",
-                "days_since_last_claim", "policy_type"}
+    required = {
+        "claim_id",
+        "claim_age_days",
+        "policy_limit",
+        "claimed_amount",
+        "num_prior_claims",
+        "policy_tenure_years",
+        "geo_risk_tier",
+        "days_since_last_claim",
+        "policy_type",
+    }
     assert required.issubset(claim.keys())
 
 

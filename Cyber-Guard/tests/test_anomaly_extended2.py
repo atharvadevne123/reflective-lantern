@@ -1,4 +1,5 @@
 """Extended anomaly detection tests with parametrize and boundary coverage."""
+
 from __future__ import annotations
 
 import numpy as np

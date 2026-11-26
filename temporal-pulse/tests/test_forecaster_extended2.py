@@ -1,4 +1,5 @@
 """Extended forecaster tests — second pass with parametrize and boundary coverage."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -31,11 +32,14 @@ def test_prepare_supervised_data_too_short_raises() -> None:
         prepare_supervised_data(series, lookback=10, horizon=5)
 
 
-@pytest.mark.parametrize("lookback,horizon", [
-    (5, 1),
-    (10, 3),
-    (20, 5),
-])
+@pytest.mark.parametrize(
+    "lookback,horizon",
+    [
+        (5, 1),
+        (10, 3),
+        (20, 5),
+    ],
+)
 def test_prepare_supervised_data_various_configs(lookback: int, horizon: int) -> None:
     series = np.arange(100, dtype=np.float32)
     X, y = prepare_supervised_data(series, lookback=lookback, horizon=horizon)

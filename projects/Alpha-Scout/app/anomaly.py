@@ -1,4 +1,5 @@
 """Isolation Forest anomaly detection for feature-level outliers."""
+
 from __future__ import annotations
 
 import logging

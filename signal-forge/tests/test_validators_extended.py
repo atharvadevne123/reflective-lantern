@@ -1,4 +1,5 @@
 """Extended validator tests for signal-forge with parametrize and boundary coverage."""
+
 from __future__ import annotations
 
 import pytest
@@ -78,11 +79,14 @@ def test_validate_predict_input_bad_market_return_raises() -> None:
         validate_predict_input(close=100.0, volume=1_000.0, market_return=1.5)
 
 
-@pytest.mark.parametrize("close,volume,ret", [
-    (0.01, 1.0, 0.0),
-    (500.0, 1e10, -0.99),
-    (MAX_CLOSE_PRICE, MAX_VOLUME, 1.0),
-])
+@pytest.mark.parametrize(
+    "close,volume,ret",
+    [
+        (0.01, 1.0, 0.0),
+        (500.0, 1e10, -0.99),
+        (MAX_CLOSE_PRICE, MAX_VOLUME, 1.0),
+    ],
+)
 def test_validate_predict_input_boundary_valid(close: float, volume: float, ret: float) -> None:
     validate_predict_input(close=close, volume=volume, market_return=ret)
 

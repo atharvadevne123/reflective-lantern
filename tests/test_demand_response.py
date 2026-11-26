@@ -372,11 +372,14 @@ class TestDemandResponseEdgeCases:
 
 
 class TestDemandResponseEdgeCases2:
-    @pytest.mark.parametrize("baseline,actual", [
-        ([100.0] * 4, [80.0] * 4),
-        ([200.0] * 4, [150.0] * 4),
-        ([50.0] * 4, [50.0] * 4),
-    ])
+    @pytest.mark.parametrize(
+        "baseline,actual",
+        [
+            ([100.0] * 4, [80.0] * 4),
+            ([200.0] * 4, [150.0] * 4),
+            ([50.0] * 4, [50.0] * 4),
+        ],
+    )
     def test_curtailment_non_negative(self, baseline: list, actual: list) -> None:
         from app.demand_response import curtailment
 
@@ -403,10 +406,13 @@ class TestDemandResponseEdgeCases2:
         result = customer_baseline_load(daily_usage_kwh=24.0)
         assert isinstance(result, float)
 
-    @pytest.mark.parametrize("net_payment,baseline_cost,baseline_kwh", [
-        (100.0, 0.10, 500.0),
-        (50.0, 0.15, 300.0),
-    ])
+    @pytest.mark.parametrize(
+        "net_payment,baseline_cost,baseline_kwh",
+        [
+            (100.0, 0.10, 500.0),
+            (50.0, 0.15, 300.0),
+        ],
+    )
     def test_event_roi_positive(
         self, net_payment: float, baseline_cost: float, baseline_kwh: float
     ) -> None:

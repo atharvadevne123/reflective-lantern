@@ -1,4 +1,5 @@
 """FastAPI application for Claim-Cast insurance prediction API."""
+
 from __future__ import annotations
 
 import json
@@ -72,7 +73,9 @@ def health(db: Session = Depends(get_db)):
         db.execute(__import__("sqlalchemy").text("SELECT 1"))
     except Exception:
         db_ok = False
-    return HealthResponse(status="ok", model_loaded=_model_loaded, db_connected=db_ok, version=MODEL_VERSION)
+    return HealthResponse(
+        status="ok", model_loaded=_model_loaded, db_connected=db_ok, version=MODEL_VERSION
+    )
 
 
 @app.post("/api/v1/predict", response_model=ClaimResponse, tags=["Prediction"])
@@ -81,7 +84,9 @@ def predict_claim(request: ClaimRequest, db: Session = Depends(get_db)):
     import pandas as pd
 
     if not _model_loaded:
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="model_not_loaded")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="model_not_loaded"
+        )
 
     try:
         X = pd.DataFrame([request.model_dump(exclude={"claim_id"})])
@@ -191,7 +196,11 @@ def adjust_premium(request: PremiumRequest):
 def triage_summary(triage_priority: int = FPath(..., ge=1, le=4)):
     """Return description and SLA for a triage priority level."""
     slas = {
-        1: {"level": "P1 — Critical", "sla_hours": 4, "action": "Immediate senior adjuster assignment"},
+        1: {
+            "level": "P1 — Critical",
+            "sla_hours": 4,
+            "action": "Immediate senior adjuster assignment",
+        },
         2: {"level": "P2 — High", "sla_hours": 24, "action": "Same-day adjuster assignment"},
         3: {"level": "P3 — Medium", "sla_hours": 72, "action": "Standard adjuster queue"},
         4: {"level": "P4 — Low", "sla_hours": 168, "action": "Automated fast-track processing"},
@@ -217,8 +226,7 @@ def claim_stats(db: Session = Depends(get_db)):
     )
     return {
         "breakdown": [
-            {"severity_label": r[0], "triage_priority": r[1], "count": r[2]}
-            for r in rows
+            {"severity_label": r[0], "triage_priority": r[1], "count": r[2]} for r in rows
         ],
         "total": sum(r[2] for r in rows),
     }
@@ -240,18 +248,31 @@ def predict_batch(requests_list: list[ClaimRequest], db: Session = Depends(get_d
     if len(requests_list) > 50:
         raise HTTPException(status_code=400, detail="batch_size_exceeds_limit_50")
     if not _model_loaded:
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="model_not_loaded")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="model_not_loaded"
+        )
 
     results = []
     for req in requests_list:
         try:
             X = pd.DataFrame([req.model_dump(exclude={"claim_id"})])
             result = predict(X)
-            log_prediction(db, req.claim_id, result["severity_score"], result["severity_label"], result["triage_priority"], MODEL_VERSION)
-            results.append(ClaimResponse(claim_id=req.claim_id, model_version=MODEL_VERSION, **result))
+            log_prediction(
+                db,
+                req.claim_id,
+                result["severity_score"],
+                result["severity_label"],
+                result["triage_priority"],
+                MODEL_VERSION,
+            )
+            results.append(
+                ClaimResponse(claim_id=req.claim_id, model_version=MODEL_VERSION, **result)
+            )
         except Exception as exc:
             logger.error("batch_predict_failed", claim_id=req.claim_id, error=str(exc))
-            raise HTTPException(status_code=500, detail=f"prediction_failed for {req.claim_id}") from exc
+            raise HTTPException(
+                status_code=500, detail=f"prediction_failed for {req.claim_id}"
+            ) from exc
     return results
 
 
@@ -285,6 +306,7 @@ def trigger_retrain(background_tasks: BackgroundTasks):
 
     def _run_retrain():
         import sys
+
         sys.path.insert(0, ".")
         from pipelines.retrain_dag import (
             evaluate_model,
@@ -292,6 +314,7 @@ def trigger_retrain(background_tasks: BackgroundTasks):
             promote_model,
             run_retraining,
         )
+
         path = fetch_training_data()
         metrics = run_retraining(path)
         if evaluate_model(metrics):

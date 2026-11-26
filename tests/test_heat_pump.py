@@ -171,11 +171,14 @@ class TestHeatPumpEdgeCases:
 
 
 class TestHeatPumpEdgeCases2:
-    @pytest.mark.parametrize("source,sink", [
-        (0.0, 50.0),
-        (-5.0, 45.0),
-        (10.0, 60.0),
-    ])
+    @pytest.mark.parametrize(
+        "source,sink",
+        [
+            (0.0, 50.0),
+            (-5.0, 45.0),
+            (10.0, 60.0),
+        ],
+    )
     def test_carnot_cop_positive(self, source: float, sink: float) -> None:
         from app.heat_pump import carnot_cop
 
@@ -189,10 +192,13 @@ class TestHeatPumpEdgeCases2:
         realistic = realistic_cop(5.0, 50.0)
         assert realistic < carnot
 
-    @pytest.mark.parametrize("heat_kwh,cop", [
-        (100.0, 3.0),
-        (500.0, 4.0),
-    ])
+    @pytest.mark.parametrize(
+        "heat_kwh,cop",
+        [
+            (100.0, 3.0),
+            (500.0, 4.0),
+        ],
+    )
     def test_electricity_for_heat_positive(self, heat_kwh: float, cop: float) -> None:
         from app.heat_pump import electricity_for_heat
 

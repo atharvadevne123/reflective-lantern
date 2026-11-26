@@ -1,4 +1,5 @@
 """Extended validator tests with parametrize and edge cases."""
+
 from __future__ import annotations
 
 import pytest
@@ -89,14 +90,17 @@ def test_validate_returns_list_type() -> None:
     assert isinstance(result, list)
 
 
-@pytest.mark.parametrize("claimed,limit,prior,expected", [
-    (70_000.0, 100_000.0, 0.0, True),
-    (50_000.0, 100_000.0, 0.0, False),
-    (10_000.0, 100_000.0, 4.0, True),
-    (10_000.0, 100_000.0, 3.0, False),
-    (60_000.0, 100_000.0, 1.0, False),
-    (61_000.0, 100_000.0, 0.0, True),
-])
+@pytest.mark.parametrize(
+    "claimed,limit,prior,expected",
+    [
+        (70_000.0, 100_000.0, 0.0, True),
+        (50_000.0, 100_000.0, 0.0, False),
+        (10_000.0, 100_000.0, 4.0, True),
+        (10_000.0, 100_000.0, 3.0, False),
+        (60_000.0, 100_000.0, 1.0, False),
+        (61_000.0, 100_000.0, 0.0, True),
+    ],
+)
 def test_is_high_risk_claim(claimed: float, limit: float, prior: float, expected: bool) -> None:
     assert is_high_risk_claim(claimed, limit, prior) is expected
 

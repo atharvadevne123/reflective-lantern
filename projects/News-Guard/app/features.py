@@ -23,15 +23,27 @@ CLICKBAIT_PATTERNS = [
 ]
 
 KNOWN_UNRELIABLE_DOMAINS = {
-    "infowars.com", "naturalnews.com", "beforeitsnews.com",
-    "yournewswire.com", "theonion.com", "babylonbee.com",
-    "clickhole.com", "worldnewsdailyreport.com",
+    "infowars.com",
+    "naturalnews.com",
+    "beforeitsnews.com",
+    "yournewswire.com",
+    "theonion.com",
+    "babylonbee.com",
+    "clickhole.com",
+    "worldnewsdailyreport.com",
 }
 
 KNOWN_RELIABLE_DOMAINS = {
-    "reuters.com", "apnews.com", "bbc.com", "bbc.co.uk",
-    "nytimes.com", "washingtonpost.com", "theguardian.com",
-    "npr.org", "pbs.org", "economist.com",
+    "reuters.com",
+    "apnews.com",
+    "bbc.com",
+    "bbc.co.uk",
+    "nytimes.com",
+    "washingtonpost.com",
+    "theguardian.com",
+    "npr.org",
+    "pbs.org",
+    "economist.com",
 }
 
 
@@ -61,14 +73,24 @@ class TextFeatureExtractor(BaseEstimator, TransformerMixin):
         caps_ratio = sum(1 for c in headline if c.isupper()) / max(len(headline), 1)
         exclamation_count = headline.count("!") + body.count("!")
         question_count = headline.count("?") + body.count("?")
-        avg_sentence_len = np.mean([len(s.split()) for s in sentences if s.strip()]) if sentences else 0.0
+        avg_sentence_len = (
+            np.mean([len(s.split()) for s in sentences if s.strip()]) if sentences else 0.0
+        )
         vocab_richness = len(set(w.lower() for w in words)) / max(len(words), 1)
         word_count = len(words)
         source_unreliable = float(source in KNOWN_UNRELIABLE_DOMAINS)
         source_reliable = float(source in KNOWN_RELIABLE_DOMAINS)
         num_quotes = full_text.count('"') // 2
-        hedge_words = sum(1 for w in ["allegedly", "reportedly", "claimed", "sources say"] if w in full_text.lower())
-        sensational_words = sum(1 for w in ["bombshell", "explosive", "devastating", "unprecedented"] if w in full_text.lower())
+        hedge_words = sum(
+            1
+            for w in ["allegedly", "reportedly", "claimed", "sources say"]
+            if w in full_text.lower()
+        )
+        sensational_words = sum(
+            1
+            for w in ["bombshell", "explosive", "devastating", "unprecedented"]
+            if w in full_text.lower()
+        )
         url_mentions = len(re.findall(r"http[s]?://", full_text))
         return [
             float(clickbait_score),
@@ -88,10 +110,19 @@ class TextFeatureExtractor(BaseEstimator, TransformerMixin):
 
     def get_feature_names_out(self) -> list[str]:
         return [
-            "clickbait_score", "caps_ratio", "exclamation_count", "question_count",
-            "avg_sentence_len", "vocab_richness", "word_count",
-            "source_unreliable", "source_reliable", "num_quotes",
-            "hedge_words", "sensational_words", "url_mentions",
+            "clickbait_score",
+            "caps_ratio",
+            "exclamation_count",
+            "question_count",
+            "avg_sentence_len",
+            "vocab_richness",
+            "word_count",
+            "source_unreliable",
+            "source_reliable",
+            "num_quotes",
+            "hedge_words",
+            "sensational_words",
+            "url_mentions",
         ]
 
 
@@ -135,10 +166,14 @@ def build_feature_dataframe(
     share_count: int = 0,
 ) -> pd.DataFrame:
     """Build a single-row DataFrame from raw article inputs."""
-    return pd.DataFrame([{
-        "headline": headline,
-        "body": body,
-        "source_domain": source_domain,
-        "publication_hour": publication_hour,
-        "share_count": share_count,
-    }])
+    return pd.DataFrame(
+        [
+            {
+                "headline": headline,
+                "body": body,
+                "source_domain": source_domain,
+                "publication_hour": publication_hour,
+                "share_count": share_count,
+            }
+        ]
+    )

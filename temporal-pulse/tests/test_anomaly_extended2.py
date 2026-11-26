@@ -1,4 +1,5 @@
 """Extended anomaly utility tests for temporal-pulse with parametrize and boundary coverage."""
+
 from __future__ import annotations
 
 import pytest
@@ -11,11 +12,14 @@ from app.anomaly import (
 )
 
 
-@pytest.mark.parametrize("percentile,expected", [
-    (100.0, 10.0),
-    (0.0, 1.0),
-    (50.0, 5.5),
-])
+@pytest.mark.parametrize(
+    "percentile,expected",
+    [
+        (100.0, 10.0),
+        (0.0, 1.0),
+        (50.0, 5.5),
+    ],
+)
 def test_score_percentile_threshold_values(percentile: float, expected: float) -> None:
     scores = list(range(1, 11))
     result = score_percentile_threshold(scores, percentile=percentile)
@@ -47,13 +51,16 @@ def test_consecutive_anomaly_lengths_all_anomalies() -> None:
     assert consecutive_anomaly_lengths(flags) == [4]
 
 
-@pytest.mark.parametrize("flags,expected", [
-    ([True, False, True], [1, 1]),
-    ([True, True, False, True, True, True], [2, 3]),
-    ([False, True, True, False, True], [2, 1]),
-    ([True], [1]),
-    ([False], []),
-])
+@pytest.mark.parametrize(
+    "flags,expected",
+    [
+        ([True, False, True], [1, 1]),
+        ([True, True, False, True, True, True], [2, 3]),
+        ([False, True, True, False, True], [2, 1]),
+        ([True], [1]),
+        ([False], []),
+    ],
+)
 def test_consecutive_anomaly_lengths_patterns(flags: list[bool], expected: list[int]) -> None:
     assert consecutive_anomaly_lengths(flags) == expected
 
@@ -89,6 +96,7 @@ def test_anomaly_density_length_matches_input() -> None:
 @pytest.mark.parametrize("window", [1, 3, 5, 10])
 def test_anomaly_density_density_in_zero_one(window: int) -> None:
     import random
+
     random.seed(42)
     scores = [random.random() for _ in range(20)]
     result = anomaly_density(scores, threshold=0.5, window=window)

@@ -316,12 +316,15 @@ def test_cost_per_unit_positive_units() -> None:
 
 
 class TestCostEstimatorEdgeCases:
-    @pytest.mark.parametrize("cpu,mem,hours", [
-        (1, 1, 1),
-        (4, 16, 8),
-        (8, 32, 24),
-        (16, 64, 720),
-    ])
+    @pytest.mark.parametrize(
+        "cpu,mem,hours",
+        [
+            (1, 1, 1),
+            (4, 16, 8),
+            (8, 32, 24),
+            (16, 64, 720),
+        ],
+    )
     def test_estimate_cost_returns_positive(self, cpu: int, mem: int, hours: float) -> None:
         from app.cost_estimator import ResourceSpec, estimate_cost
 

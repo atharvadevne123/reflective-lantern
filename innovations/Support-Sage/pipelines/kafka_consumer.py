@@ -1,4 +1,5 @@
 """Kafka consumer for real-time ticket ingestion into Support-Sage."""
+
 from __future__ import annotations
 
 import json
@@ -9,6 +10,7 @@ logger = logging.getLogger(__name__)
 
 try:
     from kafka import KafkaConsumer
+
     _KAFKA_AVAILABLE = True
 except ImportError:
     _KAFKA_AVAILABLE = False

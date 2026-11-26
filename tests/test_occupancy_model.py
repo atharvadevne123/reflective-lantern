@@ -203,11 +203,14 @@ class TestOccupancyModelEdgeCases2:
         hours = annual_occupied_hours(schedule)
         assert hours > 0
 
-    @pytest.mark.parametrize("occupied,unoccupied,fraction", [
-        (21.0, 15.0, 1.0),
-        (21.0, 15.0, 0.0),
-        (21.0, 15.0, 0.5),
-    ])
+    @pytest.mark.parametrize(
+        "occupied,unoccupied,fraction",
+        [
+            (21.0, 15.0, 1.0),
+            (21.0, 15.0, 0.0),
+            (21.0, 15.0, 0.5),
+        ],
+    )
     def test_occupancy_adjusted_setpoint_in_range(
         self, occupied: float, unoccupied: float, fraction: float
     ) -> None:

@@ -14,7 +14,12 @@ logger = logging.getLogger(__name__)
 def compute_drift(reference: list[float], current: list[float]) -> dict:
     """KS-test between reference and current prediction score distributions."""
     if len(current) < 10:
-        return {"ks_statistic": 0.0, "p_value": 1.0, "drift_detected": False, "note": "insufficient_samples"}
+        return {
+            "ks_statistic": 0.0,
+            "p_value": 1.0,
+            "drift_detected": False,
+            "note": "insufficient_samples",
+        }
     stat, p = ks_2samp(reference, current)
     drift = bool(p < 0.05)
     if drift:
@@ -63,11 +68,7 @@ def get_monitoring_summary(db: Session) -> dict:
     total = db.query(PredictionLog).count()
     fake_count = db.query(PredictionLog).filter(PredictionLog.prediction == "FAKE").count()
     real_count = total - fake_count
-    recent_drift = (
-        db.query(DriftLog)
-        .order_by(DriftLog.checked_at.desc())
-        .first()
-    )
+    recent_drift = db.query(DriftLog).order_by(DriftLog.checked_at.desc()).first()
     return {
         "total_predictions": total,
         "fake_count": fake_count,

@@ -1,4 +1,5 @@
 """MLflow experiment tracking stub."""
+
 from __future__ import annotations
 
 import logging
@@ -9,6 +10,7 @@ logger = logging.getLogger(__name__)
 
 try:
     import mlflow
+
     _MLFLOW_ENABLED = True
 except ImportError:
     _MLFLOW_ENABLED = False

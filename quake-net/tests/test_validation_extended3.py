@@ -1,4 +1,5 @@
 """Extended seismic event validation tests — third pass with parametrize."""
+
 from __future__ import annotations
 
 import pytest
@@ -59,13 +60,16 @@ def test_out_of_range_depth_negative() -> None:
     assert "depth_km" in out_of_range_fields(payload)
 
 
-@pytest.mark.parametrize("field,bad_value", [
-    ("latitude", 95.0),
-    ("longitude", 200.0),
-    ("depth_km", -5.0),
-    ("station_count", 600),
-    ("epicentral_distance_km", 25000.0),
-])
+@pytest.mark.parametrize(
+    "field,bad_value",
+    [
+        ("latitude", 95.0),
+        ("longitude", 200.0),
+        ("depth_km", -5.0),
+        ("station_count", 600),
+        ("epicentral_distance_km", 25000.0),
+    ],
+)
 def test_out_of_range_fields_various(field: str, bad_value: float) -> None:
     payload = _valid_payload()
     payload[field] = bad_value

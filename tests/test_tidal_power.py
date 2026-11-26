@@ -134,11 +134,14 @@ class TestMinimumCutInSpeed:
 
 
 class TestTidalPowerEdgeCases:
-    @pytest.mark.parametrize("diameter,speed", [
-        (10.0, 1.0),
-        (25.0, 2.0),
-        (50.0, 3.5),
-    ])
+    @pytest.mark.parametrize(
+        "diameter,speed",
+        [
+            (10.0, 1.0),
+            (25.0, 2.0),
+            (50.0, 3.5),
+        ],
+    )
     def test_tidal_stream_power_positive(self, diameter: float, speed: float) -> None:
         result = tidal_stream_power(diameter, speed)
         assert result.actual_power_kw > 0.0

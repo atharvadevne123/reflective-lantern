@@ -192,12 +192,15 @@ class TestSeverityFromConfidenceExtended:
 
         assert severity_from_confidence(1.0) == "critical"
 
-    @pytest.mark.parametrize("conf,expected", [
-        (0.95, "critical"),
-        (0.80, "high"),
-        (0.60, "medium"),
-        (0.30, "low"),
-    ])
+    @pytest.mark.parametrize(
+        "conf,expected",
+        [
+            (0.95, "critical"),
+            (0.80, "high"),
+            (0.60, "medium"),
+            (0.30, "low"),
+        ],
+    )
     def test_parametrized_mappings(self, conf: float, expected: str) -> None:
         from app.constants import severity_from_confidence
 

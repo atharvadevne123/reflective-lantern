@@ -47,30 +47,39 @@ def trained_model():
 
 @pytest.fixture
 def sample_article_df():
-    return pd.DataFrame([{
-        "headline": "SHOCKING: Government Hides Truth About Vaccines!!!",
-        "body": "Sources say the government is hiding explosive information.",
-        "source_domain": "infowars.com",
-        "publication_hour": 22,
-        "share_count": 50000,
-    }])
+    return pd.DataFrame(
+        [
+            {
+                "headline": "SHOCKING: Government Hides Truth About Vaccines!!!",
+                "body": "Sources say the government is hiding explosive information.",
+                "source_domain": "infowars.com",
+                "publication_hour": 22,
+                "share_count": 50000,
+            }
+        ]
+    )
 
 
 @pytest.fixture
 def real_article_df():
-    return pd.DataFrame([{
-        "headline": "Reuters: Federal Reserve holds interest rates unchanged",
-        "body": "The Federal Reserve kept its benchmark interest rate steady at its June meeting.",
-        "source_domain": "reuters.com",
-        "publication_hour": 14,
-        "share_count": 1200,
-    }])
+    return pd.DataFrame(
+        [
+            {
+                "headline": "Reuters: Federal Reserve holds interest rates unchanged",
+                "body": "The Federal Reserve kept its benchmark interest rate steady at its June meeting.",
+                "source_domain": "reuters.com",
+                "publication_hour": 14,
+                "share_count": 1200,
+            }
+        ]
+    )
 
 
 @pytest.fixture
 def api_client(trained_model, db_session):
     import app.main as main_module
     from app.main import app, get_db
+
     main_module._model = trained_model
     main_module._reference_scores = trained_model.get_reference_features()
 

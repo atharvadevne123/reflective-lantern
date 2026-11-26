@@ -187,14 +187,15 @@ class TestWaterHeatingEdgeCases:
 
 
 class TestWaterHeatingEdgeCases2:
-    @pytest.mark.parametrize("litres,cold,hot", [
-        (100.0, 10.0, 60.0),
-        (200.0, 15.0, 55.0),
-        (50.0, 5.0, 65.0),
-    ])
-    def test_energy_to_heat_water_positive(
-        self, litres: float, cold: float, hot: float
-    ) -> None:
+    @pytest.mark.parametrize(
+        "litres,cold,hot",
+        [
+            (100.0, 10.0, 60.0),
+            (200.0, 15.0, 55.0),
+            (50.0, 5.0, 65.0),
+        ],
+    )
+    def test_energy_to_heat_water_positive(self, litres: float, cold: float, hot: float) -> None:
         from app.water_heating import energy_to_heat_water
 
         energy = energy_to_heat_water(litres, cold, hot)

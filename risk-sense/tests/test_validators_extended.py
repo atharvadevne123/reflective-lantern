@@ -1,4 +1,5 @@
 """Extended validator tests for risk-sense with parametrize and boundary coverage."""
+
 from __future__ import annotations
 
 import pytest
@@ -23,42 +24,54 @@ def test_validate_dti_invalid_raises(bad_dti: float) -> None:
         validate_dti(bad_dti)
 
 
-@pytest.mark.parametrize("valid_prob,field", [
-    (0.0, "payment_history_score"),
-    (0.5, "credit_utilization"),
-    (1.0, "payment_history_score"),
-    (0.9999, "credit_utilization"),
-])
+@pytest.mark.parametrize(
+    "valid_prob,field",
+    [
+        (0.0, "payment_history_score"),
+        (0.5, "credit_utilization"),
+        (1.0, "payment_history_score"),
+        (0.9999, "credit_utilization"),
+    ],
+)
 def test_validate_probability_field_valid(valid_prob: float, field: str) -> None:
     result = validate_probability_field(valid_prob, field)
     assert result == valid_prob
 
 
-@pytest.mark.parametrize("bad_prob,field", [
-    (-0.001, "payment_history_score"),
-    (1.001, "credit_utilization"),
-    (-1.0, "payment_history_score"),
-    (2.0, "credit_utilization"),
-])
+@pytest.mark.parametrize(
+    "bad_prob,field",
+    [
+        (-0.001, "payment_history_score"),
+        (1.001, "credit_utilization"),
+        (-1.0, "payment_history_score"),
+        (2.0, "credit_utilization"),
+    ],
+)
 def test_validate_probability_field_invalid_raises(bad_prob: float, field: str) -> None:
     with pytest.raises(ValueError, match=field):
         validate_probability_field(bad_prob, field)
 
 
-@pytest.mark.parametrize("val,field", [
-    (0, "account_age_months"),
-    (1, "num_open_accounts"),
-    (100, "num_derogatory_marks"),
-    (999, "account_age_months"),
-])
+@pytest.mark.parametrize(
+    "val,field",
+    [
+        (0, "account_age_months"),
+        (1, "num_open_accounts"),
+        (100, "num_derogatory_marks"),
+        (999, "account_age_months"),
+    ],
+)
 def test_validate_positive_integer_valid(val: int, field: str) -> None:
     assert validate_positive_integer(val, field) == val
 
 
-@pytest.mark.parametrize("bad_val,field", [
-    (-1, "account_age_months"),
-    (-100, "num_open_accounts"),
-])
+@pytest.mark.parametrize(
+    "bad_val,field",
+    [
+        (-1, "account_age_months"),
+        (-100, "num_open_accounts"),
+    ],
+)
 def test_validate_positive_integer_negative_raises(bad_val: int, field: str) -> None:
     with pytest.raises(ValueError, match=field):
         validate_positive_integer(bad_val, field)

@@ -1,4 +1,5 @@
 """Extended sensor validator tests — third pass with boundary and parametrize."""
+
 from __future__ import annotations
 
 import math

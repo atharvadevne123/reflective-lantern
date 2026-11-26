@@ -1,4 +1,5 @@
 """Extended elasticity tests with parametrize and boundary coverage."""
+
 from __future__ import annotations
 
 import pytest
@@ -66,29 +67,33 @@ def test_apply_elasticity_price_decrease_increases_demand(elasticity: float) -> 
     assert result > 100.0
 
 
-@pytest.mark.parametrize("elasticity,expected_elastic", [
-    (-2.0, True),
-    (-1.5, True),
-    (-1.1, True),
-    (-0.9, False),
-    (-0.5, False),
-    (0.5, False),
-    (2.0, True),
-])
+@pytest.mark.parametrize(
+    "elasticity,expected_elastic",
+    [
+        (-2.0, True),
+        (-1.5, True),
+        (-1.1, True),
+        (-0.9, False),
+        (-0.5, False),
+        (0.5, False),
+        (2.0, True),
+    ],
+)
 def test_is_elastic_parametrized(elasticity: float, expected_elastic: bool) -> None:
     assert is_elastic(elasticity) is expected_elastic
 
 
-@pytest.mark.parametrize("elasticity,expected_direction", [
-    (-2.0, "lower"),
-    (-1.5, "lower"),
-    (-0.5, "raise"),
-    (-1.0, "hold"),
-    (1.0, "hold"),
-])
-def test_optimal_price_direction_parametrized(
-    elasticity: float, expected_direction: str
-) -> None:
+@pytest.mark.parametrize(
+    "elasticity,expected_direction",
+    [
+        (-2.0, "lower"),
+        (-1.5, "lower"),
+        (-0.5, "raise"),
+        (-1.0, "hold"),
+        (1.0, "hold"),
+    ],
+)
+def test_optimal_price_direction_parametrized(elasticity: float, expected_direction: str) -> None:
     result = optimal_price_direction(100.0, elasticity)
     assert result == expected_direction
 

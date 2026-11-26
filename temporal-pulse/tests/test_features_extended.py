@@ -1,4 +1,5 @@
 """Extended feature engineering tests for temporal-pulse with parametrize and boundary coverage."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -17,10 +18,12 @@ from app.features import (
 
 def _sensor_df(n: int = 50, seed: int = 42) -> pd.DataFrame:
     rng = np.random.default_rng(seed)
-    return pd.DataFrame({
-        "value": rng.normal(10, 2, n),
-        "temp": rng.uniform(20, 30, n),
-    })
+    return pd.DataFrame(
+        {
+            "value": rng.normal(10, 2, n),
+            "temp": rng.uniform(20, 30, n),
+        }
+    )
 
 
 @pytest.mark.parametrize("window", WINDOW_SIZES)
@@ -109,6 +112,7 @@ def test_rate_of_change_linear_first_diff_constant() -> None:
 
 def test_add_time_features_adds_cyclical_columns() -> None:
     import pandas as pd
+
     timestamps = pd.date_range("2024-01-01", periods=24, freq="h")
     df = pd.DataFrame({"timestamp": timestamps, "value": np.ones(24)})
     out = add_time_features(df, timestamp_col="timestamp")

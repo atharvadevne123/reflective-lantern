@@ -1,4 +1,5 @@
 """SHAP-based model explainability for Support-Sage predictions."""
+
 from __future__ import annotations
 
 import logging
@@ -8,6 +9,7 @@ logger = logging.getLogger(__name__)
 
 try:
     import shap
+
     _SHAP_AVAILABLE = True
 except ImportError:
     _SHAP_AVAILABLE = False

@@ -21,6 +21,7 @@ def test_model_trains_successfully(trained_model):
 def test_model_auc_above_threshold(trained_model):
     import json
     from pathlib import Path
+
     metrics = json.loads(Path("/tmp/test_metrics.json").read_text())
     assert metrics["auc_mean"] >= 0.55
 
@@ -45,19 +46,27 @@ def test_model_load_creates_instance():
     assert isinstance(m, NewsGuardModel)
 
 
-@pytest.mark.parametrize("source,expected_label", [
-    ("infowars.com", "FAKE"),
-    ("reuters.com", "REAL"),
-])
+@pytest.mark.parametrize(
+    "source,expected_label",
+    [
+        ("infowars.com", "FAKE"),
+        ("reuters.com", "REAL"),
+    ],
+)
 def test_predict_known_sources(trained_model, source, expected_label):
     import pandas as pd
-    df = pd.DataFrame([{
-        "headline": "SHOCKING BOMBSHELL!!! Secret they don't want you to know",
-        "body": "Explosive revelations about the hidden truth.",
-        "source_domain": source,
-        "publication_hour": 22,
-        "share_count": 50000,
-    }])
+
+    df = pd.DataFrame(
+        [
+            {
+                "headline": "SHOCKING BOMBSHELL!!! Secret they don't want you to know",
+                "body": "Explosive revelations about the hidden truth.",
+                "source_domain": source,
+                "publication_hour": 22,
+                "share_count": 50000,
+            }
+        ]
+    )
     result = trained_model.predict(df)
     assert result["prediction"] in ("FAKE", "REAL")
 
@@ -65,12 +74,17 @@ def test_predict_known_sources(trained_model, source, expected_label):
 def test_untrained_model_raises():
     m = NewsGuardModel()
     import pandas as pd
-    df = pd.DataFrame([{
-        "headline": "Test headline",
-        "body": "",
-        "source_domain": "test.com",
-        "publication_hour": 12,
-        "share_count": 0,
-    }])
+
+    df = pd.DataFrame(
+        [
+            {
+                "headline": "Test headline",
+                "body": "",
+                "source_domain": "test.com",
+                "publication_hour": 12,
+                "share_count": 0,
+            }
+        ]
+    )
     with pytest.raises(RuntimeError):
         m.predict(df)

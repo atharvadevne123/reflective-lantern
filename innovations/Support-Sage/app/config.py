@@ -1,4 +1,5 @@
 """Application configuration loaded from environment."""
+
 from __future__ import annotations
 
 import os
@@ -14,6 +15,7 @@ class Settings:
     model_path: str
     encoder_path: str
     regressor_path: str
+
 
 def get_settings() -> Settings:
     return Settings(

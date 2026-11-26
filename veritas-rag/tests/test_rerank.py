@@ -123,11 +123,14 @@ def test_identical_texts_get_same_score(reranker):
     assert abs(scores[0] - scores[1]) < 1e-9
 
 
-@pytest.mark.parametrize("query", [
-    "machine learning",
-    "data science statistics",
-    "cloud computing infrastructure",
-])
+@pytest.mark.parametrize(
+    "query",
+    [
+        "machine learning",
+        "data science statistics",
+        "cloud computing infrastructure",
+    ],
+)
 def test_query_variety_produces_valid_scores(query, reranker):
     texts = ["cloud machine learning data platform", "natural language processing"]
     scores = reranker.score(query, texts)

@@ -162,22 +162,26 @@ class TestGetWithDefaultAndKeysExtended:
 class TestGetOrSetAndUpdateMany:
     def setup_method(self) -> None:
         from app.cache import clear_all
+
         clear_all()
 
     def test_get_or_set_returns_existing_value(self) -> None:
         from app.cache import get_or_set, set_cache
+
         set_cache("k", "original")
         result = get_or_set("k", "new_value")
         assert result == "original"
 
     def test_get_or_set_sets_missing_key(self) -> None:
         from app.cache import get_cache, get_or_set
+
         result = get_or_set("missing", "default_val")
         assert result == "default_val"
         assert get_cache("missing") == "default_val"
 
     def test_update_many_sets_all_entries(self) -> None:
         from app.cache import get_cache, update_many
+
         update_many({"a": 1, "b": 2, "c": 3})
         assert get_cache("a") == 1
         assert get_cache("b") == 2
@@ -185,37 +189,44 @@ class TestGetOrSetAndUpdateMany:
 
     def test_update_many_empty_dict_no_error(self) -> None:
         from app.cache import update_many
+
         update_many({})  # should not raise
 
 
 class TestCacheDefaultTTLExtended:
     def setup_method(self) -> None:
         from app.cache import clear_all
+
         clear_all()
 
     def test_set_and_get_string_value(self) -> None:
         from app.cache import get_cache, set_cache
+
         set_cache("greeting", "hello")
         assert get_cache("greeting") == "hello"
 
     def test_set_and_get_list_value(self) -> None:
         from app.cache import get_cache, set_cache
+
         set_cache("nums", [1, 2, 3])
         assert get_cache("nums") == [1, 2, 3]
 
     def test_set_and_get_dict_value(self) -> None:
         from app.cache import get_cache, set_cache
+
         set_cache("data", {"k": "v"})
         assert get_cache("data") == {"k": "v"}
 
     def test_overwrite_existing_key(self) -> None:
         from app.cache import get_cache, set_cache
+
         set_cache("x", 1)
         set_cache("x", 2)
         assert get_cache("x") == 2
 
     def test_invalidate_specific_key(self) -> None:
         from app.cache import get_cache, invalidate, set_cache
+
         set_cache("a", 1)
         set_cache("b", 2)
         invalidate("a")
@@ -225,6 +236,7 @@ class TestCacheDefaultTTLExtended:
     @pytest.mark.parametrize("key", ["k1", "k2", "k3", "k4", "k5"])
     def test_various_keys_independent(self, key: str) -> None:
         from app.cache import get_cache, set_cache
+
         set_cache(key, key + "_val")
         assert get_cache(key) == key + "_val"
 
@@ -232,16 +244,19 @@ class TestCacheDefaultTTLExtended:
 class TestGetOrSet:
     def setup_method(self) -> None:
         from app.cache import clear_all
+
         clear_all()
 
     def test_sets_new_key(self) -> None:
         from app.cache import get_cache, get_or_set
+
         result = get_or_set("new_key", "value")
         assert result == "value"
         assert get_cache("new_key") == "value"
 
     def test_returns_existing_value(self) -> None:
         from app.cache import get_or_set, set_cache
+
         set_cache("existing", "old_value")
         result = get_or_set("existing", "new_value")
         assert result == "old_value"
@@ -250,10 +265,12 @@ class TestGetOrSet:
 class TestUpdateMany:
     def setup_method(self) -> None:
         from app.cache import clear_all
+
         clear_all()
 
     def test_sets_multiple_keys(self) -> None:
         from app.cache import get_cache, update_many
+
         update_many({"a": 1, "b": 2, "c": 3})
         assert get_cache("a") == 1
         assert get_cache("b") == 2
@@ -261,10 +278,12 @@ class TestUpdateMany:
 
     def test_empty_dict_no_error(self) -> None:
         from app.cache import update_many
+
         update_many({})
 
     def test_overwrites_existing(self) -> None:
         from app.cache import get_cache, set_cache, update_many
+
         set_cache("x", 10)
         update_many({"x": 99})
         assert get_cache("x") == 99

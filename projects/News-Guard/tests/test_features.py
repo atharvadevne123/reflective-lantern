@@ -12,27 +12,39 @@ from app.features import (
 
 
 def test_text_extractor_output_shape():
-    df = pd.DataFrame([{
-        "headline": "SHOCKING: Government hides truth!!!",
-        "body": "Some body text.",
-        "source_domain": "infowars.com",
-    }])
+    df = pd.DataFrame(
+        [
+            {
+                "headline": "SHOCKING: Government hides truth!!!",
+                "body": "Some body text.",
+                "source_domain": "infowars.com",
+            }
+        ]
+    )
     extractor = TextFeatureExtractor()
     result = extractor.transform(df)
     assert result.shape == (1, 13)
 
 
 def test_text_extractor_clickbait_score():
-    df_fake = pd.DataFrame([{
-        "headline": "You Won't Believe What Shocking Experts Say!!!",
-        "body": "",
-        "source_domain": "fake.com",
-    }])
-    df_real = pd.DataFrame([{
-        "headline": "Federal reserve holds interest rates unchanged",
-        "body": "",
-        "source_domain": "reuters.com",
-    }])
+    df_fake = pd.DataFrame(
+        [
+            {
+                "headline": "You Won't Believe What Shocking Experts Say!!!",
+                "body": "",
+                "source_domain": "fake.com",
+            }
+        ]
+    )
+    df_real = pd.DataFrame(
+        [
+            {
+                "headline": "Federal reserve holds interest rates unchanged",
+                "body": "",
+                "source_domain": "reuters.com",
+            }
+        ]
+    )
     ext = TextFeatureExtractor()
     fake_feats = ext.transform(df_fake)
     real_feats = ext.transform(df_real)
@@ -40,7 +52,9 @@ def test_text_extractor_clickbait_score():
 
 
 def test_text_extractor_source_flags():
-    df_unreliable = pd.DataFrame([{"headline": "Test", "body": "", "source_domain": "infowars.com"}])
+    df_unreliable = pd.DataFrame(
+        [{"headline": "Test", "body": "", "source_domain": "infowars.com"}]
+    )
     df_reliable = pd.DataFrame([{"headline": "Test", "body": "", "source_domain": "reuters.com"}])
     ext = TextFeatureExtractor()
     u_feats = ext.transform(df_unreliable)
@@ -50,11 +64,13 @@ def test_text_extractor_source_flags():
 
 
 def test_tfidf_transformer_shape():
-    df = pd.DataFrame([
-        {"headline": "Breaking news about politics"},
-        {"headline": "Scientists discover new treatment"},
-        {"headline": "SHOCKING government conspiracy revealed"},
-    ])
+    df = pd.DataFrame(
+        [
+            {"headline": "Breaking news about politics"},
+            {"headline": "Scientists discover new treatment"},
+            {"headline": "SHOCKING government conspiracy revealed"},
+        ]
+    )
     tfidf = TfidfHeadlineTransformer(max_features=50)
     tfidf.fit(df)
     result = tfidf.transform(df)
@@ -94,10 +110,13 @@ def test_build_feature_dataframe_columns():
     assert len(df) == 1
 
 
-@pytest.mark.parametrize("caps_headline,expected_high_caps", [
-    ("ALL CAPS HEADLINE HERE", True),
-    ("normal lowercase headline", False),
-])
+@pytest.mark.parametrize(
+    "caps_headline,expected_high_caps",
+    [
+        ("ALL CAPS HEADLINE HERE", True),
+        ("normal lowercase headline", False),
+    ],
+)
 def test_caps_ratio(caps_headline, expected_high_caps):
     df = pd.DataFrame([{"headline": caps_headline, "body": "", "source_domain": "test.com"}])
     ext = TextFeatureExtractor()

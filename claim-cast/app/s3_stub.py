@@ -1,4 +1,5 @@
 """AWS S3 stub for model artifact storage — replace with boto3 in production."""
+
 from __future__ import annotations
 
 import logging
@@ -25,7 +26,12 @@ def upload_artifact(local_path: str | Path, key: str | None = None) -> str:
     if key is None:
         key = f"{S3_PREFIX}/{path.name}"
     s3_uri = f"s3://{S3_BUCKET}/{key}"
-    logger.info("s3_upload_stub local=%s uri=%s size_bytes=%d", path, s3_uri, path.stat().st_size if path.exists() else 0)
+    logger.info(
+        "s3_upload_stub local=%s uri=%s size_bytes=%d",
+        path,
+        s3_uri,
+        path.stat().st_size if path.exists() else 0,
+    )
     return s3_uri
 
 

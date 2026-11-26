@@ -199,7 +199,6 @@ def test_midpoint_is_between_endpoints() -> None:
     assert min(LONDON.lat, PARIS.lat) <= mid.lat <= max(LONDON.lat, PARIS.lat)
 
 
-
 TOKYO = Coordinate(35.6762, 139.6503)
 
 

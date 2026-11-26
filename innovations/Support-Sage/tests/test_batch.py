@@ -1,4 +1,5 @@
 """Tests for batch prediction endpoint."""
+
 import pytest
 
 
@@ -13,6 +14,7 @@ def test_batch_predict(client, batch_size):
     data = response.json()
     assert data["count"] == batch_size
     assert len(data["results"]) == batch_size
+
 
 def test_batch_predict_exceeds_limit(client):
     tickets = [

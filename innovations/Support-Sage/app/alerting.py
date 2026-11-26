@@ -1,4 +1,5 @@
 """Drift alerting via logging and optional webhook."""
+
 from __future__ import annotations
 
 import logging
@@ -16,6 +17,7 @@ def alert_if_drift(drift_report: dict[str, Any], webhook_url: str | None = None)
     if webhook_url:
         try:
             import urllib.request
+
             data = f'{{"text": "{msg}"}}'.encode()
             req = urllib.request.Request(webhook_url, data=data, headers={"Content-Type": "application/json"})
             urllib.request.urlopen(req, timeout=5)

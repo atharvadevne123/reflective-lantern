@@ -180,6 +180,7 @@ class TestMemoizeTtl:
 class TestGetOrSet:
     def test_returns_existing_value(self) -> None:
         from app.cache_utils import TTLCache, get_or_set
+
         cache = TTLCache(ttl=60.0)
         cache.set("k", "existing")
         result = get_or_set(cache, "k", lambda: "new")
@@ -187,6 +188,7 @@ class TestGetOrSet:
 
     def test_computes_and_stores_on_miss(self) -> None:
         from app.cache_utils import TTLCache, get_or_set
+
         cache = TTLCache(ttl=60.0)
         result = get_or_set(cache, "k", lambda: "computed")
         assert result == "computed"
@@ -194,6 +196,7 @@ class TestGetOrSet:
 
     def test_factory_called_once_on_multiple_misses(self) -> None:
         from app.cache_utils import TTLCache, get_or_set
+
         cache = TTLCache(ttl=60.0)
         call_count = 0
 
@@ -210,6 +213,7 @@ class TestGetOrSet:
 class TestInvalidatePrefix:
     def test_removes_matching_keys(self) -> None:
         from app.cache_utils import TTLCache, invalidate_prefix
+
         cache = TTLCache(ttl=60.0)
         cache.set("user:1", "a")
         cache.set("user:2", "b")
@@ -220,6 +224,7 @@ class TestInvalidatePrefix:
 
     def test_no_matching_keys(self) -> None:
         from app.cache_utils import TTLCache, invalidate_prefix
+
         cache = TTLCache(ttl=60.0)
         cache.set("other:1", "x")
         removed = invalidate_prefix(cache, "user:")
@@ -227,6 +232,7 @@ class TestInvalidatePrefix:
 
     def test_empty_cache(self) -> None:
         from app.cache_utils import TTLCache, invalidate_prefix
+
         cache = TTLCache(ttl=60.0)
         assert invalidate_prefix(cache, "prefix:") == 0
 
@@ -236,6 +242,7 @@ class TestInvalidatePrefix:
     )
     def test_parametrized(self, prefix: str, expected_removed: int) -> None:
         from app.cache_utils import TTLCache, invalidate_prefix
+
         cache = TTLCache(ttl=60.0)
         cache.set("a:1", 1)
         cache.set("a:2", 2)
@@ -316,12 +323,15 @@ class TestTTLCacheEdgeCases:
         cache.clear()
         assert len(cache) == 0
 
-    @pytest.mark.parametrize("key,value", [
-        ("str_key", "string_value"),
-        ("int_key", 42),
-        ("list_key", [1, 2, 3]),
-        ("dict_key", {"a": 1}),
-    ])
+    @pytest.mark.parametrize(
+        "key,value",
+        [
+            ("str_key", "string_value"),
+            ("int_key", 42),
+            ("list_key", [1, 2, 3]),
+            ("dict_key", {"a": 1}),
+        ],
+    )
     def test_various_value_types(self, key: str, value: object) -> None:
         cache = TTLCache(ttl=60)
         cache.set(key, value)

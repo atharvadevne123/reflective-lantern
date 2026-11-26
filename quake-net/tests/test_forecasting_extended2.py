@@ -1,4 +1,5 @@
 """Extended Omori law forecasting tests with parametrize and boundary coverage."""
+
 from __future__ import annotations
 
 import math
@@ -16,11 +17,14 @@ from app.forecasting import (
 )
 
 
-@pytest.mark.parametrize("t_days,k,expected_gt", [
-    (0.0, 10.0, 0.0),
-    (1.0, 10.0, 0.0),
-    (10.0, 100.0, 0.0),
-])
+@pytest.mark.parametrize(
+    "t_days,k,expected_gt",
+    [
+        (0.0, 10.0, 0.0),
+        (1.0, 10.0, 0.0),
+        (10.0, 100.0, 0.0),
+    ],
+)
 def test_omori_rate_positive(t_days: float, k: float, expected_gt: float) -> None:
     rate = omori_rate(t_days, k=k)
     assert rate > expected_gt
@@ -67,12 +71,15 @@ def test_expected_count_p_equals_1_log_case() -> None:
     assert math.isfinite(count)
 
 
-@pytest.mark.parametrize("mag,expected_gt", [
-    (3.0, 0.0),
-    (5.0, 0.0),
-    (7.0, 0.0),
-    (9.0, 0.0),
-])
+@pytest.mark.parametrize(
+    "mag,expected_gt",
+    [
+        (3.0, 0.0),
+        (5.0, 0.0),
+        (7.0, 0.0),
+        (9.0, 0.0),
+    ],
+)
 def test_productivity_from_magnitude_positive(mag: float, expected_gt: float) -> None:
     k = productivity_from_magnitude(mag)
     assert k > expected_gt

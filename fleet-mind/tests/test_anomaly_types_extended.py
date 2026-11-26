@@ -1,4 +1,5 @@
 """Extended anomaly types tests with parametrize and boundary coverage."""
+
 from __future__ import annotations
 
 import pytest
@@ -35,14 +36,17 @@ def test_anomaly_rule_check_missing_field_returns_false() -> None:
     assert rule.check({"other_field": 100.0}) is False
 
 
-@pytest.mark.parametrize("field,value,direction,threshold,expected", [
-    ("temp", 110.0, "above", 100.0, True),
-    ("temp", 90.0, "above", 100.0, False),
-    ("pressure", 1.0, "below", 2.0, True),
-    ("pressure", 3.0, "below", 2.0, False),
-    ("voltage", 9.5, "below", 10.0, True),
-    ("voltage", 12.0, "below", 10.0, False),
-])
+@pytest.mark.parametrize(
+    "field,value,direction,threshold,expected",
+    [
+        ("temp", 110.0, "above", 100.0, True),
+        ("temp", 90.0, "above", 100.0, False),
+        ("pressure", 1.0, "below", 2.0, True),
+        ("pressure", 3.0, "below", 2.0, False),
+        ("voltage", 9.5, "below", 10.0, True),
+        ("voltage", 12.0, "below", 10.0, False),
+    ],
+)
 def test_anomaly_rule_check_parametrized(
     field: str, value: float, direction: str, threshold: float, expected: bool
 ) -> None:
@@ -82,7 +86,9 @@ def test_classify_anomalies_critical_before_warning() -> None:
     if len(result) > 1:
         severity_order = {"critical": 0, "warning": 1, "info": 2}
         for i in range(len(result) - 1):
-            assert severity_order[result[i]["severity"]] <= severity_order[result[i + 1]["severity"]]
+            assert (
+                severity_order[result[i]["severity"]] <= severity_order[result[i + 1]["severity"]]
+            )
 
 
 def test_classify_anomalies_result_has_required_keys() -> None:

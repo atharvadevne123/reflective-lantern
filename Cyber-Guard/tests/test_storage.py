@@ -69,6 +69,7 @@ class TestUploadArtifact:
         mock_client = MagicMock()
         import sys
         import types
+
         fake_boto3 = types.ModuleType("boto3")
         fake_boto3.client = MagicMock(return_value=mock_client)
         with (
@@ -83,12 +84,14 @@ class TestUploadArtifact:
 class TestDownloadArtifact:
     def test_returns_false_when_s3_disabled(self, tmp_path) -> None:
         from app.storage import download_artifact
+
         with patch("app.storage._BOTO_AVAILABLE", False):
             result = download_artifact(str(tmp_path / "model.joblib"))
         assert result is False
 
     def test_returns_false_when_no_bucket(self, tmp_path) -> None:
         from app.storage import download_artifact
+
         with patch("app.storage.S3_BUCKET", ""), patch("app.storage._BOTO_AVAILABLE", True):
             result = download_artifact(str(tmp_path / "model.joblib"))
         assert result is False

@@ -1,4 +1,5 @@
 """Extended data utility tests — second pass with parametrize and boundary coverage."""
+
 from __future__ import annotations
 
 import pandas as pd
@@ -14,13 +15,15 @@ from app.data_utils import (
 
 
 def _make_ohlcv(n: int = 10, with_nans: bool = False) -> pd.DataFrame:
-    df = pd.DataFrame({
-        "open": [100.0 + i for i in range(n)],
-        "high": [105.0 + i for i in range(n)],
-        "low": [95.0 + i for i in range(n)],
-        "close": [102.0 + i for i in range(n)],
-        "volume": [1000.0 * (i + 1) for i in range(n)],
-    })
+    df = pd.DataFrame(
+        {
+            "open": [100.0 + i for i in range(n)],
+            "high": [105.0 + i for i in range(n)],
+            "low": [95.0 + i for i in range(n)],
+            "close": [102.0 + i for i in range(n)],
+            "volume": [1000.0 * (i + 1) for i in range(n)],
+        }
+    )
     if with_nans:
         df.loc[2, "close"] = float("nan")
         df.loc[5, "volume"] = float("nan")
@@ -76,11 +79,14 @@ def test_winsorise_does_not_change_middle_values() -> None:
     assert result.iloc[50] == pytest.approx(series.iloc[50])
 
 
-@pytest.mark.parametrize("lower,upper", [
-    (0.01, 0.99),
-    (0.05, 0.95),
-    (0.10, 0.90),
-])
+@pytest.mark.parametrize(
+    "lower,upper",
+    [
+        (0.01, 0.99),
+        (0.05, 0.95),
+        (0.10, 0.90),
+    ],
+)
 def test_winsorise_various_quantiles(lower: float, upper: float) -> None:
     series = pd.Series(list(range(1, 101)), dtype=float)
     result = winsorise(series, lower=lower, upper=upper)

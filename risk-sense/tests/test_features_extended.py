@@ -1,4 +1,5 @@
 """Extended feature engineering tests for risk-sense with parametrize and boundary coverage."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -13,15 +14,17 @@ from app.features import (
 
 def _base_matrix(n: int = 20, seed: int = 42) -> np.ndarray:
     rng = np.random.default_rng(seed)
-    return np.column_stack([
-        rng.uniform(0, 5, n),         # 0: debt_to_income
-        rng.uniform(0, 1, n),         # 1: payment_history_score
-        rng.uniform(0, 1, n),         # 2: credit_utilization
-        rng.integers(0, 300, n).astype(float),  # 3: account_age_months
-        rng.integers(1, 20, n).astype(float),   # 4: num_open_accounts
-        rng.integers(0, 5, n).astype(float),    # 5: num_derogatory_marks
-        rng.exponential(50_000, n),   # 6: annual_income
-    ])
+    return np.column_stack(
+        [
+            rng.uniform(0, 5, n),  # 0: debt_to_income
+            rng.uniform(0, 1, n),  # 1: payment_history_score
+            rng.uniform(0, 1, n),  # 2: credit_utilization
+            rng.integers(0, 300, n).astype(float),  # 3: account_age_months
+            rng.integers(1, 20, n).astype(float),  # 4: num_open_accounts
+            rng.integers(0, 5, n).astype(float),  # 5: num_derogatory_marks
+            rng.exponential(50_000, n),  # 6: annual_income
+        ]
+    )
 
 
 @pytest.mark.parametrize("n", [1, 10, 100])
@@ -88,11 +91,14 @@ def test_interaction_zero_accounts_clipped_to_one() -> None:
     assert np.isfinite(out[0, -1])
 
 
-@pytest.mark.parametrize("lower,upper", [
-    (1.0, 99.0),
-    (5.0, 95.0),
-    (10.0, 90.0),
-])
+@pytest.mark.parametrize(
+    "lower,upper",
+    [
+        (1.0, 99.0),
+        (5.0, 95.0),
+        (10.0, 90.0),
+    ],
+)
 def test_clip_outlier_transformer_clipping_bounds(lower: float, upper: float) -> None:
     rng = np.random.default_rng(42)
     X = rng.normal(0, 10, (200, 3))

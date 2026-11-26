@@ -1,4 +1,5 @@
 """Automated retraining pipeline (Airflow-compatible DAG)."""
+
 from __future__ import annotations
 
 import json
@@ -11,6 +12,7 @@ logger = logging.getLogger(__name__)
 try:
     from airflow import DAG
     from airflow.operators.python import PythonOperator
+
     _AIRFLOW_AVAILABLE = True
 except ImportError:
     _AIRFLOW_AVAILABLE = False
@@ -18,6 +20,7 @@ except ImportError:
 
 def _retrain(**context) -> None:
     from app.model import prepare_training_data, save_model, train_model
+
     logger.info("Retraining started at %s", datetime.utcnow().isoformat())
     X, y = prepare_training_data(n_tickers=5)
     pipe, metrics = train_model(X, y)

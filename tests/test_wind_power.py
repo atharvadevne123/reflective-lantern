@@ -193,11 +193,14 @@ class TestWindPowerEdgeCases:
 
 
 class TestWindPowerEdgeCases2:
-    @pytest.mark.parametrize("speed,diameter", [
-        (5.0, 10.0),
-        (8.0, 15.0),
-        (12.0, 20.0),
-    ])
+    @pytest.mark.parametrize(
+        "speed,diameter",
+        [
+            (5.0, 10.0),
+            (8.0, 15.0),
+            (12.0, 20.0),
+        ],
+    )
     def test_turbine_power_positive(self, speed: float, diameter: float) -> None:
         from app.wind_power import turbine_power_kw
 

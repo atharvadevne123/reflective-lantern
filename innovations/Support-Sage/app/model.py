@@ -1,4 +1,5 @@
 """ML model training and prediction for ticket triage."""
+
 import json
 import logging
 from pathlib import Path
@@ -71,17 +72,22 @@ def train_model(df: pd.DataFrame) -> tuple[Pipeline, dict[str, Any]]:
     ensemble.fit(X, y_priority)
 
     # Build full pipeline object (feature extraction + classifier)
-    full_pipe = Pipeline([
-        ("features", feature_pipe),
-        ("clf", ensemble),
-    ])
+    full_pipe = Pipeline(
+        [
+            ("features", feature_pipe),
+            ("clf", ensemble),
+        ]
+    )
 
     # Also train a resolution-time regressor (LightGBM regression)
     from lightgbm import LGBMRegressor
-    reg_pipe = Pipeline([
-        ("features", build_feature_pipeline()),
-        ("reg", LGBMRegressor(n_estimators=100, verbose=-1)),
-    ])
+
+    reg_pipe = Pipeline(
+        [
+            ("features", build_feature_pipeline()),
+            ("reg", LGBMRegressor(n_estimators=100, verbose=-1)),
+        ]
+    )
     reg_pipe.fit(df[["subject", "description"]], df["resolution_hours"])
 
     metrics = {
@@ -97,7 +103,9 @@ def train_model(df: pd.DataFrame) -> tuple[Pipeline, dict[str, Any]]:
     joblib.dump(reg_pipe, REGRESSOR_PATH)
     json.dump(metrics, METRICS_PATH.open("w"), indent=2)
 
-    logger.info("Model trained: AUC=%.4f+-%.4f on %d samples", metrics["auc_mean"], metrics["auc_std"], metrics["n_samples"])
+    logger.info(
+        "Model trained: AUC=%.4f+-%.4f on %d samples", metrics["auc_mean"], metrics["auc_std"], metrics["n_samples"]
+    )
     return full_pipe, metrics
 
 

@@ -1,4 +1,5 @@
 """Feature engineering pipeline for stock signals."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -54,35 +55,58 @@ class StockFeatureEngineer(BaseEstimator, TransformerMixin):
 
 
 FEATURE_COLUMNS = [
-    "return_lag_1", "return_lag_3", "return_lag_5", "return_lag_10", "return_lag_20",
-    "rolling_mean_5", "rolling_mean_10", "rolling_mean_20",
-    "rolling_std_5", "rolling_std_10", "rolling_std_20",
-    "rolling_max_5", "rolling_max_10", "rolling_max_20",
-    "rolling_min_5", "rolling_min_10", "rolling_min_20",
-    "price_to_ma5", "price_to_ma20",
-    "high_low_ratio", "volume_ratio",
-    "volatility_5", "volatility_20",
-    "rsi_14", "macd", "macd_signal", "macd_hist",
-    "pe_ratio", "log_market_cap",
+    "return_lag_1",
+    "return_lag_3",
+    "return_lag_5",
+    "return_lag_10",
+    "return_lag_20",
+    "rolling_mean_5",
+    "rolling_mean_10",
+    "rolling_mean_20",
+    "rolling_std_5",
+    "rolling_std_10",
+    "rolling_std_20",
+    "rolling_max_5",
+    "rolling_max_10",
+    "rolling_max_20",
+    "rolling_min_5",
+    "rolling_min_10",
+    "rolling_min_20",
+    "price_to_ma5",
+    "price_to_ma20",
+    "high_low_ratio",
+    "volume_ratio",
+    "volatility_5",
+    "volatility_20",
+    "rsi_14",
+    "macd",
+    "macd_signal",
+    "macd_hist",
+    "pe_ratio",
+    "log_market_cap",
 ]
 
 
 def build_feature_pipeline() -> Pipeline:
-    return Pipeline([
-        ("engineer", StockFeatureEngineer()),
-        ("scaler", StandardScaler()),
-    ])
+    return Pipeline(
+        [
+            ("engineer", StockFeatureEngineer()),
+            ("scaler", StandardScaler()),
+        ]
+    )
 
 
 def make_sample_ohlcv(n: int = 200, ticker: str = "AAPL") -> pd.DataFrame:
     """Generate synthetic OHLCV data for testing."""
     rng = np.random.default_rng(42)
     prices = 100 * np.cumprod(1 + rng.normal(0.0005, 0.015, n))
-    return pd.DataFrame({
-        "ticker": ticker,
-        "close": prices,
-        "open": prices * (1 + rng.normal(0, 0.003, n)),
-        "high": prices * (1 + np.abs(rng.normal(0, 0.005, n))),
-        "low": prices * (1 - np.abs(rng.normal(0, 0.005, n))),
-        "volume": rng.integers(1_000_000, 10_000_000, n).astype(float),
-    })
+    return pd.DataFrame(
+        {
+            "ticker": ticker,
+            "close": prices,
+            "open": prices * (1 + rng.normal(0, 0.003, n)),
+            "high": prices * (1 + np.abs(rng.normal(0, 0.005, n))),
+            "low": prices * (1 - np.abs(rng.normal(0, 0.005, n))),
+            "volume": rng.integers(1_000_000, 10_000_000, n).astype(float),
+        }
+    )

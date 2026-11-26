@@ -158,11 +158,14 @@ class TestAncillaryServiceValue:
 
 
 class TestGridBalancingEdgeCases:
-    @pytest.mark.parametrize("freq_dev,capacity", [
-        (0.1, 100.0),
-        (0.5, 50.0),
-        (-0.2, 100.0),
-    ])
+    @pytest.mark.parametrize(
+        "freq_dev,capacity",
+        [
+            (0.1, 100.0),
+            (0.5, 50.0),
+            (-0.2, 100.0),
+        ],
+    )
     def test_droop_response_proportional(self, freq_dev: float, capacity: float) -> None:
         from app.grid_balancing import droop_response_kw
 
@@ -181,13 +184,14 @@ class TestGridBalancingEdgeCases:
         bid = ancillary_service_value("asset1", 10.0, "FFR", 1.0, 30.0, 10.0)
         assert hasattr(bid, "total_value")
 
-    @pytest.mark.parametrize("capacity_mw,price", [
-        (5.0, 10.0),
-        (10.0, 15.0),
-    ])
-    def test_ancillary_value_scales_with_capacity(
-        self, capacity_mw: float, price: float
-    ) -> None:
+    @pytest.mark.parametrize(
+        "capacity_mw,price",
+        [
+            (5.0, 10.0),
+            (10.0, 15.0),
+        ],
+    )
+    def test_ancillary_value_scales_with_capacity(self, capacity_mw: float, price: float) -> None:
         from app.grid_balancing import ancillary_service_value
 
         bid = ancillary_service_value("a", capacity_mw, "FFR", 1.0, 30.0, price)

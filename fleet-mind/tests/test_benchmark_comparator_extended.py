@@ -1,4 +1,5 @@
 """Extended benchmark comparator tests with parametrize and boundary coverage."""
+
 from __future__ import annotations
 
 import pytest
@@ -50,11 +51,14 @@ def test_compare_returns_benchmark_result() -> None:
     assert result.unit == "mpg"
 
 
-@pytest.mark.parametrize("actual,benchmark,expected_above", [
-    (100.0, 90.0, True),
-    (90.0, 100.0, False),
-    (100.0, 100.0, False),
-])
+@pytest.mark.parametrize(
+    "actual,benchmark,expected_above",
+    [
+        (100.0, 90.0, True),
+        (90.0, 100.0, False),
+        (100.0, 100.0, False),
+    ],
+)
 def test_compare_is_above_benchmark_parametrized(
     actual: float, benchmark: float, expected_above: bool
 ) -> None:

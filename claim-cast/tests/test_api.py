@@ -1,4 +1,5 @@
 """API endpoint tests for Claim-Cast."""
+
 from __future__ import annotations
 
 import pytest
@@ -81,12 +82,15 @@ def test_triage_summary_invalid_priority(client):
 
 
 def test_premium_adjustment(client):
-    resp = client.post("/api/v1/premium", json={
-        "base_premium": 1200.0,
-        "triage_priority": 2,
-        "severity_label": "high",
-        "claim_frequency": 0.5,
-    })
+    resp = client.post(
+        "/api/v1/premium",
+        json={
+            "base_premium": 1200.0,
+            "triage_priority": 2,
+            "severity_label": "high",
+            "claim_frequency": 0.5,
+        },
+    )
     assert resp.status_code == 200
     body = resp.json()
     assert body["adjusted_premium"] > body["base_premium"]
@@ -94,12 +98,15 @@ def test_premium_adjustment(client):
 
 
 def test_premium_low_risk(client):
-    resp = client.post("/api/v1/premium", json={
-        "base_premium": 800.0,
-        "triage_priority": 4,
-        "severity_label": "low",
-        "claim_frequency": 0.0,
-    })
+    resp = client.post(
+        "/api/v1/premium",
+        json={
+            "base_premium": 800.0,
+            "triage_priority": 4,
+            "severity_label": "low",
+            "claim_frequency": 0.0,
+        },
+    )
     assert resp.status_code == 200
     body = resp.json()
     assert body["risk_multiplier"] == 1.0
@@ -115,10 +122,7 @@ def test_claim_stats_endpoint(client, sample_claim):
 
 
 def test_batch_predict(client, sample_claim):
-    batch = [
-        {**sample_claim, "claim_id": f"CLM-BATCH-{i}"}
-        for i in range(3)
-    ]
+    batch = [{**sample_claim, "claim_id": f"CLM-BATCH-{i}"} for i in range(3)]
     resp = client.post("/api/v1/predict/batch", json=batch)
     assert resp.status_code == 200
     results = resp.json()

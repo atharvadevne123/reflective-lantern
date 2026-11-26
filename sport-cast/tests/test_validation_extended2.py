@@ -1,4 +1,5 @@
 """Extended validation tests for sport-cast with parametrize and boundary coverage."""
+
 from __future__ import annotations
 
 import pytest
@@ -11,26 +12,32 @@ from app.validation import (
 )
 
 
-@pytest.mark.parametrize("wins,draws,losses", [
-    (0, 0, 0),
-    (5, 0, 0),
-    (0, 5, 0),
-    (0, 0, 5),
-    (2, 2, 1),
-    (1, 2, 2),
-    (3, 1, 1),
-])
+@pytest.mark.parametrize(
+    "wins,draws,losses",
+    [
+        (0, 0, 0),
+        (5, 0, 0),
+        (0, 5, 0),
+        (0, 0, 5),
+        (2, 2, 1),
+        (1, 2, 2),
+        (3, 1, 1),
+    ],
+)
 def test_win_loss_draws_valid_totals(wins: int, draws: int, losses: int) -> None:
     validate_win_loss_draws(wins, draws, losses)
 
 
-@pytest.mark.parametrize("wins,draws,losses", [
-    (6, 0, 0),
-    (2, 2, 2),
-    (5, 1, 0),
-    (0, 3, 3),
-    (10, 0, 0),
-])
+@pytest.mark.parametrize(
+    "wins,draws,losses",
+    [
+        (6, 0, 0),
+        (2, 2, 2),
+        (5, 1, 0),
+        (0, 3, 3),
+        (10, 0, 0),
+    ],
+)
 def test_win_loss_draws_exceeds_five_raises(wins: int, draws: int, losses: int) -> None:
     with pytest.raises(ValueError):
         validate_win_loss_draws(wins, draws, losses)
@@ -46,12 +53,15 @@ def test_probability_bounds_valid(valid_prob: float) -> None:
     validate_probability_bounds(valid_prob, "test_field")
 
 
-@pytest.mark.parametrize("bad_prob,field", [
-    (-0.001, "field_a"),
-    (1.001, "field_b"),
-    (-1.0, "field_c"),
-    (2.0, "field_d"),
-])
+@pytest.mark.parametrize(
+    "bad_prob,field",
+    [
+        (-0.001, "field_a"),
+        (1.001, "field_b"),
+        (-1.0, "field_c"),
+        (2.0, "field_d"),
+    ],
+)
 def test_probability_bounds_invalid_raises(bad_prob: float, field: str) -> None:
     with pytest.raises(ValueError, match=field):
         validate_probability_bounds(bad_prob, field)
@@ -102,31 +112,27 @@ def test_validate_match_features_valid_no_warnings() -> None:
 
 
 def test_validate_match_features_home_overflow_produces_warning() -> None:
-    warnings = validate_match_features(_valid_payload(
-        home_wins_last5=4, home_draws_last5=2, home_losses_last5=0
-    ))
+    warnings = validate_match_features(
+        _valid_payload(home_wins_last5=4, home_draws_last5=2, home_losses_last5=0)
+    )
     assert any("home" in w for w in warnings)
 
 
 def test_validate_match_features_away_overflow_produces_warning() -> None:
-    warnings = validate_match_features(_valid_payload(
-        away_wins_last5=3, away_draws_last5=2, away_losses_last5=1
-    ))
+    warnings = validate_match_features(
+        _valid_payload(away_wins_last5=3, away_draws_last5=2, away_losses_last5=1)
+    )
     assert any("away" in w for w in warnings)
 
 
 @pytest.mark.parametrize("elo_diff", [801, 1000, 1500])
 def test_validate_match_features_large_elo_gap_warning(elo_diff: int) -> None:
-    warnings = validate_match_features(_valid_payload(
-        home_elo=1500.0, away_elo=1500.0 + elo_diff
-    ))
+    warnings = validate_match_features(_valid_payload(home_elo=1500.0, away_elo=1500.0 + elo_diff))
     assert any("Elo" in w for w in warnings)
 
 
 def test_validate_match_features_elo_gap_exactly_800_no_warning() -> None:
-    warnings = validate_match_features(_valid_payload(
-        home_elo=1500.0, away_elo=2300.0
-    ))
+    warnings = validate_match_features(_valid_payload(home_elo=1500.0, away_elo=2300.0))
     assert not any("Elo" in w for w in warnings)
 
 

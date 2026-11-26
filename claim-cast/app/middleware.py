@@ -1,4 +1,5 @@
 """Correlation ID logging and rate limiting middleware."""
+
 from __future__ import annotations
 
 import time

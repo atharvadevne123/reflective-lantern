@@ -190,11 +190,14 @@ class TestFlexibilityScoreEdgeCases2:
         score = load_variability_score([50.0, 100.0, 30.0, 80.0, 60.0] * 5)
         assert isinstance(score, float)
 
-    @pytest.mark.parametrize("var,readiness,peak", [
-        (0.5, 0.7, 0.3),
-        (0.8, 0.6, 0.5),
-        (0.3, 0.4, 0.8),
-    ])
+    @pytest.mark.parametrize(
+        "var,readiness,peak",
+        [
+            (0.5, 0.7, 0.3),
+            (0.8, 0.6, 0.5),
+            (0.3, 0.4, 0.8),
+        ],
+    )
     def test_overall_flexibility_score_range(
         self, var: float, readiness: float, peak: float
     ) -> None:

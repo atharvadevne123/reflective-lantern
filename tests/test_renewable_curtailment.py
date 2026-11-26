@@ -148,11 +148,14 @@ class TestAnalyseCurtailment:
 
 
 class TestRenewableCurtailmentEdgeCases:
-    @pytest.mark.parametrize("available,dispatched,duration", [
-        (100.0, 80.0, 0.5),
-        (200.0, 150.0, 1.0),
-        (500.0, 400.0, 0.5),
-    ])
+    @pytest.mark.parametrize(
+        "available,dispatched,duration",
+        [
+            (100.0, 80.0, 0.5),
+            (200.0, 150.0, 1.0),
+            (500.0, 400.0, 0.5),
+        ],
+    )
     def test_curtailed_energy_positive(
         self, available: float, dispatched: float, duration: float
     ) -> None:
@@ -173,11 +176,14 @@ class TestRenewableCurtailmentEdgeCases:
         loss = carbon_abatement_lost(1000.0)
         assert loss > 0.0
 
-    @pytest.mark.parametrize("forecast,actual", [
-        (100.0, 100.0),
-        (90.0, 100.0),
-        (110.0, 100.0),
-    ])
+    @pytest.mark.parametrize(
+        "forecast,actual",
+        [
+            (100.0, 100.0),
+            (90.0, 100.0),
+            (110.0, 100.0),
+        ],
+    )
     def test_forecast_accuracy_range(self, forecast: float, actual: float) -> None:
         from app.renewable_curtailment import curtailment_forecast_accuracy
 

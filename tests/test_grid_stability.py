@@ -222,11 +222,14 @@ class TestGridStabilityEdgeCases:
 
 
 class TestGridStabilityEdgeCases2:
-    @pytest.mark.parametrize("active,reactive", [
-        (100.0, 0.0),
-        (100.0, 50.0),
-        (0.0, 100.0),
-    ])
+    @pytest.mark.parametrize(
+        "active,reactive",
+        [
+            (100.0, 0.0),
+            (100.0, 50.0),
+            (0.0, 100.0),
+        ],
+    )
     def test_apparent_power_non_negative(self, active: float, reactive: float) -> None:
         from app.grid_stability import apparent_power_kva
 
@@ -240,10 +243,13 @@ class TestGridStabilityEdgeCases2:
         assert is_frequency_normal(50.3)
         assert not is_frequency_normal(51.0)
 
-    @pytest.mark.parametrize("active,reactive", [
-        (100.0, 0.0),
-        (80.0, 60.0),
-    ])
+    @pytest.mark.parametrize(
+        "active,reactive",
+        [
+            (100.0, 0.0),
+            (80.0, 60.0),
+        ],
+    )
     def test_grid_metrics_returns_result(self, active: float, reactive: float) -> None:
         from app.grid_stability import grid_metrics
 

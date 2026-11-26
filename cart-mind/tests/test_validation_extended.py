@@ -1,4 +1,5 @@
 """Extended validation tests with parametrize and boundary coverage."""
+
 from __future__ import annotations
 
 import pytest
@@ -32,12 +33,15 @@ def test_check_temporal_coherence_equal_days_no_warning() -> None:
     assert check_temporal_coherence(payload) == []
 
 
-@pytest.mark.parametrize("registration,purchase,should_warn", [
-    (100, 50, False),
-    (50, 100, True),
-    (0, 1, True),
-    (100, 100, False),
-])
+@pytest.mark.parametrize(
+    "registration,purchase,should_warn",
+    [
+        (100, 50, False),
+        (50, 100, True),
+        (0, 1, True),
+        (100, 100, False),
+    ],
+)
 def test_check_temporal_coherence_parametrized(
     registration: int, purchase: int, should_warn: bool
 ) -> None:
@@ -88,13 +92,16 @@ def test_check_quantity_coherence_positive_purchases_positive_avg_ok() -> None:
     assert check_quantity_coherence(payload) == []
 
 
-@pytest.mark.parametrize("n_warnings,expected_penalty", [
-    (0, 0.0),
-    (1, 0.1),
-    (5, 0.5),
-    (10, 1.0),
-    (15, 1.0),
-])
+@pytest.mark.parametrize(
+    "n_warnings,expected_penalty",
+    [
+        (0, 0.0),
+        (1, 0.1),
+        (5, 0.5),
+        (10, 1.0),
+        (15, 1.0),
+    ],
+)
 def test_cross_field_penalty_score_parametrized(n_warnings: int, expected_penalty: float) -> None:
     warnings = ["warning"] * n_warnings
     result = cross_field_penalty_score(warnings)

@@ -1,4 +1,5 @@
 """Extended defect risk index tests with parametrize and boundary coverage."""
+
 from __future__ import annotations
 
 import pytest
@@ -6,14 +7,17 @@ import pytest
 from app.features import defect_risk_index, sensor_range_feature
 
 
-@pytest.mark.parametrize("temperature,vibration,tool_wear,pressure,expected", [
-    (70.0, 3.0, 20.0, 50.0, 0.0),
-    (90.0, 3.0, 20.0, 50.0, 0.3),
-    (70.0, 6.0, 20.0, 50.0, 0.25),
-    (70.0, 3.0, 50.0, 50.0, 0.25),
-    (70.0, 3.0, 20.0, 60.0, 0.15),
-    (90.0, 6.0, 50.0, 60.0, 0.95),
-])
+@pytest.mark.parametrize(
+    "temperature,vibration,tool_wear,pressure,expected",
+    [
+        (70.0, 3.0, 20.0, 50.0, 0.0),
+        (90.0, 3.0, 20.0, 50.0, 0.3),
+        (70.0, 6.0, 20.0, 50.0, 0.25),
+        (70.0, 3.0, 50.0, 50.0, 0.25),
+        (70.0, 3.0, 20.0, 60.0, 0.15),
+        (90.0, 6.0, 50.0, 60.0, 0.95),
+    ],
+)
 def test_defect_risk_index_parametrized(
     temperature: float, vibration: float, tool_wear: float, pressure: float, expected: float
 ) -> None:
@@ -68,11 +72,14 @@ def test_sensor_range_feature_computes_range() -> None:
     assert result["sensor_range"] == pytest.approx(4.0)
 
 
-@pytest.mark.parametrize("values,expected_range", [
-    ([10.0, 10.0, 10.0], 0.0),
-    ([0.0, 100.0], 100.0),
-    ([1.0, 2.0, 3.0, 4.0, 5.0], 4.0),
-])
+@pytest.mark.parametrize(
+    "values,expected_range",
+    [
+        ([10.0, 10.0, 10.0], 0.0),
+        ([0.0, 100.0], 100.0),
+        ([1.0, 2.0, 3.0, 4.0, 5.0], 4.0),
+    ],
+)
 def test_sensor_range_feature_various(values: list, expected_range: float) -> None:
     row = {f"s{i}": v for i, v in enumerate(values)}
     result = sensor_range_feature(row)

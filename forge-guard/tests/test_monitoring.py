@@ -320,9 +320,15 @@ class TestModelPredictionSummary:
         for _ in range(3):
             db_session.add(
                 PredictionLog(
-                    temperature=70.0, pressure=50.0, vibration=2.0,
-                    cycle_time=30.0, tool_wear=15.0, power_consumption=100.0,
-                    humidity=50.0, prediction=0, defect_probability=0.1,
+                    temperature=70.0,
+                    pressure=50.0,
+                    vibration=2.0,
+                    cycle_time=30.0,
+                    tool_wear=15.0,
+                    power_consumption=100.0,
+                    humidity=50.0,
+                    prediction=0,
+                    defect_probability=0.1,
                     model_version="v2.0",
                 )
             )
@@ -337,9 +343,15 @@ class TestModelPredictionSummary:
         for pred in [0, 0, 1, 1]:
             db_session.add(
                 PredictionLog(
-                    temperature=70.0, pressure=50.0, vibration=2.0,
-                    cycle_time=30.0, tool_wear=15.0, power_consumption=100.0,
-                    humidity=50.0, prediction=pred, defect_probability=0.5,
+                    temperature=70.0,
+                    pressure=50.0,
+                    vibration=2.0,
+                    cycle_time=30.0,
+                    tool_wear=15.0,
+                    power_consumption=100.0,
+                    humidity=50.0,
+                    prediction=pred,
+                    defect_probability=0.5,
                     model_version="v3.0",
                 )
             )

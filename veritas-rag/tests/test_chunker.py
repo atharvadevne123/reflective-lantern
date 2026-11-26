@@ -6,7 +6,9 @@ from app.ingestion.chunker import chunk_document
 from app.schemas import Document
 
 
-def _doc(text: str, pages: list[str] | None = None, source: str = "test.txt", source_type: str = "text") -> Document:
+def _doc(
+    text: str, pages: list[str] | None = None, source: str = "test.txt", source_type: str = "text"
+) -> Document:
     return Document(
         doc_id="d1",
         source=source,

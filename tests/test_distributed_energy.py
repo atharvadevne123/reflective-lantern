@@ -184,10 +184,13 @@ class TestDistributedEnergyEdgeCases:
         result = grid_import_export(50.0, 100.0)
         assert result < 0.0
 
-    @pytest.mark.parametrize("actual_kwh,rated_kw,hours", [
-        (500.0, 100.0, 8760.0),
-        (1000.0, 200.0, 8760.0),
-    ])
+    @pytest.mark.parametrize(
+        "actual_kwh,rated_kw,hours",
+        [
+            (500.0, 100.0, 8760.0),
+            (1000.0, 200.0, 8760.0),
+        ],
+    )
     def test_capacity_factor_in_range(
         self, actual_kwh: float, rated_kw: float, hours: float
     ) -> None:
@@ -202,10 +205,13 @@ class TestDistributedEnergyEdgeCases:
         credit = net_metering_credit(100.0, 0.20, 0.10)
         assert credit > 0.0
 
-    @pytest.mark.parametrize("exported,retail,nm_rate", [
-        (50.0, 0.25, 0.12),
-        (100.0, 0.30, 0.15),
-    ])
+    @pytest.mark.parametrize(
+        "exported,retail,nm_rate",
+        [
+            (50.0, 0.25, 0.12),
+            (100.0, 0.30, 0.15),
+        ],
+    )
     def test_net_metering_credit_parametrized(
         self, exported: float, retail: float, nm_rate: float
     ) -> None:

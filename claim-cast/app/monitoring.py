@@ -1,4 +1,5 @@
 """Drift detection and prediction logging using KS-test."""
+
 from __future__ import annotations
 
 import logging
@@ -77,7 +78,12 @@ def log_drift(
 
 
 def get_recent_scores(db: Session, limit: int = 200) -> list[float]:
-    rows = db.query(ClaimPrediction.severity_score).order_by(ClaimPrediction.id.desc()).limit(limit).all()
+    rows = (
+        db.query(ClaimPrediction.severity_score)
+        .order_by(ClaimPrediction.id.desc())
+        .limit(limit)
+        .all()
+    )
     return [r[0] for r in rows]
 
 

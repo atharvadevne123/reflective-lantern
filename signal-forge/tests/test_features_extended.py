@@ -1,4 +1,5 @@
 """Extended feature engineering tests for signal-forge with parametrize and boundary coverage."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -44,11 +45,13 @@ def test_volatility_feature_non_negative_after_window() -> None:
 
 
 def test_volatility_constant_price_is_zero() -> None:
-    df = pd.DataFrame({
-        "close": [100.0] * 30,
-        "volume": [1_000.0] * 30,
-        "market_return": [0.0] * 30,
-    })
+    df = pd.DataFrame(
+        {
+            "close": [100.0] * 30,
+            "volume": [1_000.0] * 30,
+            "market_return": [0.0] * 30,
+        }
+    )
     out = VolatilityFeature(window=5).fit_transform(df)
     valid = out["volatility"].dropna()
     assert (valid == pytest.approx(0.0, abs=1e-9)).all()
@@ -84,22 +87,26 @@ def test_volume_ratio_feature_window(window: int) -> None:
 
 
 def test_volume_ratio_constant_volume_is_one() -> None:
-    df = pd.DataFrame({
-        "close": [100.0] * 30,
-        "volume": [5000.0] * 30,
-        "market_return": [0.0] * 30,
-    })
+    df = pd.DataFrame(
+        {
+            "close": [100.0] * 30,
+            "volume": [5000.0] * 30,
+            "market_return": [0.0] * 30,
+        }
+    )
     out = VolumeRatioFeature(window=5).fit_transform(df)
     valid = out["volume_ratio"].dropna()
     assert (valid == pytest.approx(1.0, rel=1e-4)).all()
 
 
 def test_volume_ratio_no_division_by_zero() -> None:
-    df = pd.DataFrame({
-        "close": [100.0] * 30,
-        "volume": [0.0] * 30,
-        "market_return": [0.0] * 30,
-    })
+    df = pd.DataFrame(
+        {
+            "close": [100.0] * 30,
+            "volume": [0.0] * 30,
+            "market_return": [0.0] * 30,
+        }
+    )
     out = VolumeRatioFeature(window=5).fit_transform(df)
     assert out["volume_ratio"].dropna().apply(np.isfinite).all()
 

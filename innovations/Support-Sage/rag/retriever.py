@@ -1,4 +1,5 @@
 """FAISS-based similar ticket retriever for RAG-augmented triage."""
+
 import json
 import logging
 from pathlib import Path
@@ -29,6 +30,7 @@ def retrieve_similar(query: str, top_k: int = 5) -> list[dict[str, Any]]:
     metadata = json.loads(meta_path.read_text())
 
     from rag.ingest import embed_text
+
     vec = embed_text([query]).astype(np.float32)
     faiss.normalize_L2(vec)
 

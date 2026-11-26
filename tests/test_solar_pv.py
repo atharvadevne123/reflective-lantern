@@ -163,11 +163,14 @@ class TestSolarPVEdgeCases:
 
 
 class TestSolarPVEdgeCases2:
-    @pytest.mark.parametrize("panels,wp,psh", [
-        (10, 400, 4.0),
-        (20, 350, 5.0),
-        (5, 500, 3.5),
-    ])
+    @pytest.mark.parametrize(
+        "panels,wp,psh",
+        [
+            (10, 400, 4.0),
+            (20, 350, 5.0),
+            (5, 500, 3.5),
+        ],
+    )
     def test_annual_yield_positive(self, panels: int, wp: float, psh: float) -> None:
         from app.solar_pv import annual_yield_kwh
 

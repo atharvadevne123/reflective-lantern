@@ -126,13 +126,16 @@ def test_trust_tier_minimal():
     assert trust_tier(0.10) == "minimal"
 
 
-@pytest.mark.parametrize("score,expected", [
-    (1.0, "high"),
-    (0.75, "high"),
-    (0.50, "medium"),
-    (0.25, "low"),
-    (0.0, "minimal"),
-])
+@pytest.mark.parametrize(
+    "score,expected",
+    [
+        (1.0, "high"),
+        (0.75, "high"),
+        (0.50, "medium"),
+        (0.25, "low"),
+        (0.0, "minimal"),
+    ],
+)
 def test_trust_tier_boundaries(score, expected):
     assert trust_tier(score) == expected
 
@@ -234,7 +237,11 @@ def test_top_k_trust_returns_k():
 
 
 def test_top_k_trust_sorted_descending():
-    chunks = [_make_scored_chunk(trust=0.3), _make_scored_chunk(trust=0.9), _make_scored_chunk(trust=0.6)]
+    chunks = [
+        _make_scored_chunk(trust=0.3),
+        _make_scored_chunk(trust=0.9),
+        _make_scored_chunk(trust=0.6),
+    ]
     result = top_k_trust(chunks, k=3)
     assert result[0].trust >= result[1].trust >= result[2].trust
 

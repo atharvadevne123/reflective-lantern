@@ -1,4 +1,5 @@
 """Extended time-series utility tests — second pass with parametrize."""
+
 from __future__ import annotations
 
 import pytest
@@ -24,12 +25,15 @@ def test_sma_window_one_returns_last() -> None:
     assert sma(values, window=1) == pytest.approx(9.0)
 
 
-@pytest.mark.parametrize("window,expected", [
-    (1, 5.0),
-    (2, 4.5),
-    (3, 4.0),
-    (5, 3.0),
-])
+@pytest.mark.parametrize(
+    "window,expected",
+    [
+        (1, 5.0),
+        (2, 4.5),
+        (3, 4.0),
+        (5, 3.0),
+    ],
+)
 def test_sma_parametrized_windows(window: int, expected: float) -> None:
     values = [1.0, 2.0, 3.0, 4.0, 5.0]
     assert sma(values, window=window) == pytest.approx(expected)

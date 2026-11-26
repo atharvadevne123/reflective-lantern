@@ -1,4 +1,5 @@
 """Feature engineering tests."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -10,16 +11,18 @@ from app.features import ActuarialFeatureEngineer, build_feature_pipeline, prepa
 
 def _make_df(n: int = 20) -> pd.DataFrame:
     rng = np.random.default_rng(7)
-    return pd.DataFrame({
-        "claim_age_days": rng.integers(0, 365, n).astype(float),
-        "policy_limit": rng.choice([50_000, 100_000, 250_000], n).astype(float),
-        "claimed_amount": rng.exponential(20_000, n),
-        "num_prior_claims": rng.integers(0, 5, n).astype(float),
-        "policy_tenure_years": rng.uniform(1, 10, n),
-        "geo_risk_tier": rng.integers(1, 6, n).astype(float),
-        "days_since_last_claim": rng.integers(30, 500, n).astype(float),
-        "policy_type": rng.choice(["home", "auto", "life", "commercial"], n),
-    })
+    return pd.DataFrame(
+        {
+            "claim_age_days": rng.integers(0, 365, n).astype(float),
+            "policy_limit": rng.choice([50_000, 100_000, 250_000], n).astype(float),
+            "claimed_amount": rng.exponential(20_000, n),
+            "num_prior_claims": rng.integers(0, 5, n).astype(float),
+            "policy_tenure_years": rng.uniform(1, 10, n),
+            "geo_risk_tier": rng.integers(1, 6, n).astype(float),
+            "days_since_last_claim": rng.integers(30, 500, n).astype(float),
+            "policy_type": rng.choice(["home", "auto", "life", "commercial"], n),
+        }
+    )
 
 
 def test_feature_engineer_output_shape():
@@ -39,16 +42,18 @@ def test_feature_engineer_no_nans():
 
 
 def test_severity_ratio_clipped():
-    df = pd.DataFrame({
-        "policy_limit": [100_000.0],
-        "claimed_amount": [25_000.0],
-        "claim_age_days": [10.0],
-        "num_prior_claims": [0.0],
-        "policy_tenure_years": [2.0],
-        "geo_risk_tier": [2.0],
-        "days_since_last_claim": [200.0],
-        "policy_type": ["auto"],
-    })
+    df = pd.DataFrame(
+        {
+            "policy_limit": [100_000.0],
+            "claimed_amount": [25_000.0],
+            "claim_age_days": [10.0],
+            "num_prior_claims": [0.0],
+            "policy_tenure_years": [2.0],
+            "geo_risk_tier": [2.0],
+            "days_since_last_claim": [200.0],
+            "policy_type": ["auto"],
+        }
+    )
     eng = ActuarialFeatureEngineer()
     out = eng.fit_transform(df)
     assert out["severity_ratio"].iloc[0] == pytest.approx(0.25, abs=1e-4)
@@ -70,9 +75,15 @@ def test_recency_flag():
     assert list(out["recency_flag"]) == [1.0, 1.0, 0.0]
 
 
-@pytest.mark.parametrize("policy_type,expected_enc", [
-    ("home", 0), ("auto", 1), ("life", 2), ("commercial", 3),
-])
+@pytest.mark.parametrize(
+    "policy_type,expected_enc",
+    [
+        ("home", 0),
+        ("auto", 1),
+        ("life", 2),
+        ("commercial", 3),
+    ],
+)
 def test_policy_type_encoding(policy_type, expected_enc):
     df = _make_df(1)
     df["policy_type"] = [policy_type]
@@ -104,13 +115,16 @@ def test_prepare_input_returns_dataframe():
     assert len(df) == 1
 
 
-@pytest.mark.parametrize("age_days,expected_tier", [
-    (3, 0.0),
-    (15, 1.0),
-    (60, 2.0),
-    (200, 3.0),
-    (500, 4.0),
-])
+@pytest.mark.parametrize(
+    "age_days,expected_tier",
+    [
+        (3, 0.0),
+        (15, 1.0),
+        (60, 2.0),
+        (200, 3.0),
+        (500, 4.0),
+    ],
+)
 def test_age_tier_values(age_days, expected_tier):
     df = _make_df(1)
     df["claim_age_days"] = [float(age_days)]

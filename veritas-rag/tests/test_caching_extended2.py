@@ -1,4 +1,5 @@
 """Extended caching tests with parametrize and boundary coverage."""
+
 from __future__ import annotations
 
 import pytest
@@ -28,12 +29,15 @@ def test_normalize_query_collapses_whitespace() -> None:
     assert result == "hello world"
 
 
-@pytest.mark.parametrize("query,expected", [
-    ("What is AI?", "what is ai"),
-    ("  spaces  ", "spaces"),
-    ("UPPER CASE", "upper case"),
-    ("hello, world!", "hello world"),
-])
+@pytest.mark.parametrize(
+    "query,expected",
+    [
+        ("What is AI?", "what is ai"),
+        ("  spaces  ", "spaces"),
+        ("UPPER CASE", "upper case"),
+        ("hello, world!", "hello world"),
+    ],
+)
 def test_normalize_query_parametrized(query: str, expected: str) -> None:
     assert normalize_query(query) == expected
 

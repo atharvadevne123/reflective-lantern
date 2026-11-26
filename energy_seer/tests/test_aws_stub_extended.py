@@ -31,6 +31,7 @@ class TestUploadModelExtended:
 
     def test_path_object_accepted(self) -> None:
         from pathlib import Path
+
         result = upload_model(Path("/tmp/model.pkl"), "b", "k")
         assert result is True
 

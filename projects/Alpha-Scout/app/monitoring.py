@@ -1,4 +1,5 @@
 """Drift detection and prediction logging."""
+
 from __future__ import annotations
 
 import structlog
@@ -101,6 +102,7 @@ def check_pipeline_health(pipe) -> dict[str, object]:
     issues = []
     try:
         from sklearn.utils.validation import check_is_fitted
+
         check_is_fitted(pipe)
     except Exception as exc:
         issues.append(f"pipeline not fitted: {exc}")

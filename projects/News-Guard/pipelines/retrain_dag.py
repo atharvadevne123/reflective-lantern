@@ -10,6 +10,7 @@ logger = logging.getLogger(__name__)
 try:
     from airflow import DAG
     from airflow.operators.python import PythonOperator
+
     _AIRFLOW_AVAILABLE = True
 except ImportError:
     _AIRFLOW_AVAILABLE = False
@@ -62,6 +63,7 @@ def _validate_model(**ctx) -> None:
     """Validate newly trained model meets AUC threshold."""
     import json
     from pathlib import Path
+
     metrics = json.loads(Path("metrics.json").read_text())
     auc = metrics.get("auc_mean", 0.0)
     if auc < 0.75:

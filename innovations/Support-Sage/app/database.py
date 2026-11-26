@@ -1,4 +1,5 @@
 """Database models and session management for Support-Sage."""
+
 import os
 from datetime import UTC, datetime
 

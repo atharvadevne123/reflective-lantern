@@ -1,4 +1,5 @@
 """Extended anomaly detection tests for quake-net."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -11,13 +12,15 @@ from app.similarity import SIGNATURE_COLUMNS
 
 def _make_events(n: int, seed: int = 42) -> pd.DataFrame:
     rng = np.random.default_rng(seed)
-    return pd.DataFrame({
-        "depth_km": rng.uniform(0, 300, n),
-        "p_wave_amplitude": rng.exponential(100, n),
-        "s_wave_amplitude": rng.exponential(150, n),
-        "epicentral_distance_km": rng.uniform(1, 500, n),
-        "station_count": rng.integers(1, 50, n).astype(float),
-    })
+    return pd.DataFrame(
+        {
+            "depth_km": rng.uniform(0, 300, n),
+            "p_wave_amplitude": rng.exponential(100, n),
+            "s_wave_amplitude": rng.exponential(150, n),
+            "epicentral_distance_km": rng.uniform(1, 500, n),
+            "station_count": rng.integers(1, 50, n).astype(float),
+        }
+    )
 
 
 def test_detector_not_fitted_on_init() -> None:

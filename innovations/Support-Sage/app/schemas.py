@@ -1,4 +1,5 @@
 """Pydantic request/response schemas with full validation for Support-Sage."""
+
 from __future__ import annotations
 
 import uuid

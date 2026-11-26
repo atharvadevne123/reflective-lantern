@@ -1,4 +1,5 @@
 """FastAPI application for Support-Sage ticket triage service."""
+
 import logging
 import time
 import uuid
@@ -32,6 +33,7 @@ def get_model() -> tuple:
         except FileNotFoundError:
             logger.warning("Model not found — training on synthetic data")
             from app.features import generate_synthetic_data
+
             df = generate_synthetic_data(2000)
             pipe, _ = train_model(df)
             pipe, le, reg = load_model()
@@ -77,7 +79,9 @@ async def add_correlation_id(request: Request, call_next):
     duration_ms = round((time.monotonic() - start) * 1000, 2)
     response.headers["X-Correlation-ID"] = correlation_id
     response.headers["X-Response-Time-Ms"] = str(duration_ms)
-    logger.info("req=%s path=%s status=%s duration_ms=%s", correlation_id, request.url.path, response.status_code, duration_ms)
+    logger.info(
+        "req=%s path=%s status=%s duration_ms=%s", correlation_id, request.url.path, response.status_code, duration_ms
+    )
     return response
 
 
@@ -145,6 +149,7 @@ async def metrics_endpoint(db: Session = Depends(get_db)) -> dict[str, Any]:
     """
     import json
     from pathlib import Path
+
     model_metrics: dict = {}
     metrics_path = Path("models/metrics.json")
     if metrics_path.exists():
@@ -157,6 +162,7 @@ async def metrics_endpoint(db: Session = Depends(get_db)) -> dict[str, Any]:
 async def train_endpoint() -> dict[str, Any]:
     """Retrain the model on fresh synthetic data and reload the in-memory cache."""
     from app.features import generate_synthetic_data
+
     df = generate_synthetic_data(3000)
     _, metrics = train_model(df)
     _model_cache.clear()

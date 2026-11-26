@@ -1,4 +1,5 @@
 """Shared pytest fixtures for Support-Sage tests."""
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
@@ -64,4 +65,5 @@ def critical_ticket():
 @pytest.fixture()
 def sample_df():
     from app.features import generate_synthetic_data
+
     return generate_synthetic_data(n_samples=200)

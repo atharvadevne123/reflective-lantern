@@ -1,4 +1,5 @@
 """Extended TTL/LRU cache tests — second pass with parametrize and boundary coverage."""
+
 from __future__ import annotations
 
 import time

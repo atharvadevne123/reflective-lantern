@@ -1,4 +1,5 @@
 """Extended batch processor tests with parametrize and boundary coverage."""
+
 from __future__ import annotations
 
 import pytest
@@ -38,14 +39,17 @@ def test_chunk_readings_last_chunk_smaller() -> None:
     assert len(chunks[-1]) == 1
 
 
-@pytest.mark.parametrize("n,chunk_size,expected_chunks", [
-    (0, 5, 0),
-    (5, 5, 1),
-    (10, 5, 2),
-    (11, 5, 3),
-    (25, 25, 1),
-    (26, 25, 2),
-])
+@pytest.mark.parametrize(
+    "n,chunk_size,expected_chunks",
+    [
+        (0, 5, 0),
+        (5, 5, 1),
+        (10, 5, 2),
+        (11, 5, 3),
+        (25, 25, 1),
+        (26, 25, 2),
+    ],
+)
 def test_chunk_readings_parametrized(n: int, chunk_size: int, expected_chunks: int) -> None:
     readings = _make_readings(n)
     chunks = list(chunk_readings(readings, chunk_size=chunk_size))

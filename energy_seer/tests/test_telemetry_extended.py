@@ -182,21 +182,25 @@ class TestBatchIncrementAndGetMany:
 
     def test_batch_increment_multiple_counters(self) -> None:
         from app.telemetry import batch_increment, get
+
         batch_increment({"req": 5, "err": 2})
         assert get("req") == 5
         assert get("err") == 2
 
     def test_batch_increment_empty_dict(self) -> None:
         from app.telemetry import batch_increment
+
         batch_increment({})  # should not raise
 
     def test_batch_increment_ignores_negatives(self) -> None:
         from app.telemetry import batch_increment, get
+
         batch_increment({"c": -5})
         assert get("c") == 0
 
     def test_get_many_returns_all_values(self) -> None:
         from app.telemetry import get_many, increment
+
         increment("x", 3)
         increment("y", 7)
         result = get_many(["x", "y"])
@@ -204,6 +208,7 @@ class TestBatchIncrementAndGetMany:
 
     def test_get_many_missing_key_returns_zero(self) -> None:
         from app.telemetry import get_many
+
         result = get_many(["never_set"])
         assert result["never_set"] == 0
 
@@ -247,7 +252,6 @@ class TestTelemetryIncrementByExtended:
         above = all_above(5)
         assert "high" in above
         assert "low" not in above
-
 
 
 class TestBatchIncrement:

@@ -1,4 +1,5 @@
 """Generate the system architecture diagram for Support-Sage."""
+
 import os
 
 import matplotlib
@@ -24,10 +25,30 @@ def generate(output_path: str = "screenshots/architecture.png") -> None:
         )
         ax.add_patch(rect)
         if sublabel:
-            ax.text(x + w / 2, y + h * 0.65, label, ha="center", va="center", fontsize=fontsize, color="white", fontweight="bold")
-            ax.text(x + w / 2, y + h * 0.3, sublabel, ha="center", va="center", fontsize=7, color="#93c5fd", style="italic")
+            ax.text(
+                x + w / 2,
+                y + h * 0.65,
+                label,
+                ha="center",
+                va="center",
+                fontsize=fontsize,
+                color="white",
+                fontweight="bold",
+            )
+            ax.text(
+                x + w / 2, y + h * 0.3, sublabel, ha="center", va="center", fontsize=7, color="#93c5fd", style="italic"
+            )
         else:
-            ax.text(x + w / 2, y + h / 2, label, ha="center", va="center", fontsize=fontsize, color="white", fontweight="bold")
+            ax.text(
+                x + w / 2,
+                y + h / 2,
+                label,
+                ha="center",
+                va="center",
+                fontsize=fontsize,
+                color="white",
+                fontweight="bold",
+            )
 
     def arrow(x1, y1, x2, y2):
         ax.annotate("", xy=(x2, y2), xytext=(x1, y1), arrowprops=dict(arrowstyle="->", color="#60a5fa", lw=1.5))
@@ -61,7 +82,9 @@ def generate(output_path: str = "screenshots/architecture.png") -> None:
         mpatches.Patch(color="#1e3a5f", label="Storage"),
         mpatches.Patch(color="#713f12", label="Orchestration"),
     ]
-    ax.legend(handles=legend_items, loc="lower left", fontsize=8, facecolor="#1e293b", edgecolor="#60a5fa", labelcolor="white")
+    ax.legend(
+        handles=legend_items, loc="lower left", fontsize=8, facecolor="#1e293b", edgecolor="#60a5fa", labelcolor="white"
+    )
     plt.tight_layout()
     plt.savefig(output_path, dpi=150, bbox_inches="tight", facecolor="#0f172a")
     print(f"Saved: {output_path}")

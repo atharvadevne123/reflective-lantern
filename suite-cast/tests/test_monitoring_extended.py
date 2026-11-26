@@ -76,7 +76,6 @@ class TestDriftSeverity:
         assert drift_severity(0.50) == "severe"
 
 
-
 class TestRateSpread:
     def test_empty_returns_zero(self, db_session) -> None:
         result = rate_spread(db_session)
@@ -84,6 +83,7 @@ class TestRateSpread:
 
     def test_single_prediction_returns_zero(self, db_session) -> None:
         from app.database import Prediction
+
         db_session.add(Prediction(suggested_rate=120.0, demand_score=0.8, model_version="1.0"))
         db_session.commit()
         result = rate_spread(db_session)
@@ -91,6 +91,7 @@ class TestRateSpread:
 
     def test_spread_across_two_predictions(self, db_session) -> None:
         from app.database import Prediction
+
         for rate in [100.0, 200.0]:
             db_session.add(Prediction(suggested_rate=rate, demand_score=0.5, model_version="1.0"))
         db_session.commit()

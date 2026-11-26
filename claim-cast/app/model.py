@@ -1,4 +1,5 @@
 """XGBoost ensemble model training and prediction for claim severity."""
+
 from __future__ import annotations
 
 import json
@@ -24,19 +25,24 @@ SEVERITY_LABELS = {0: "low", 1: "medium", 2: "high", 3: "critical"}
 
 
 def build_pipeline() -> Pipeline:
-    return Pipeline([
-        ("features", ActuarialFeatureEngineer()),
-        ("scaler", StandardScaler()),
-        ("model", XGBClassifier(
-            n_estimators=200,
-            max_depth=5,
-            learning_rate=0.05,
-            subsample=0.8,
-            colsample_bytree=0.8,
-            eval_metric="mlogloss",
-            random_state=42,
-        )),
-    ])
+    return Pipeline(
+        [
+            ("features", ActuarialFeatureEngineer()),
+            ("scaler", StandardScaler()),
+            (
+                "model",
+                XGBClassifier(
+                    n_estimators=200,
+                    max_depth=5,
+                    learning_rate=0.05,
+                    subsample=0.8,
+                    colsample_bytree=0.8,
+                    eval_metric="mlogloss",
+                    random_state=42,
+                ),
+            ),
+        ]
+    )
 
 
 def train_model(X: pd.DataFrame, y: pd.Series) -> tuple[Pipeline, dict]:
@@ -74,16 +80,18 @@ def _seed_model() -> None:
     """Seed with synthetic data so the API starts even without real training data."""
     rng = np.random.default_rng(42)
     n = 500
-    X = pd.DataFrame({
-        "claim_age_days": rng.integers(0, 400, n).astype(float),
-        "policy_limit": rng.choice([50_000, 100_000, 250_000, 500_000], n).astype(float),
-        "claimed_amount": rng.exponential(25_000, n),
-        "num_prior_claims": rng.integers(0, 8, n).astype(float),
-        "policy_tenure_years": rng.uniform(0.5, 20, n),
-        "geo_risk_tier": rng.integers(1, 6, n).astype(float),
-        "days_since_last_claim": rng.integers(10, 1000, n).astype(float),
-        "policy_type": rng.choice(["home", "auto", "life", "commercial"], n),
-    })
+    X = pd.DataFrame(
+        {
+            "claim_age_days": rng.integers(0, 400, n).astype(float),
+            "policy_limit": rng.choice([50_000, 100_000, 250_000, 500_000], n).astype(float),
+            "claimed_amount": rng.exponential(25_000, n),
+            "num_prior_claims": rng.integers(0, 8, n).astype(float),
+            "policy_tenure_years": rng.uniform(0.5, 20, n),
+            "geo_risk_tier": rng.integers(1, 6, n).astype(float),
+            "days_since_last_claim": rng.integers(10, 1000, n).astype(float),
+            "policy_type": rng.choice(["home", "auto", "life", "commercial"], n),
+        }
+    )
     ratio = (X["claimed_amount"] / X["policy_limit"]).clip(0, 1.0)
     y = pd.cut(
         ratio,
@@ -133,6 +141,7 @@ def get_model_info() -> dict:
         Dict with model path, anomaly path, and metrics path strings.
     """
     import logging
+
     logger = logging.getLogger(__name__)
     info = {
         "model_path": str(MODEL_PATH),
@@ -141,11 +150,13 @@ def get_model_info() -> dict:
         "model_exists": MODEL_PATH.exists(),
         "anomaly_exists": ANOMALY_PATH.exists(),
     }
-    logger.info("model_info model_exists=%s anomaly_exists=%s", info["model_exists"], info["anomaly_exists"])
+    logger.info(
+        "model_info model_exists=%s anomaly_exists=%s", info["model_exists"], info["anomaly_exists"]
+    )
     return info
 
 
-def train_model_tracked(X: "pd.DataFrame", y: "pd.Series") -> "tuple[Pipeline, dict]":
+def train_model_tracked(X: pd.DataFrame, y: pd.Series) -> tuple[Pipeline, dict]:
     """Train model with MLflow experiment tracking.
 
     Args:
@@ -170,7 +181,7 @@ def train_model_tracked(X: "pd.DataFrame", y: "pd.Series") -> "tuple[Pipeline, d
     return pipe, metrics
 
 
-def cross_validate_model(X: "pd.DataFrame", y: "pd.Series", cv: int = 5) -> dict:
+def cross_validate_model(X: pd.DataFrame, y: pd.Series, cv: int = 5) -> dict:
     """Run cross-validation and return detailed fold metrics.
 
     Args:
@@ -185,7 +196,9 @@ def cross_validate_model(X: "pd.DataFrame", y: "pd.Series", cv: int = 5) -> dict
 
     pipe = build_pipeline()
     cv_splitter = StratifiedKFold(n_splits=cv, shuffle=True, random_state=42)
-    results = cross_validate(pipe, X, y, cv=cv_splitter, scoring=["f1_macro", "accuracy"], return_train_score=True)
+    results = cross_validate(
+        pipe, X, y, cv=cv_splitter, scoring=["f1_macro", "accuracy"], return_train_score=True
+    )
     return {
         "cv_folds": cv,
         "test_f1_macro": [round(float(s), 4) for s in results["test_f1_macro"]],

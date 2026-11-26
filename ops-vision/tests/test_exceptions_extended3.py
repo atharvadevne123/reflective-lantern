@@ -1,4 +1,5 @@
 """Extended exception hierarchy tests — third pass."""
+
 from __future__ import annotations
 
 import pytest

@@ -156,22 +156,27 @@ class TestSanitizeIdentifier:
 class TestPadLeft:
     def test_pads_short_string(self) -> None:
         from app.string_utils import pad_left
+
         assert pad_left("hi", 5) == "   hi"
 
     def test_no_pad_needed(self) -> None:
         from app.string_utils import pad_left
+
         assert pad_left("hello", 5) == "hello"
 
     def test_already_longer(self) -> None:
         from app.string_utils import pad_left
+
         assert pad_left("toolong", 3) == "toolong"
 
     def test_custom_fill_char(self) -> None:
         from app.string_utils import pad_left
+
         assert pad_left("7", 3, "0") == "007"
 
     def test_invalid_fill_raises(self) -> None:
         from app.string_utils import pad_left
+
         with pytest.raises(ValueError):
             pad_left("x", 5, "ab")
 
@@ -179,28 +184,34 @@ class TestPadLeft:
 class TestPadRight:
     def test_pads_short_string(self) -> None:
         from app.string_utils import pad_right
+
         assert pad_right("hi", 5) == "hi   "
 
     def test_no_pad_needed(self) -> None:
         from app.string_utils import pad_right
+
         assert pad_right("hello", 5) == "hello"
 
     def test_custom_fill_char(self) -> None:
         from app.string_utils import pad_right
+
         assert pad_right("x", 4, "-") == "x---"
 
 
 class TestRemoveWhitespace:
     def test_removes_spaces(self) -> None:
         from app.string_utils import remove_whitespace
+
         assert remove_whitespace("h e l l o") == "hello"
 
     def test_removes_newlines(self) -> None:
         from app.string_utils import remove_whitespace
+
         assert remove_whitespace("a\nb\tc") == "abc"
 
     def test_empty_string(self) -> None:
         from app.string_utils import remove_whitespace
+
         assert remove_whitespace("") == ""
 
     @pytest.mark.parametrize(
@@ -209,6 +220,7 @@ class TestRemoveWhitespace:
     )
     def test_parametrized(self, text: str, expected: str) -> None:
         from app.string_utils import remove_whitespace
+
         assert remove_whitespace(text) == expected
 
 
@@ -331,11 +343,14 @@ class TestCountWords:
 
 
 class TestStringUtilsEdgeCases:
-    @pytest.mark.parametrize("text,max_len,expected_end", [
-        ("Hello World", 5, "..."),
-        ("Hi", 10, "Hi"),
-        ("", 5, ""),
-    ])
+    @pytest.mark.parametrize(
+        "text,max_len,expected_end",
+        [
+            ("Hello World", 5, "..."),
+            ("Hi", 10, "Hi"),
+            ("", 5, ""),
+        ],
+    )
     def test_truncate_parametrized(self, text: str, max_len: int, expected_end: str) -> None:
         from app.string_utils import truncate
 
@@ -346,12 +361,15 @@ class TestStringUtilsEdgeCases:
             assert result.endswith(expected_end)
             assert len(result) <= max_len + len(expected_end)
 
-    @pytest.mark.parametrize("size,expected_prefix", [
-        (0, "0.00 B"),
-        (1023, "1023.00 B"),
-        (1024, "1.00 KB"),
-        (1024 * 1024, "1.00 MB"),
-    ])
+    @pytest.mark.parametrize(
+        "size,expected_prefix",
+        [
+            (0, "0.00 B"),
+            (1023, "1023.00 B"),
+            (1024, "1.00 KB"),
+            (1024 * 1024, "1.00 MB"),
+        ],
+    )
     def test_format_bytes_units(self, size: int, expected_prefix: str) -> None:
         from app.string_utils import format_bytes
 
@@ -374,11 +392,14 @@ class TestStringUtilsEdgeCases:
 
         assert remove_whitespace("  hello   world  ") == "helloworld"
 
-    @pytest.mark.parametrize("snake,expected_camel", [
-        ("hello_world", "helloWorld"),
-        ("my_variable_name", "myVariableName"),
-        ("single", "single"),
-    ])
+    @pytest.mark.parametrize(
+        "snake,expected_camel",
+        [
+            ("hello_world", "helloWorld"),
+            ("my_variable_name", "myVariableName"),
+            ("single", "single"),
+        ],
+    )
     def test_snake_to_camel(self, snake: str, expected_camel: str) -> None:
         from app.string_utils import snake_to_camel
 

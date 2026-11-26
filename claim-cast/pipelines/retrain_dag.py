@@ -1,4 +1,5 @@
 """Automated retraining pipeline — Airflow-compatible DAG for weekly claim model refresh."""
+
 from __future__ import annotations
 
 import json
@@ -11,6 +12,7 @@ logger = logging.getLogger(__name__)
 try:
     from airflow import DAG
     from airflow.operators.python import PythonOperator
+
     _AIRFLOW_AVAILABLE = True
 except ImportError:
     _AIRFLOW_AVAILABLE = False
@@ -24,16 +26,18 @@ def fetch_training_data() -> str:
     logger.info("fetch_training_data: generating synthetic training batch")
     rng = np.random.default_rng(int(datetime.utcnow().timestamp()))
     n = 1000
-    df = pd.DataFrame({
-        "claim_age_days": rng.integers(0, 400, n).astype(float),
-        "policy_limit": rng.choice([50_000, 100_000, 250_000, 500_000], n).astype(float),
-        "claimed_amount": rng.exponential(25_000, n),
-        "num_prior_claims": rng.integers(0, 8, n).astype(float),
-        "policy_tenure_years": rng.uniform(0.5, 20, n),
-        "geo_risk_tier": rng.integers(1, 6, n).astype(float),
-        "days_since_last_claim": rng.integers(10, 1000, n).astype(float),
-        "policy_type": rng.choice(["home", "auto", "life", "commercial"], n),
-    })
+    df = pd.DataFrame(
+        {
+            "claim_age_days": rng.integers(0, 400, n).astype(float),
+            "policy_limit": rng.choice([50_000, 100_000, 250_000, 500_000], n).astype(float),
+            "claimed_amount": rng.exponential(25_000, n),
+            "num_prior_claims": rng.integers(0, 8, n).astype(float),
+            "policy_tenure_years": rng.uniform(0.5, 20, n),
+            "geo_risk_tier": rng.integers(1, 6, n).astype(float),
+            "days_since_last_claim": rng.integers(10, 1000, n).astype(float),
+            "policy_type": rng.choice(["home", "auto", "life", "commercial"], n),
+        }
+    )
     output_path = "/tmp/retrain_data.csv"
     df.to_csv(output_path, index=False)
     logger.info("fetch_training_data: saved %d rows to %s", n, output_path)
@@ -48,6 +52,7 @@ def run_retraining(data_path: str = "/tmp/retrain_data.csv") -> dict:
 
     df = pd.read_csv(data_path)
     import pandas as _pd
+
     ratio = (df["claimed_amount"] / df["policy_limit"]).clip(0, 1.0)
     y = _pd.cut(
         ratio,
@@ -88,7 +93,11 @@ def promote_model() -> None:
 if _AIRFLOW_AVAILABLE:
     with DAG(
         dag_id="claim_cast_weekly_retrain",
-        default_args={"owner": "reflective-lantern", "retries": 1, "retry_delay": timedelta(minutes=5)},
+        default_args={
+            "owner": "reflective-lantern",
+            "retries": 1,
+            "retry_delay": timedelta(minutes=5),
+        },
         schedule_interval="@weekly",
         start_date=datetime(2026, 1, 1),
         catchup=False,

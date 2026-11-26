@@ -1,4 +1,5 @@
 """Extended efficiency score tests with parametrize and boundary coverage."""
+
 from __future__ import annotations
 
 import pytest
@@ -61,12 +62,15 @@ def test_grade_is_valid(grade: str) -> None:
     assert grade in ("A", "B", "C", "D")
 
 
-@pytest.mark.parametrize("score,expected_color", [
-    (90.0, "green"),
-    (70.0, "green"),
-    (50.0, "amber"),
-    (20.0, "red"),
-])
+@pytest.mark.parametrize(
+    "score,expected_color",
+    [
+        (90.0, "green"),
+        (70.0, "green"),
+        (50.0, "amber"),
+        (20.0, "red"),
+    ],
+)
 def test_score_to_color_parametrized(score: float, expected_color: str) -> None:
     assert score_to_color(score) == expected_color
 
@@ -85,10 +89,13 @@ def test_efficiency_percentile_all_larger_returns_zero() -> None:
     assert result == 0.0
 
 
-@pytest.mark.parametrize("score,population,expected_range", [
-    (50.0, [0.0, 25.0, 50.0, 75.0, 100.0], (30.0, 60.0)),
-    (75.0, [0.0, 25.0, 50.0, 75.0, 100.0], (50.0, 80.0)),
-])
+@pytest.mark.parametrize(
+    "score,population,expected_range",
+    [
+        (50.0, [0.0, 25.0, 50.0, 75.0, 100.0], (30.0, 60.0)),
+        (75.0, [0.0, 25.0, 50.0, 75.0, 100.0], (50.0, 80.0)),
+    ],
+)
 def test_efficiency_percentile_in_range(
     score: float, population: list, expected_range: tuple
 ) -> None:

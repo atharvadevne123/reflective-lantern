@@ -1,4 +1,5 @@
 """Pydantic request/response schemas."""
+
 from __future__ import annotations
 
 from pydantic import BaseModel, Field, model_validator

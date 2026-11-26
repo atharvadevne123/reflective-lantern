@@ -1,4 +1,5 @@
 """ML model training, prediction, and serialisation."""
+
 from __future__ import annotations
 
 import json
@@ -23,22 +24,24 @@ MODEL_VERSION = "1.0.0"
 
 
 def _build_pipeline() -> Pipeline:
-    return Pipeline([
-        ("scaler", StandardScaler()),
-        (
-            "model",
-            XGBClassifier(
-                n_estimators=200,
-                max_depth=4,
-                learning_rate=0.05,
-                subsample=0.8,
-                colsample_bytree=0.8,
-                eval_metric="logloss",
-                random_state=42,
-                n_jobs=1,
+    return Pipeline(
+        [
+            ("scaler", StandardScaler()),
+            (
+                "model",
+                XGBClassifier(
+                    n_estimators=200,
+                    max_depth=4,
+                    learning_rate=0.05,
+                    subsample=0.8,
+                    colsample_bytree=0.8,
+                    eval_metric="logloss",
+                    random_state=42,
+                    n_jobs=1,
+                ),
             ),
-        ),
-    ])
+        ]
+    )
 
 
 def prepare_training_data(n_tickers: int = 5) -> tuple[pd.DataFrame, pd.Series]:

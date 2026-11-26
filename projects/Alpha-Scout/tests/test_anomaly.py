@@ -1,4 +1,5 @@
 """Anomaly detection tests."""
+
 from __future__ import annotations
 
 import pytest
@@ -46,6 +47,7 @@ def test_extreme_values_flagged_as_anomaly(fitted_detector):
 
 def test_predict_without_fitted_detector():
     from app import anomaly
+
     anomaly._detector = None
     df = make_sample_ohlcv(60, ticker="X")
     eng = StockFeatureEngineer()

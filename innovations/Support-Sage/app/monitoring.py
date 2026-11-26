@@ -1,4 +1,5 @@
 """Model monitoring: drift detection and prediction logging."""
+
 import logging
 from datetime import UTC, datetime, timedelta
 from typing import Any
@@ -32,8 +33,12 @@ def log_prediction(
         subject_len=len(subject),
         desc_len=len(description),
         word_count=len((subject + " " + description).split()),
-        has_error_keyword=int(any(kw in (subject + description).lower() for kw in ["error", "exception", "500", "crash"])),
-        has_urgent_keyword=int(any(kw in (subject + description).lower() for kw in ["urgent", "critical", "emergency", "down"])),
+        has_error_keyword=int(
+            any(kw in (subject + description).lower() for kw in ["error", "exception", "500", "crash"])
+        ),
+        has_urgent_keyword=int(
+            any(kw in (subject + description).lower() for kw in ["urgent", "critical", "emergency", "down"])
+        ),
     )
     db.add(record)
     db.commit()
@@ -103,9 +108,11 @@ def get_drift_report(db: Session, window_days: int = 7) -> dict[str, Any]:
             "resolution_hours": drift_resolution,
             "word_count": drift_word_count,
         },
-        "any_drift_detected": any([
-            drift_confidence.get("drift_detected"),
-            drift_resolution.get("drift_detected"),
-            drift_word_count.get("drift_detected"),
-        ]),
+        "any_drift_detected": any(
+            [
+                drift_confidence.get("drift_detected"),
+                drift_resolution.get("drift_detected"),
+                drift_word_count.get("drift_detected"),
+            ]
+        ),
     }

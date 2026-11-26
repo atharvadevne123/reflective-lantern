@@ -144,11 +144,14 @@ class TestSavingsPotential:
 
 
 class TestEnergyIntensityEdgeCases:
-    @pytest.mark.parametrize("kwh,sqm", [
-        (10000.0, 100.0),
-        (50000.0, 500.0),
-        (1000.0, 10.0),
-    ])
+    @pytest.mark.parametrize(
+        "kwh,sqm",
+        [
+            (10000.0, 100.0),
+            (50000.0, 500.0),
+            (1000.0, 10.0),
+        ],
+    )
     def test_energy_use_intensity_basic(self, kwh: float, sqm: float) -> None:
         from app.energy_intensity import energy_use_intensity
 
@@ -161,11 +164,14 @@ class TestEnergyIntensityEdgeCases:
         with pytest.raises(ValueError):
             energy_use_intensity(1000.0, 0.0)
 
-    @pytest.mark.parametrize("eui,target_eui", [
-        (200.0, 150.0),
-        (300.0, 100.0),
-        (150.0, 120.0),
-    ])
+    @pytest.mark.parametrize(
+        "eui,target_eui",
+        [
+            (200.0, 150.0),
+            (300.0, 100.0),
+            (150.0, 120.0),
+        ],
+    )
     def test_eui_reduction_needed_positive(self, eui: float, target_eui: float) -> None:
         from app.energy_intensity import eui_reduction_needed
 

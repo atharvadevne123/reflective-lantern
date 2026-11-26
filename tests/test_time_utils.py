@@ -149,6 +149,7 @@ class TestToAndFromUnixTimestamp:
         import datetime
 
         from app.time_utils import from_unix_timestamp, to_unix_timestamp
+
         dt = datetime.datetime(2024, 6, 15, 12, 0, 0, tzinfo=datetime.UTC)
         ts = to_unix_timestamp(dt)
         back = from_unix_timestamp(ts)
@@ -158,12 +159,14 @@ class TestToAndFromUnixTimestamp:
         import datetime
 
         from app.time_utils import to_unix_timestamp
+
         naive = datetime.datetime(2024, 1, 1, 0, 0, 0)
         aware = datetime.datetime(2024, 1, 1, 0, 0, 0, tzinfo=datetime.UTC)
         assert to_unix_timestamp(naive) == to_unix_timestamp(aware)
 
     def test_from_unix_timestamp_is_utc_aware(self) -> None:
         from app.time_utils import from_unix_timestamp
+
         dt = from_unix_timestamp(0.0)
         assert dt.tzinfo is not None
 
@@ -173,6 +176,7 @@ class TestDaysBetween:
         import datetime
 
         from app.time_utils import days_between
+
         d = datetime.datetime(2024, 1, 15, tzinfo=datetime.UTC)
         assert days_between(d, d) == 0
 
@@ -180,6 +184,7 @@ class TestDaysBetween:
         import datetime
 
         from app.time_utils import days_between
+
         start = datetime.datetime(2024, 1, 1, tzinfo=datetime.UTC)
         end = datetime.datetime(2024, 1, 10, tzinfo=datetime.UTC)
         assert days_between(start, end) == 9
@@ -188,6 +193,7 @@ class TestDaysBetween:
         import datetime
 
         from app.time_utils import days_between
+
         start = datetime.datetime(2024, 1, 10, tzinfo=datetime.UTC)
         end = datetime.datetime(2024, 1, 1, tzinfo=datetime.UTC)
         assert days_between(start, end) == -9
@@ -200,6 +206,7 @@ class TestDaysBetween:
         import datetime
 
         from app.time_utils import days_between
+
         start = datetime.datetime(2024, 1, 1, tzinfo=datetime.UTC)
         end = start + datetime.timedelta(days=offset_days)
         assert days_between(start, end) == expected

@@ -1,4 +1,5 @@
 """Extended Pydantic schema tests with parametrize and validation edge cases."""
+
 from __future__ import annotations
 
 import pytest

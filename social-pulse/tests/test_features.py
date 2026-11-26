@@ -240,6 +240,7 @@ def test_follower_bucket_parametrized(followers: int, expected_bucket: int) -> N
 )
 def test_capitalisation_ratio_parametrized(text: str, expected: float) -> None:
     import math
+
     assert math.isclose(capitalisation_ratio(text), expected)
 
 

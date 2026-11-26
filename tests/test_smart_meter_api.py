@@ -149,12 +149,13 @@ class TestConsumptionStats:
 
 class TestSmartMeterAPIEdgeCases:
     def _make_readings(self, n: int = 5) -> list:
-        from datetime import datetime, timezone
+        from datetime import datetime
 
         from app.smart_meter_api import MeterReading
 
-        base = datetime(2024, 1, 1, tzinfo=timezone.utc)
+        base = datetime(2024, 1, 1, tzinfo=UTC)
         from datetime import timedelta
+
         return [MeterReading(base + timedelta(minutes=30 * i), float(i + 1)) for i in range(n)]
 
     @pytest.mark.parametrize("n", [1, 5, 48])

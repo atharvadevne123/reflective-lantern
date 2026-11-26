@@ -1,4 +1,5 @@
 """Extended validator tests for social-pulse with parametrize and boundary coverage."""
+
 from __future__ import annotations
 
 import pytest
@@ -39,37 +40,46 @@ def test_sanitise_text_control_chars_removed() -> None:
     assert "\x00" not in result
 
 
-@pytest.mark.parametrize("text,expected", [
-    ("#hello world", 1),
-    ("#hello #world #foo", 3),
-    ("no hashtags here", 0),
-    ("#a #b", 2),
-    ("text with no tags", 0),
-])
+@pytest.mark.parametrize(
+    "text,expected",
+    [
+        ("#hello world", 1),
+        ("#hello #world #foo", 3),
+        ("no hashtags here", 0),
+        ("#a #b", 2),
+        ("text with no tags", 0),
+    ],
+)
 def test_validate_hashtag_consistency(text: str, expected: int) -> None:
     result = validate_hashtag_consistency(text, 99)
     assert result == expected
 
 
-@pytest.mark.parametrize("text,expected", [
-    ("@alice hello", 1),
-    ("@alice @bob @carol", 3),
-    ("no mentions", 0),
-    ("@a and @b", 2),
-])
+@pytest.mark.parametrize(
+    "text,expected",
+    [
+        ("@alice hello", 1),
+        ("@alice @bob @carol", 3),
+        ("no mentions", 0),
+        ("@a and @b", 2),
+    ],
+)
 def test_validate_mention_consistency(text: str, expected: int) -> None:
     result = validate_mention_consistency(text, 99)
     assert result == expected
 
 
-@pytest.mark.parametrize("text,threshold,expected", [
-    ("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 30, True),
-    ("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 30, True),
-    ("aaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 30, False),
-    ("normal text here", 30, False),
-    ("bbbbb", 5, True),
-    ("bbbbb", 6, False),
-])
+@pytest.mark.parametrize(
+    "text,threshold,expected",
+    [
+        ("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 30, True),
+        ("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 30, True),
+        ("aaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 30, False),
+        ("normal text here", 30, False),
+        ("bbbbb", 5, True),
+        ("bbbbb", 6, False),
+    ],
+)
 def test_check_repetitive_content(text: str, threshold: int, expected: bool) -> None:
     assert check_repetitive_content(text, threshold=threshold) is expected
 
@@ -78,22 +88,28 @@ def test_check_repetitive_content_empty_string() -> None:
     assert check_repetitive_content("") is False
 
 
-@pytest.mark.parametrize("text,has_url", [
-    ("Check https://example.com for more", True),
-    ("Visit http://foo.bar/path", True),
-    ("No URLs here at all", False),
-    ("ftp://not-matched.com", False),
-    ("https://x.io", True),
-])
+@pytest.mark.parametrize(
+    "text,has_url",
+    [
+        ("Check https://example.com for more", True),
+        ("Visit http://foo.bar/path", True),
+        ("No URLs here at all", False),
+        ("ftp://not-matched.com", False),
+        ("https://x.io", True),
+    ],
+)
 def test_validate_url(text: str, has_url: bool) -> None:
     assert validate_url(text) is has_url
 
 
-@pytest.mark.parametrize("text,wpm,expected_min", [
-    ("one", 238, 1.0),
-    ("word " * 238, 238, 60.0),
-    ("   ", 238, 1.0),
-])
+@pytest.mark.parametrize(
+    "text,wpm,expected_min",
+    [
+        ("one", 238, 1.0),
+        ("word " * 238, 238, 60.0),
+        ("   ", 238, 1.0),
+    ],
+)
 def test_estimate_reading_time_minimum_one_second(text: str, wpm: int, expected_min: float) -> None:
     result = estimate_reading_time_seconds(text, wpm=wpm)
     assert result >= expected_min
@@ -105,24 +121,30 @@ def test_estimate_reading_time_proportional() -> None:
     assert long > short
 
 
-@pytest.mark.parametrize("text,expected", [
-    ("hello", True),
-    ("123", False),
-    ("", False),
-    ("!@#$%", False),
-    ("hello1", True),
-])
+@pytest.mark.parametrize(
+    "text,expected",
+    [
+        ("hello", True),
+        ("123", False),
+        ("", False),
+        ("!@#$%", False),
+        ("hello1", True),
+    ],
+)
 def test_is_alpha_text(text: str, expected: bool) -> None:
     assert is_alpha_text(text) is expected
 
 
-@pytest.mark.parametrize("text,expected", [
-    ("one two three", 3),
-    ("", 0),
-    ("   ", 0),
-    ("single", 1),
-    ("a b c d e", 5),
-])
+@pytest.mark.parametrize(
+    "text,expected",
+    [
+        ("one two three", 3),
+        ("", 0),
+        ("   ", 0),
+        ("single", 1),
+        ("a b c d e", 5),
+    ],
+)
 def test_word_count(text: str, expected: int) -> None:
     assert word_count(text) == expected
 

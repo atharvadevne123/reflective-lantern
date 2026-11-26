@@ -1,4 +1,5 @@
 """Automated retraining pipeline (Airflow DAG) for Support-Sage."""
+
 from __future__ import annotations
 
 from datetime import datetime, timedelta
@@ -6,6 +7,7 @@ from datetime import datetime, timedelta
 try:
     from airflow import DAG
     from airflow.operators.python import PythonOperator
+
     _AIRFLOW_AVAILABLE = True
 except ImportError:
     _AIRFLOW_AVAILABLE = False
@@ -22,8 +24,10 @@ DEFAULT_ARGS = {
 def task_generate_data(**context: dict) -> dict:
     """Generate fresh synthetic training data."""
     import sys
+
     sys.path.insert(0, ".")
     from app.features import generate_synthetic_data
+
     df = generate_synthetic_data(n_samples=3000)
     df.to_parquet("/tmp/training_data.parquet", index=False)
     return {"n_samples": len(df)}
@@ -34,8 +38,10 @@ def task_train_model(**context: dict) -> dict:
     import sys
 
     import pandas as pd
+
     sys.path.insert(0, ".")
     from app.model import train_model
+
     df = pd.read_parquet("/tmp/training_data.parquet")
     _, metrics = train_model(df)
     return metrics
@@ -46,8 +52,10 @@ def task_rebuild_rag_index(**context: dict) -> dict:
     import sys
 
     import pandas as pd
+
     sys.path.insert(0, ".")
     from rag.ingest import ingest_tickets
+
     df = pd.read_parquet("/tmp/training_data.parquet")
     n = ingest_tickets(df)
     return {"indexed_tickets": n}
@@ -56,9 +64,11 @@ def task_rebuild_rag_index(**context: dict) -> dict:
 def task_check_drift(**context: dict) -> dict:
     """Run KS-test drift check and log results."""
     import sys
+
     sys.path.insert(0, ".")
     from app.database import SessionLocal
     from app.monitoring import get_drift_report
+
     db = SessionLocal()
     try:
         report = get_drift_report(db)

@@ -166,8 +166,22 @@ class TestAvgScore:
         assert result == pytest.approx(s.trend_score, abs=1e-6)
 
     def test_average_of_two(self) -> None:
-        s1 = _score(viral_probability=0.0, author_followers=0, hashtag_count=0, has_media=False, mention_count=0, post_id="a")
-        s2 = _score(viral_probability=1.0, author_followers=5_000_000, hashtag_count=5, has_media=True, mention_count=3, post_id="b")
+        s1 = _score(
+            viral_probability=0.0,
+            author_followers=0,
+            hashtag_count=0,
+            has_media=False,
+            mention_count=0,
+            post_id="a",
+        )
+        s2 = _score(
+            viral_probability=1.0,
+            author_followers=5_000_000,
+            hashtag_count=5,
+            has_media=True,
+            mention_count=3,
+            post_id="b",
+        )
         result = avg_score([s1, s2])
         expected = (s1.trend_score + s2.trend_score) / 2
         assert result == pytest.approx(expected, abs=1e-6)

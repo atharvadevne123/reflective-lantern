@@ -166,6 +166,7 @@ def test_history_length_matches_add_count():
 
 def test_make_doc_id_stable():
     from app.ingestion.versioning import make_doc_id
+
     id1 = make_doc_id("file.txt", 1)
     id2 = make_doc_id("file.txt", 1)
     assert id1 == id2
@@ -173,6 +174,7 @@ def test_make_doc_id_stable():
 
 def test_make_doc_id_different_versions_stable():
     from app.ingestion.versioning import make_doc_id
+
     id1 = make_doc_id("file.txt", 1)
     id2 = make_doc_id("file.txt", 2)
     assert id1 != id2

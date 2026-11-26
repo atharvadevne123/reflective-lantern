@@ -1,4 +1,5 @@
 """Extended pricing strategy tests with parametrize and boundary coverage."""
+
 from __future__ import annotations
 
 import pytest
@@ -55,24 +56,30 @@ def test_dynamic_inelastic_market_raises_price() -> None:
     assert result == pytest.approx(105.0)
 
 
-@pytest.mark.parametrize("strategy,base_price", [
-    (PricingStrategy.PENETRATION, 200.0),
-    (PricingStrategy.PREMIUM, 200.0),
-    (PricingStrategy.SKIMMING, 200.0),
-    (PricingStrategy.COST_PLUS, 200.0),
-])
+@pytest.mark.parametrize(
+    "strategy,base_price",
+    [
+        (PricingStrategy.PENETRATION, 200.0),
+        (PricingStrategy.PREMIUM, 200.0),
+        (PricingStrategy.SKIMMING, 200.0),
+        (PricingStrategy.COST_PLUS, 200.0),
+    ],
+)
 def test_strategy_scales_with_base_price(strategy: PricingStrategy, base_price: float) -> None:
     result_100 = apply_strategy(100.0, strategy)
     result_200 = apply_strategy(base_price, strategy)
     assert result_200 == pytest.approx(result_100 * 2, abs=0.01)
 
 
-@pytest.mark.parametrize("elasticity,expected_direction", [
-    (-2.0, "lower"),
-    (-1.5, "lower"),
-    (-0.5, "higher"),
-    (-0.9, "higher"),
-])
+@pytest.mark.parametrize(
+    "elasticity,expected_direction",
+    [
+        (-2.0, "lower"),
+        (-1.5, "lower"),
+        (-0.5, "higher"),
+        (-0.9, "higher"),
+    ],
+)
 def test_dynamic_direction_by_elasticity(elasticity: float, expected_direction: str) -> None:
     base = 100.0
     result = apply_strategy(base, PricingStrategy.DYNAMIC, elasticity=elasticity)

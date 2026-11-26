@@ -1,4 +1,5 @@
 """Extended suite-cast model tests — second pass with parametrize."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -29,8 +30,13 @@ def test_generate_sample_data_df_shape() -> None:
 def test_generate_sample_data_df_has_required_columns() -> None:
     df, _ = generate_sample_data(n=50)
     required = [
-        "lead_time", "length_of_stay", "guests_count", "checkin_month",
-        "checkin_dayofweek", "room_rate", "competitor_avg_rate",
+        "lead_time",
+        "length_of_stay",
+        "guests_count",
+        "checkin_month",
+        "checkin_dayofweek",
+        "room_rate",
+        "competitor_avg_rate",
     ]
     for col in required:
         assert col in df.columns

@@ -1,4 +1,5 @@
 """Extended forecasting tests for sport-cast with parametrize and boundary coverage."""
+
 from __future__ import annotations
 
 import pytest
@@ -82,12 +83,15 @@ def test_rolling_average_constant_series_equals_constant() -> None:
     assert out == pytest.approx([5.0] * 10, rel=1e-6)
 
 
-@pytest.mark.parametrize("win_rates,expected_trend", [
-    ([0.1, 0.2, 0.3, 0.4, 0.5], "improving"),
-    ([0.9, 0.7, 0.5, 0.3, 0.1], "declining"),
-    ([0.5, 0.5, 0.5, 0.5, 0.5], "stable"),
-    ([0.4, 0.5, 0.4, 0.5, 0.4], "stable"),
-])
+@pytest.mark.parametrize(
+    "win_rates,expected_trend",
+    [
+        ([0.1, 0.2, 0.3, 0.4, 0.5], "improving"),
+        ([0.9, 0.7, 0.5, 0.3, 0.1], "declining"),
+        ([0.5, 0.5, 0.5, 0.5, 0.5], "stable"),
+        ([0.4, 0.5, 0.4, 0.5, 0.4], "stable"),
+    ],
+)
 def test_detect_form_trend(win_rates: list[float], expected_trend: str) -> None:
     assert detect_form_trend(win_rates) == expected_trend
 
@@ -102,6 +106,7 @@ def test_detect_form_trend_valid_outputs() -> None:
     valid = {"improving", "declining", "stable"}
     for _ in range(10):
         import random
+
         vals = [random.random() for _ in range(5)]
         result = detect_form_trend(vals)
         assert result in valid

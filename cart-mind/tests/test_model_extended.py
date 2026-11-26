@@ -11,10 +11,12 @@ from app.model import model_fingerprint, predict_intent
 
 
 def _make_simple_pipeline() -> Pipeline:
-    pipe = Pipeline([
-        ("scaler", StandardScaler()),
-        ("clf", LogisticRegression(max_iter=200)),
-    ])
+    pipe = Pipeline(
+        [
+            ("scaler", StandardScaler()),
+            ("clf", LogisticRegression(max_iter=200)),
+        ]
+    )
     X = pd.DataFrame({"a": [1.0, 2.0, 3.0, 4.0], "b": [0.1, 0.2, 0.3, 0.4]})
     y = pd.Series([0, 1, 0, 1])
     pipe.fit(X, y)

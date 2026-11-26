@@ -1,4 +1,5 @@
 """Extended monitoring/drift tests with parametrize and boundary coverage."""
+
 from __future__ import annotations
 
 import pytest
@@ -86,6 +87,7 @@ def test_compute_drift_various_sample_sizes_no_error(n: int) -> None:
 
 def test_compute_drift_similar_distributions_low_statistic() -> None:
     import random
+
     rng = random.Random(42)
     reference = [rng.gauss(0, 1) for _ in range(200)]
     current = [rng.gauss(0, 1) for _ in range(200)]

@@ -145,10 +145,13 @@ class TestNormalisedSavingsPercent:
 
 
 class TestBaselineCalculatorEdgeCases:
-    @pytest.mark.parametrize("x,y,reporting_x", [
-        ([1.0, 2.0, 3.0], [100.0, 200.0, 300.0], 4.0),
-        ([10.0, 20.0, 30.0], [500.0, 600.0, 700.0], 25.0),
-    ])
+    @pytest.mark.parametrize(
+        "x,y,reporting_x",
+        [
+            ([1.0, 2.0, 3.0], [100.0, 200.0, 300.0], 4.0),
+            ([10.0, 20.0, 30.0], [500.0, 600.0, 700.0], 25.0),
+        ],
+    )
     def test_build_regression_baseline_returns_model(
         self, x: list, y: list, reporting_x: float
     ) -> None:
@@ -175,10 +178,13 @@ class TestBaselineCalculatorEdgeCases:
         result = adjusted_baseline(50.0, 2.0, 10.0)
         assert result == pytest.approx(70.0)
 
-    @pytest.mark.parametrize("pre_kwh", [
-        [100.0, 110.0, 90.0],
-        [200.0, 200.0, 200.0],
-    ])
+    @pytest.mark.parametrize(
+        "pre_kwh",
+        [
+            [100.0, 110.0, 90.0],
+            [200.0, 200.0, 200.0],
+        ],
+    )
     def test_mean_baseline_in_range(self, pre_kwh: list) -> None:
         from app.baseline_calculator import mean_baseline
 

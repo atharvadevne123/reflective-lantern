@@ -266,100 +266,120 @@ class TestValidateFeatureWindowExtended:
 class TestValidatePositiveIntExtended:
     def test_valid_positive_int(self) -> None:
         from app.validators import validate_positive_int
+
         assert validate_positive_int(5) == 5
 
     def test_zero_raises(self) -> None:
         from app.validators import validate_positive_int
+
         with pytest.raises(ValueError, match="positive"):
             validate_positive_int(0)
 
     def test_negative_raises(self) -> None:
         from app.validators import validate_positive_int
+
         with pytest.raises(ValueError):
             validate_positive_int(-1)
 
     def test_bool_raises(self) -> None:
         from app.validators import validate_positive_int
+
         with pytest.raises(ValueError):
             validate_positive_int(True)  # type: ignore[arg-type]
 
     def test_float_raises(self) -> None:
         from app.validators import validate_positive_int
+
         with pytest.raises(ValueError):
             validate_positive_int(1.5)  # type: ignore[arg-type]
 
     def test_custom_name_in_error(self) -> None:
         from app.validators import validate_positive_int
+
         with pytest.raises(ValueError, match="count"):
             validate_positive_int(-1, name="count")
 
     @pytest.mark.parametrize("v", [1, 2, 100, 10000])
     def test_various_positive_ints(self, v: int) -> None:
         from app.validators import validate_positive_int
+
         assert validate_positive_int(v) == v
 
 
 class TestValidateNonNegativeFloatExtended:
     def test_zero_accepted(self) -> None:
         from app.validators import validate_non_negative_float
+
         assert validate_non_negative_float(0.0) == 0.0
 
     def test_positive_accepted(self) -> None:
         from app.validators import validate_non_negative_float
+
         assert validate_non_negative_float(3.14) == pytest.approx(3.14)
 
     def test_negative_raises(self) -> None:
         from app.validators import validate_non_negative_float
+
         with pytest.raises(ValueError, match="non-negative"):
             validate_non_negative_float(-0.001)
 
     def test_infinity_raises(self) -> None:
         from app.validators import validate_non_negative_float
+
         with pytest.raises(ValueError, match="finite"):
             validate_non_negative_float(float("inf"))
 
     def test_nan_raises(self) -> None:
         from app.validators import validate_non_negative_float
+
         with pytest.raises(ValueError, match="finite"):
             validate_non_negative_float(float("nan"))
 
     def test_custom_name_in_error(self) -> None:
         from app.validators import validate_non_negative_float
+
         with pytest.raises(ValueError, match="consumption"):
             validate_non_negative_float(-1.0, name="consumption")
 
     @pytest.mark.parametrize("v", [0.0, 0.001, 1.0, 100.0, 9999.9])
     def test_valid_values(self, v: float) -> None:
         from app.validators import validate_non_negative_float
+
         assert validate_non_negative_float(v) == pytest.approx(v)
 
 
 class TestValidateForecastLengthExtended:
     def test_minimum_one_accepted(self) -> None:
         from app.validators import validate_forecast_length
+
         assert validate_forecast_length(1) == 1
 
     def test_max_length_accepted(self) -> None:
         from app.validators import validate_forecast_length
+
         assert validate_forecast_length(8760) == 8760
 
     def test_zero_raises(self) -> None:
         from app.validators import validate_forecast_length
+
         with pytest.raises(ValueError, match="at least 1"):
             validate_forecast_length(0)
 
     def test_negative_raises(self) -> None:
         from app.validators import validate_forecast_length
+
         with pytest.raises(ValueError):
             validate_forecast_length(-10)
 
     def test_exceeds_max_raises(self) -> None:
         from app.validators import validate_forecast_length
+
         with pytest.raises(ValueError, match="exceeds"):
             validate_forecast_length(8761)
 
     def test_custom_max_length(self) -> None:
         from app.validators import validate_forecast_length
+
         assert validate_forecast_length(48, max_length=48) == 48
         with pytest.raises(ValueError):
             validate_forecast_length(49, max_length=48)
@@ -367,24 +387,29 @@ class TestValidateForecastLengthExtended:
     @pytest.mark.parametrize("n", [1, 24, 168, 720, 8760])
     def test_valid_horizons(self, n: int) -> None:
         from app.validators import validate_forecast_length
+
         assert validate_forecast_length(n) == n
 
 
 class TestValidateTemperature:
     def test_valid_range(self) -> None:
         from app.validators import validate_temperature
+
         assert validate_temperature(20.0) == pytest.approx(20.0)
 
     def test_lower_bound(self) -> None:
         from app.validators import validate_temperature
+
         assert validate_temperature(-60.0) == pytest.approx(-60.0)
 
     def test_upper_bound(self) -> None:
         from app.validators import validate_temperature
+
         assert validate_temperature(60.0) == pytest.approx(60.0)
 
     def test_above_upper_raises(self) -> None:
         from app.validators import validate_temperature
+
         with pytest.raises(ValueError):
             validate_temperature(61.0)
 
@@ -392,6 +417,7 @@ class TestValidateTemperature:
         import math
 
         from app.validators import validate_temperature
+
         with pytest.raises(ValueError):
             validate_temperature(math.nan)
 
@@ -399,18 +425,22 @@ class TestValidateTemperature:
 class TestValidateHumidity:
     def test_valid_range(self) -> None:
         from app.validators import validate_humidity
+
         assert validate_humidity(50.0) == pytest.approx(50.0)
 
     def test_zero(self) -> None:
         from app.validators import validate_humidity
+
         assert validate_humidity(0.0) == pytest.approx(0.0)
 
     def test_hundred(self) -> None:
         from app.validators import validate_humidity
+
         assert validate_humidity(100.0) == pytest.approx(100.0)
 
     def test_above_max_raises(self) -> None:
         from app.validators import validate_humidity
+
         with pytest.raises(ValueError):
             validate_humidity(100.1)
 
@@ -418,19 +448,23 @@ class TestValidateHumidity:
 class TestValidatePositiveInt:
     def test_positive_passes(self) -> None:
         from app.validators import validate_positive_int
+
         assert validate_positive_int(5) == 5
 
     def test_zero_raises(self) -> None:
         from app.validators import validate_positive_int
+
         with pytest.raises(ValueError):
             validate_positive_int(0)
 
     def test_negative_raises(self) -> None:
         from app.validators import validate_positive_int
+
         with pytest.raises(ValueError):
             validate_positive_int(-1)
 
     def test_bool_raises(self) -> None:
         from app.validators import validate_positive_int
+
         with pytest.raises(ValueError):
             validate_positive_int(True)

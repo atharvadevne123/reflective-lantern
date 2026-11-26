@@ -413,8 +413,7 @@ class TestDriftMonitorAnyDrifted:
         """any_drifted returns expected value for mixed drift patterns."""
         monitor = DriftMonitor()
         results = [
-            DriftResult(FEATURE_COLS[i], 0.3, 0.001, flag)
-            for i, flag in enumerate(drifted_flags)
+            DriftResult(FEATURE_COLS[i], 0.3, 0.001, flag) for i, flag in enumerate(drifted_flags)
         ]
         assert monitor.any_drifted(results) is expected
 
@@ -522,6 +521,7 @@ class TestDriftMonitorDriftSummary:
         from datetime import datetime
 
         from app.monitoring import FEATURE_COLS
+
         results = []
         for i, flag in enumerate(drifted_flags):
             col = FEATURE_COLS[i % len(FEATURE_COLS)]
@@ -564,7 +564,10 @@ class TestDriftMonitorDriftSummary:
         flags = [True] * n_drifted + [False] * n_stable
         results = self._make_results(flags)
         summary = monitor.drift_summary(results)
-        assert len(summary["drifted_features"]) + len(summary["stable_features"]) == summary["total_features"]
+        assert (
+            len(summary["drifted_features"]) + len(summary["stable_features"])
+            == summary["total_features"]
+        )
 
 
 class TestDriftMonitorRates:
@@ -572,6 +575,7 @@ class TestDriftMonitorRates:
 
     def _make_results(self, drifted_flags: list[bool]) -> list[DriftResult]:
         from datetime import datetime
+
         results = []
         for i, flag in enumerate(drifted_flags):
             col = FEATURE_COLS[i % len(FEATURE_COLS)]

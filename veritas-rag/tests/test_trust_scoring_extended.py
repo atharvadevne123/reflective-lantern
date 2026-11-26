@@ -1,4 +1,5 @@
 """Extended trust scoring tests with parametrize and boundary coverage."""
+
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
@@ -21,9 +22,16 @@ from app.scoring.trust import (
 
 def _make_scored_chunk(trust: float = 0.5, rerank: float = 0.5) -> ScoredChunk:
     from datetime import UTC, datetime
+
     chunk = Chunk(
-        chunk_id="c1", doc_id="d1", source="test.txt", source_type="text",
-        page=1, seq=0, text="test chunk", created_at=datetime.now(UTC).isoformat()
+        chunk_id="c1",
+        doc_id="d1",
+        source="test.txt",
+        source_type="text",
+        page=1,
+        seq=0,
+        text="test chunk",
+        created_at=datetime.now(UTC).isoformat(),
     )
     return ScoredChunk(chunk=chunk, rerank_score=rerank, trust=trust)
 
@@ -117,7 +125,11 @@ def test_top_k_trust_returns_at_most_k(k: int) -> None:
 
 
 def test_top_k_trust_sorted_descending() -> None:
-    chunks = [_make_scored_chunk(trust=0.3), _make_scored_chunk(trust=0.9), _make_scored_chunk(trust=0.6)]
+    chunks = [
+        _make_scored_chunk(trust=0.3),
+        _make_scored_chunk(trust=0.9),
+        _make_scored_chunk(trust=0.6),
+    ]
     result = top_k_trust(chunks)
     scores = [c.trust for c in result]
     assert scores == sorted(scores, reverse=True)
@@ -140,11 +152,14 @@ def test_above_threshold_ratio_empty_returns_zero() -> None:
     assert above_threshold_ratio([]) == 0.0
 
 
-@pytest.mark.parametrize("threshold,expected_ratio", [
-    (0.0, 1.0),
-    (0.5, 0.5),
-    (1.1, 0.0),
-])
+@pytest.mark.parametrize(
+    "threshold,expected_ratio",
+    [
+        (0.0, 1.0),
+        (0.5, 0.5),
+        (1.1, 0.0),
+    ],
+)
 def test_above_threshold_ratio_parametrized(threshold: float, expected_ratio: float) -> None:
     chunks = [_make_scored_chunk(trust=0.3), _make_scored_chunk(trust=0.7)]
     result = above_threshold_ratio(chunks, threshold=threshold)

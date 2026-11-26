@@ -167,12 +167,15 @@ def test_truncate_to_bytes_no_change_when_under_limit():
     assert result == text
 
 
-@pytest.mark.parametrize("text", [
-    "hello world",
-    "HELLO WORLD",
-    "  spaces  ",
-    "line1\nline2",
-])
+@pytest.mark.parametrize(
+    "text",
+    [
+        "hello world",
+        "HELLO WORLD",
+        "  spaces  ",
+        "line1\nline2",
+    ],
+)
 def test_normalize_text_is_idempotent(text):
     once = normalize_text(text)
     twice = normalize_text(once)

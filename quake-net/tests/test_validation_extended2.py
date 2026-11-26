@@ -1,4 +1,5 @@
 """Extended validation tests: parametrize ranges, fault types, amplitude coherence."""
+
 from __future__ import annotations
 
 import pytest
@@ -34,10 +35,19 @@ def test_valid_payload_passes() -> None:
     assert result["out_of_range"] == []
 
 
-@pytest.mark.parametrize("field", [
-    "latitude", "longitude", "depth_km", "station_count",
-    "p_wave_amplitude", "s_wave_amplitude", "epicentral_distance_km", "fault_type",
-])
+@pytest.mark.parametrize(
+    "field",
+    [
+        "latitude",
+        "longitude",
+        "depth_km",
+        "station_count",
+        "p_wave_amplitude",
+        "s_wave_amplitude",
+        "epicentral_distance_km",
+        "fault_type",
+    ],
+)
 def test_missing_required_field_detected(field: str) -> None:
     payload = _valid_payload()
     del payload[field]
@@ -52,14 +62,17 @@ def test_all_fields_missing() -> None:
     assert len(result["missing"]) == 8
 
 
-@pytest.mark.parametrize("lat,valid", [
-    (-90.0, True),
-    (0.0, True),
-    (90.0, True),
-    (-90.1, False),
-    (90.1, False),
-    (180.0, False),
-])
+@pytest.mark.parametrize(
+    "lat,valid",
+    [
+        (-90.0, True),
+        (0.0, True),
+        (90.0, True),
+        (-90.1, False),
+        (90.1, False),
+        (180.0, False),
+    ],
+)
 def test_latitude_range(lat: float, valid: bool) -> None:
     payload = _valid_payload(latitude=lat)
     result = validate_event(payload)
@@ -69,13 +82,16 @@ def test_latitude_range(lat: float, valid: bool) -> None:
         assert "latitude" in result["out_of_range"]
 
 
-@pytest.mark.parametrize("lon,valid", [
-    (-180.0, True),
-    (0.0, True),
-    (180.0, True),
-    (-180.1, False),
-    (180.1, False),
-])
+@pytest.mark.parametrize(
+    "lon,valid",
+    [
+        (-180.0, True),
+        (0.0, True),
+        (180.0, True),
+        (-180.1, False),
+        (180.1, False),
+    ],
+)
 def test_longitude_range(lon: float, valid: bool) -> None:
     payload = _valid_payload(longitude=lon)
     result = validate_event(payload)
@@ -85,13 +101,16 @@ def test_longitude_range(lon: float, valid: bool) -> None:
         assert "longitude" in result["out_of_range"]
 
 
-@pytest.mark.parametrize("depth,valid", [
-    (0.0, True),
-    (350.0, True),
-    (700.0, True),
-    (-1.0, False),
-    (701.0, False),
-])
+@pytest.mark.parametrize(
+    "depth,valid",
+    [
+        (0.0, True),
+        (350.0, True),
+        (700.0, True),
+        (-1.0, False),
+        (701.0, False),
+    ],
+)
 def test_depth_km_range(depth: float, valid: bool) -> None:
     payload = _valid_payload(depth_km=depth)
     result = validate_event(payload)
@@ -101,17 +120,20 @@ def test_depth_km_range(depth: float, valid: bool) -> None:
         assert "depth_km" in result["out_of_range"]
 
 
-@pytest.mark.parametrize("fault,expected", [
-    ("strike_slip", "strike_slip"),
-    ("REVERSE", "reverse"),
-    ("Normal", "normal"),
-    ("OBLIQUE", "oblique"),
-    ("unknown", "unknown"),
-    ("Strike Slip", "strike_slip"),
-    ("strike-slip", "strike_slip"),
-    ("garbage", "unknown"),
-    ("", "unknown"),
-])
+@pytest.mark.parametrize(
+    "fault,expected",
+    [
+        ("strike_slip", "strike_slip"),
+        ("REVERSE", "reverse"),
+        ("Normal", "normal"),
+        ("OBLIQUE", "oblique"),
+        ("unknown", "unknown"),
+        ("Strike Slip", "strike_slip"),
+        ("strike-slip", "strike_slip"),
+        ("garbage", "unknown"),
+        ("", "unknown"),
+    ],
+)
 def test_normalise_fault_type(fault: str, expected: str) -> None:
     assert normalise_fault_type(fault) == expected
 
@@ -127,16 +149,19 @@ def test_unrecognised_fault_type_adds_warning() -> None:
     assert any("fault_type" in w.lower() for w in result["warnings"])
 
 
-@pytest.mark.parametrize("p_wave,s_wave,coherent", [
-    (100.0, 200.0, True),
-    (100.0, 50.0, True),
-    (100.0, 49.0, False),
-    (100.0, 0.0, False),
-    (0.0, 100.0, False),
-    (0.0, 0.0, False),
-    (1.0, 0.5, True),
-    (1.0, 0.49, False),
-])
+@pytest.mark.parametrize(
+    "p_wave,s_wave,coherent",
+    [
+        (100.0, 200.0, True),
+        (100.0, 50.0, True),
+        (100.0, 49.0, False),
+        (100.0, 0.0, False),
+        (0.0, 100.0, False),
+        (0.0, 0.0, False),
+        (1.0, 0.5, True),
+        (1.0, 0.49, False),
+    ],
+)
 def test_amplitudes_are_coherent(p_wave: float, s_wave: float, coherent: bool) -> None:
     assert amplitudes_are_coherent(p_wave, s_wave) is coherent
 

@@ -1,4 +1,5 @@
 """Extended decision threshold tests — second pass with parametrize."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -7,9 +8,7 @@ import pytest
 from app.thresholds import apply_threshold, find_optimal_threshold, threshold_summary
 
 
-def _binary_scenario(
-    n_pos: int = 50, n_neg: int = 50, seed: int = 0
-) -> tuple[list[int], list[float]]:
+def _binary_scenario(n_pos: int = 50, n_neg: int = 50, seed: int = 0) -> tuple[list[int], list[float]]:
     rng = np.random.default_rng(seed)
     y_true = [1] * n_pos + [0] * n_neg
     scores_pos = rng.uniform(0.6, 1.0, n_pos).tolist()

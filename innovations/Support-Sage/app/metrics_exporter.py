@@ -1,4 +1,5 @@
 """Prometheus metrics exporter for Support-Sage."""
+
 from __future__ import annotations
 
 import logging
@@ -7,6 +8,7 @@ logger = logging.getLogger(__name__)
 
 try:
     from prometheus_client import Counter, Gauge, Histogram, generate_latest
+
     _PROM_AVAILABLE = True
     PREDICT_COUNTER = Counter("support_sage_predictions_total", "Total predictions", ["priority"])
     PREDICT_LATENCY = Histogram("support_sage_prediction_latency_seconds", "Prediction latency")

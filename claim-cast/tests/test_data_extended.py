@@ -1,4 +1,5 @@
 """Extended tests for synthetic claim data generation."""
+
 from __future__ import annotations
 
 import pandas as pd

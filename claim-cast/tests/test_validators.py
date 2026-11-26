@@ -1,4 +1,5 @@
 """Tests for claim data validation utilities."""
+
 from __future__ import annotations
 
 import pytest
@@ -40,11 +41,14 @@ def test_validate_claim_data_invalid_geo_risk():
     assert any("geo_risk_tier" in e for e in errors)
 
 
-@pytest.mark.parametrize("claimed,limit,prior,expected", [
-    (70_000, 100_000, 1, True),   # severity_ratio 0.7
-    (40_000, 100_000, 5, True),   # high prior claims
-    (10_000, 100_000, 1, False),  # normal
-    (60_001, 100_000, 0, True),   # just above 0.6
-])
+@pytest.mark.parametrize(
+    "claimed,limit,prior,expected",
+    [
+        (70_000, 100_000, 1, True),  # severity_ratio 0.7
+        (40_000, 100_000, 5, True),  # high prior claims
+        (10_000, 100_000, 1, False),  # normal
+        (60_001, 100_000, 0, True),  # just above 0.6
+    ],
+)
 def test_is_high_risk_claim(claimed, limit, prior, expected):
     assert is_high_risk_claim(claimed, limit, prior) == expected

@@ -186,14 +186,15 @@ class TestEVChargingEdgeCases:
 
 
 class TestEVChargingEdgeCases2:
-    @pytest.mark.parametrize("start,target,capacity", [
-        (20.0, 80.0, 60.0),
-        (0.0, 100.0, 40.0),
-        (50.0, 90.0, 75.0),
-    ])
-    def test_energy_to_charge_positive(
-        self, start: float, target: float, capacity: float
-    ) -> None:
+    @pytest.mark.parametrize(
+        "start,target,capacity",
+        [
+            (20.0, 80.0, 60.0),
+            (0.0, 100.0, 40.0),
+            (50.0, 90.0, 75.0),
+        ],
+    )
+    def test_energy_to_charge_positive(self, start: float, target: float, capacity: float) -> None:
         from app.ev_charging import energy_to_charge
 
         energy = energy_to_charge(start, target, capacity)
@@ -219,13 +220,14 @@ class TestEVChargingEdgeCases2:
         saved = co2_saved_vs_ice(30.0)
         assert isinstance(saved, float)
 
-    @pytest.mark.parametrize("num_vehicles,miles,eff", [
-        (10, 50.0, 4.0),
-        (5, 100.0, 3.5),
-    ])
-    def test_fleet_daily_demand_positive(
-        self, num_vehicles: int, miles: float, eff: float
-    ) -> None:
+    @pytest.mark.parametrize(
+        "num_vehicles,miles,eff",
+        [
+            (10, 50.0, 4.0),
+            (5, 100.0, 3.5),
+        ],
+    )
+    def test_fleet_daily_demand_positive(self, num_vehicles: int, miles: float, eff: float) -> None:
         from app.ev_charging import fleet_daily_demand_kw
 
         demand = fleet_daily_demand_kw(num_vehicles, miles, eff)

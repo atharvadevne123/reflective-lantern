@@ -146,9 +146,9 @@ class TestDuplicateDetector:
             assert dup_id == "original"
 
 
-
 def test_content_hash_function():
     from app.ingestion.dedup import content_hash
+
     h1 = content_hash("hello world")
     h2 = content_hash("hello world")
     assert h1 == h2

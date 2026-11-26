@@ -133,10 +133,12 @@ async def predict(
         share_count=req.share_count,
     )
     result = _model.predict(df)
-    feature_hash = compute_feature_hash({
-        "headline": req.headline,
-        "source_domain": req.source_domain,
-    })
+    feature_hash = compute_feature_hash(
+        {
+            "headline": req.headline,
+            "source_domain": req.source_domain,
+        }
+    )
 
     log_prediction(
         db=db,
