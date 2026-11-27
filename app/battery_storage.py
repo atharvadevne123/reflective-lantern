@@ -66,6 +66,18 @@ class DispatchResult:
         """Alias for peak_shaved_kw."""
         return self.peak_shaved_kw
 
+    def to_dict(self) -> dict[str, float]:
+        """Return dispatch outcome as a plain dict."""
+        return {
+            "final_soc_pct": self.final_soc_pct,
+            "energy_charged_kwh": self.energy_charged_kwh,
+            "energy_discharged_kwh": self.energy_discharged_kwh,
+            "net_grid_kwh": self.net_grid_kwh,
+            "peak_shaved_kw": self.peak_shaved_kw,
+            "cycle_count": self.cycle_count,
+            "cost_saving": self.cost_saving,
+        }
+
 
 def usable_energy_kwh(
     battery: BatterySystem,

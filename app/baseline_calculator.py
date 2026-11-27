@@ -19,6 +19,16 @@ class BaselineModel:
     baseline_kwh: float
     method: str
 
+    def to_dict(self) -> dict[str, float | str]:
+        """Return model parameters as a plain dict."""
+        return {
+            "intercept": self.intercept,
+            "slope": self.slope,
+            "r_squared": self.r_squared,
+            "baseline_kwh": self.baseline_kwh,
+            "method": self.method,
+        }
+
 
 def mean_baseline(pre_retrofit_kwh: list[float]) -> float:
     """Compute a simple mean baseline from pre-retrofit consumption data.
