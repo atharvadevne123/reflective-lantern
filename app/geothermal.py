@@ -302,3 +302,18 @@ def geothermal_gradient(
     if gradient_c_per_km <= 0:
         raise ValueError("gradient_c_per_km must be positive")
     return surface_temperature_c + (depth_m / 1000.0) * gradient_c_per_km
+
+
+__all__ = [
+    "GeothermalPlantResult",
+    "GeothermalResource",
+    "brine_enthalpy_kj_per_kg",
+    "carnot_efficiency",
+    "characterise_resource",
+    "geothermal_gradient",
+    "geothermal_plant",
+    "heat_flow",
+    "levelised_cost_of_energy",
+    "reservoir_temperature",
+    "thermal_power_from_flow",
+]

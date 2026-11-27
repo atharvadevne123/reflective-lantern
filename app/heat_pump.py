@@ -191,3 +191,15 @@ def analyse_heat_pump(
         co2_emissions_kg=co2,
         scop=scop,
     )
+
+
+__all__ = [
+    "HeatPumpResult",
+    "HeatPumpType",
+    "analyse_heat_pump",
+    "carnot_cop",
+    "electricity_for_heat",
+    "heat_delivered_kwh",
+    "realistic_cop",
+    "seasonal_cop",
+]

@@ -344,3 +344,19 @@ def stack_voltage(cell_voltage_v: float, num_cells: int) -> float:
     if num_cells <= 0:
         raise ValueError("num_cells must be positive")
     return cell_voltage_v * num_cells
+
+
+__all__ = [
+    "FuelCellResult",
+    "activation_overpotential",
+    "cell_voltage",
+    "degradation_rate_per_hour",
+    "fuel_cell_efficiency",
+    "hydrogen_consumption_rate",
+    "nernst_voltage",
+    "ohmic_overpotential",
+    "operating_point",
+    "stack_power",
+    "stack_voltage",
+    "water_production_rate",
+]
