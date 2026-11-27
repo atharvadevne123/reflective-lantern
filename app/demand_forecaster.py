@@ -327,3 +327,19 @@ def ensemble_forecast(
     if abs(sum(weights) - 1.0) > 1e-6:
         raise ValueError("weights must sum to 1.0")
     return [sum(w * f[i] for w, f in zip(weights, forecasts, strict=False)) for i in range(n)]
+
+
+__all__ = [
+    "ForecastMethod",
+    "ForecastResult",
+    "bias",
+    "ensemble_forecast",
+    "exponential_smoothing_forecast",
+    "forecast_accuracy_summary",
+    "forecast_demand",
+    "linear_trend_forecast",
+    "mean_absolute_error",
+    "moving_average_forecast",
+    "naive_forecast",
+    "root_mean_square_error",
+]

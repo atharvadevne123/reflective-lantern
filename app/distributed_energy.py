@@ -292,3 +292,19 @@ def portfolio_availability(portfolio: DERPortfolio) -> float:
         return 0.0
     available = sum(u.rated_power_kw for u in portfolio.assets if u.status == DERStatus.ONLINE)
     return available / total
+
+
+__all__ = [
+    "DERPortfolio",
+    "DERStatus",
+    "DERType",
+    "DERUnit",
+    "aggregate_generation",
+    "capacity_factor",
+    "dispatch_order",
+    "grid_import_export",
+    "net_metering_credit",
+    "portfolio_availability",
+    "self_consumption_rate",
+    "self_sufficiency_rate",
+]

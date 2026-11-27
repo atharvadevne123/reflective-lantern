@@ -287,3 +287,17 @@ def replacement_cost_per_kwh(
     if capacity_kwh <= 0:
         raise ValueError("capacity_kwh must be positive")
     return pack_cost / capacity_kwh
+
+
+__all__ = [
+    "DegradationResult",
+    "calendar_degradation",
+    "cycle_degradation",
+    "cycles_to_eol",
+    "degradation_report",
+    "energy_throughput_kwh",
+    "rainflow_cycle_depth_factor",
+    "remaining_capacity",
+    "replacement_cost_per_kwh",
+    "state_of_health",
+]
