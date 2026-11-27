@@ -30,6 +30,17 @@ class PVSystemResult:
         """Alias for peak_power_kw."""
         return self.peak_power_kw
 
+    def to_dict(self) -> dict[str, float]:
+        """Return PV result as a plain dict."""
+        return {
+            "peak_power_kw": self.peak_power_kw,
+            "annual_yield_kwh": self.annual_yield_kwh,
+            "performance_ratio": self.performance_ratio,
+            "specific_yield_kwh_per_kwp": self.specific_yield_kwh_per_kwp,
+            "capacity_factor": self.capacity_factor,
+            "co2_saved_kg": self.co2_saved_kg,
+        }
+
 
 def array_power_kw(
     panel_count: int,

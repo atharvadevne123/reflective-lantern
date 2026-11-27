@@ -26,6 +26,17 @@ class TurbineResult:
     annual_kwh: float
     co2_saved_kg: float
 
+    def to_dict(self) -> dict[str, float]:
+        """Return turbine result as a plain dict."""
+        return {
+            "rotor_area_m2": self.rotor_area_m2,
+            "theoretical_power_kw": self.theoretical_power_kw,
+            "actual_power_kw": self.actual_power_kw,
+            "capacity_factor": self.capacity_factor,
+            "annual_kwh": self.annual_kwh,
+            "co2_saved_kg": self.co2_saved_kg,
+        }
+
 
 def rotor_swept_area(rotor_diameter_m: float) -> float:
     """Compute the swept area of a horizontal-axis wind turbine rotor.
