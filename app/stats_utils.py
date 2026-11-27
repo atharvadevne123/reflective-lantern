@@ -680,6 +680,74 @@ def trimmed_mean(values: Sequence[float], proportion: float = 0.1) -> float:
     return sum(trimmed) / len(trimmed)
 
 
+def exponential_moving_average(values: Sequence[float], alpha: float = 0.3) -> list[float]:
+    """Return the exponential moving average of *values*.
+
+    Args:
+        values: Non-empty sequence of numbers.
+        alpha: Smoothing factor in (0, 1].
+
+    Raises:
+        ValueError: If *values* is empty or *alpha* is out of range.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    if not (0 < alpha <= 1):
+        raise ValueError("alpha must be in (0, 1]")
+    result = [float(values[0])]
+    for v in values[1:]:
+        result.append(alpha * v + (1 - alpha) * result[-1])
+    return result
+
+
+def winsorize(values: Sequence[float], lower: float = 0.05, upper: float = 0.95) -> list[float]:
+    """Replace extreme values by their winsorization bounds.
+
+    Args:
+        values: Non-empty sequence of numbers.
+        lower: Lower quantile bound (0 to upper).
+        upper: Upper quantile bound (lower to 1).
+
+    Raises:
+        ValueError: If *values* is empty or bounds are out of range.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    if not (0 <= lower < upper <= 1):
+        raise ValueError("lower and upper must satisfy 0 <= lower < upper <= 1")
+    lo = percentile(values, lower * 100)
+    hi = percentile(values, upper * 100)
+    return [max(lo, min(hi, v)) for v in values]
+
+
+def rolling_std(values: Sequence[float], window: int) -> list[float]:
+    """Return rolling standard deviation over a sliding window.
+
+    Args:
+        values: Non-empty sequence of numbers.
+        window: Window size (>= 2).
+
+    Returns:
+        List of std values; first (window - 1) entries are 0.0 (insufficient data).
+
+    Raises:
+        ValueError: If window < 2 or *values* is empty.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    if window < 2:
+        raise ValueError("window must be >= 2")
+    result: list[float] = []
+    for i in range(len(values)):
+        if i < window - 1:
+            result.append(0.0)
+        else:
+            w = list(values[i - window + 1 : i + 1])
+            m = sum(w) / window
+            result.append(math.sqrt(sum((x - m) ** 2 for x in w) / window))
+    return result
+
+
 def zscore(value: float, mean_v: float, std_v: float) -> float:
     """Return the z-score of a single value given population mean and std.
 
