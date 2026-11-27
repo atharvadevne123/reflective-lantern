@@ -297,3 +297,17 @@ def eui_reduction_needed(
     if target_eui > current_eui:
         raise ValueError("target_eui cannot exceed current_eui")
     return (1.0 - target_eui / current_eui) * 100.0
+
+
+__all__ = [
+    "EUIResult",
+    "SectorRanking",
+    "benchmark_eui",
+    "carbon_from_eui",
+    "energy_use_intensity",
+    "eui_reduction_needed",
+    "floor_area_from_eui",
+    "normalise_weather",
+    "rank_within_sector",
+    "savings_potential",
+]

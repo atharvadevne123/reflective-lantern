@@ -174,3 +174,13 @@ def compare_buildings(
     """
     labelled = [(name, label_building(area, kwh, reference_eui)) for name, area, kwh in buildings]
     return sorted(labelled, key=lambda x: x[1].eui_kwh_per_m2)
+
+
+__all__ = [
+    "EnergyClass",
+    "EnergyLabel",
+    "classify_building",
+    "compare_buildings",
+    "efficiency_ratio",
+    "label_building",
+]

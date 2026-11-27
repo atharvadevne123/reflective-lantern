@@ -234,3 +234,19 @@ def run_audit(
         total_savings_potential_kwh=savings_kwh,
         total_savings_potential_cost=savings_cost,
     )
+
+
+__all__ = [
+    "AuditLevel",
+    "AuditOpportunity",
+    "AuditReport",
+    "BreakdownList",
+    "EndUseBreakdown",
+    "EndUseCategory",
+    "build_end_use_breakdown",
+    "end_use_percentage",
+    "energy_use_intensity",
+    "opportunity_payback",
+    "prioritise_opportunities",
+    "run_audit",
+]

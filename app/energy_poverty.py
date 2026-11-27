@@ -204,3 +204,15 @@ def assess_household(
         vulnerability_score=vscore,
         recommended_interventions=interventions,
     )
+
+
+__all__ = [
+    "FuelPovertyAssessment",
+    "PovertyMethod",
+    "after_fuel_costs_income",
+    "assess_household",
+    "assess_ten_percent",
+    "energy_cost_ratio",
+    "recommended_interventions",
+    "vulnerability_score",
+]
