@@ -85,6 +85,10 @@ class TTLCache:
         now = time.monotonic()
         return [k for k, (_, exp) in self._store.items() if exp > now]
 
+    def __iter__(self):
+        """Iterate over non-expired keys."""
+        return iter(self.keys())
+
 
 _SENTINEL = object()
 
