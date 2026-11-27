@@ -182,3 +182,14 @@ def analyse_turbine(
         annual_kwh=kwh,
         co2_saved_kg=co2,
     )
+
+
+__all__ = [
+    "TurbineResult",
+    "analyse_turbine",
+    "annual_energy_output_kwh",
+    "rotor_swept_area",
+    "turbine_power_kw",
+    "wind_power_density",
+    "wind_speed_at_height",
+]

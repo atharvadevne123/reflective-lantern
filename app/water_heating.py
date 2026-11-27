@@ -180,3 +180,13 @@ def compare_technologies(
             daily_litres, cold_temp_c, hot_temp_c, "heat_pump", heat_pump_cop, electricity_rate
         ),
     }
+
+
+__all__ = [
+    "DHWResult",
+    "boiler_consumption",
+    "compare_technologies",
+    "energy_to_heat_water",
+    "estimate_dhw",
+    "heat_pump_consumption",
+]

@@ -291,3 +291,16 @@ def value_of_curtailment_reduction(
     if curtailment_reduction_kwh < 0:
         raise ValueError("curtailment_reduction_kwh must be non-negative")
     return curtailment_reduction_kwh * (marginal_generation_cost - curtailment_payment)
+
+
+__all__ = [
+    "CurtailmentEvent",
+    "CurtailmentSummary",
+    "analyse_curtailment",
+    "carbon_abatement_lost",
+    "curtailment_forecast_accuracy",
+    "curtailment_rate",
+    "curtailed_energy",
+    "revenue_lost",
+    "value_of_curtailment_reduction",
+]

@@ -178,3 +178,14 @@ def energy_cost_savings(
     if kwh_saved_per_year < 0 or energy_rate < 0 or o_and_m_savings < 0:
         raise ValueError("All arguments must be non-negative")
     return round(kwh_saved_per_year * energy_rate + o_and_m_savings, 4)
+
+
+__all__ = [
+    "ROIResult",
+    "analyse_investment",
+    "energy_cost_savings",
+    "lifetime_savings",
+    "net_present_value",
+    "roi_percent",
+    "simple_payback",
+]

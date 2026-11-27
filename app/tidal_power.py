@@ -264,3 +264,16 @@ def tidal_resource_score(
         return 0.0
     score = min((mean_speed_m_s - cut_in_speed_m_s) / (rated_speed_m_s - cut_in_speed_m_s), 1.0)
     return round(score * 100.0, 2)
+
+
+__all__ = [
+    "BarrageResult",
+    "TidalStreamResult",
+    "annual_tidal_energy_kwh",
+    "current_power_density",
+    "minimum_cut_in_speed",
+    "tidal_barrage_energy",
+    "tidal_energy_density",
+    "tidal_resource_score",
+    "tidal_stream_power",
+]

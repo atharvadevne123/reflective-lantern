@@ -169,3 +169,13 @@ def analyse_pv_system(
         capacity_factor=cf,
         co2_saved_kg=co2,
     )
+
+
+__all__ = [
+    "PVSystemResult",
+    "analyse_pv_system",
+    "annual_yield_kwh",
+    "array_power_kw",
+    "capacity_factor",
+    "specific_yield",
+]

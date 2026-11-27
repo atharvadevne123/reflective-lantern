@@ -215,3 +215,13 @@ def analyse_cable(
         within_limit=vd_pct <= MAX_VOLTAGE_DROP_PCT,
         power_loss_w=power_loss,
     )
+
+
+__all__ = [
+    "CableResult",
+    "analyse_cable",
+    "cable_resistance",
+    "voltage_drop_percent",
+    "voltage_drop_single_phase",
+    "voltage_drop_three_phase",
+]

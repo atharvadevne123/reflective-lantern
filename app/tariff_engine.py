@@ -164,3 +164,14 @@ def peak_shifting_savings(
     from_rate = rate_for_hour(from_hour, rates)
     to_rate = rate_for_hour(to_hour, rates)
     return round((from_rate - to_rate) * shift_kwh, 4)
+
+
+__all__ = [
+    "BillEstimate",
+    "RatePeriod",
+    "TariffRate",
+    "classify_hour",
+    "peak_shifting_savings",
+    "rate_for_hour",
+    "simulate_bill",
+]

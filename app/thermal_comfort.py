@@ -191,3 +191,14 @@ def assess_comfort(
         category=comfort_category(ppd_val),
         sensation=sensation_label(pmv_val),
     )
+
+
+__all__ = [
+    "ComfortCategory",
+    "ThermalComfortResult",
+    "assess_comfort",
+    "comfort_category",
+    "pmv",
+    "ppd",
+    "sensation_label",
+]
