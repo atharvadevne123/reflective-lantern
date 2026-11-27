@@ -30,6 +30,18 @@ class CableResult:
     within_limit: bool
     power_loss_w: float
 
+    def to_dict(self) -> dict[str, float | bool]:
+        """Return cable result as a plain dict."""
+        return {
+            "resistance_ohm": self.resistance_ohm,
+            "reactance_ohm": self.reactance_ohm,
+            "impedance_ohm": self.impedance_ohm,
+            "voltage_drop_v": self.voltage_drop_v,
+            "voltage_drop_pct": self.voltage_drop_pct,
+            "within_limit": self.within_limit,
+            "power_loss_w": self.power_loss_w,
+        }
+
 
 def cable_resistance(
     length_m: float,

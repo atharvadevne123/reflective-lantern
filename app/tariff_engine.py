@@ -38,6 +38,16 @@ class BillEstimate:
     kwh_by_period: dict[str, float]
     cost_by_period: dict[str, float]
 
+    def to_dict(self) -> dict[str, object]:
+        """Return bill estimate as a plain dict."""
+        return {
+            "total_cost": self.total_cost,
+            "energy_cost": self.energy_cost,
+            "standing_charge": self.standing_charge,
+            "kwh_by_period": self.kwh_by_period,
+            "cost_by_period": self.cost_by_period,
+        }
+
 
 DEFAULT_TOU_RATES: list[TariffRate] = [
     TariffRate(RatePeriod.OFF_PEAK, 0.08, 0, 7),
