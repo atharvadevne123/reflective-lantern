@@ -56,7 +56,7 @@ def naive_forecast(
 def moving_average_forecast(
     historical: list[float],
     window: int,
-    horizon: int,
+    horizon: int = 1,
 ) -> list[float]:
     """Forecast using a simple moving average.
 
@@ -85,15 +85,22 @@ def moving_average_forecast(
 
 def exponential_smoothing_forecast(
     historical: list[float],
-    alpha: float,
-    horizon: int,
+    alpha_or_horizon: float,
+    horizon_or_alpha: float | None = None,
+    *,
+    alpha: float | None = None,
 ) -> list[float]:
     """Forecast using simple exponential smoothing (Holt's level model).
 
+    Accepts two calling conventions:
+      - exponential_smoothing_forecast(hist, alpha, horizon)  [legacy]
+      - exponential_smoothing_forecast(hist, horizon, alpha=0.3)  [new]
+
     Args:
         historical: Historical demand values.
-        alpha: Smoothing factor in (0, 1].
-        horizon: Number of periods to forecast.
+        alpha_or_horizon: Smoothing factor (0,1] or integer horizon.
+        horizon_or_alpha: Integer horizon or smoothing factor (0,1].
+        alpha: Explicit keyword-only smoothing factor (new convention).
 
     Returns:
         List of forecasted values.
@@ -103,14 +110,26 @@ def exponential_smoothing_forecast(
     """
     if not historical:
         raise ValueError("historical must not be empty")
-    if not (0 < alpha <= 1):
+    if alpha is not None:
+        # New convention: (hist, horizon, alpha=value)
+        _horizon = int(alpha_or_horizon)
+        _alpha = alpha
+    elif horizon_or_alpha is not None:
+        # Legacy: (hist, alpha, horizon)
+        _alpha = float(alpha_or_horizon)
+        _horizon = int(horizon_or_alpha)
+    else:
+        # Two-arg form: (hist, horizon) with default alpha
+        _horizon = int(alpha_or_horizon)
+        _alpha = 0.3
+    if not (0 < _alpha <= 1):
         raise ValueError("alpha must be in (0, 1]")
-    if horizon <= 0:
+    if _horizon <= 0:
         raise ValueError("horizon must be positive")
     level = historical[0]
     for value in historical[1:]:
-        level = alpha * value + (1 - alpha) * level
-    return [round(level, 4)] * horizon
+        level = _alpha * value + (1 - _alpha) * level
+    return [round(level, 4)] * _horizon
 
 
 def linear_trend_forecast(
