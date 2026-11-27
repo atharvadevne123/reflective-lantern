@@ -38,6 +38,15 @@ class EndUseBreakdown:
     pct_of_total: float
 
 
+class BreakdownList(list):
+    """List of EndUseBreakdown that also supports `category in breakdown` lookups."""
+
+    def __contains__(self, item: object) -> bool:
+        if isinstance(item, EndUseCategory):
+            return any(b.category == item for b in self)
+        return super().__contains__(item)
+
+
 @dataclass
 class AuditOpportunity:
     """An identified energy saving opportunity."""
@@ -48,7 +57,7 @@ class AuditOpportunity:
     estimated_annual_savings_cost: float
     implementation_cost: float
     simple_payback_years: float
-    priority: str
+    priority: str = ""
 
 
 @dataclass
@@ -123,7 +132,7 @@ def opportunity_payback(
         implementation_cost: Total implementation cost in currency units.
 
     Returns:
-        Simple payback period in years.
+        Simple payback period in years (implementation_cost / annual_savings).
 
     Raises:
         ValueError: If annual_savings is non-positive or implementation_cost is negative.
@@ -151,33 +160,33 @@ def prioritise_opportunities(
 
 def build_end_use_breakdown(
     end_uses: dict[EndUseCategory, float],
-    energy_rate: float,
+    energy_rate: float | None = None,
 ) -> list[EndUseBreakdown]:
     """Build a list of end-use breakdowns from a consumption dictionary.
 
     Args:
         end_uses: Mapping of end-use category to annual kWh.
-        energy_rate: Electricity unit rate in currency/kWh.
+        energy_rate: Electricity unit rate in currency/kWh (optional; pass None to skip cost).
 
     Returns:
         List of :class:`EndUseBreakdown` objects.
 
     Raises:
-        ValueError: If any consumption value is negative or energy_rate is non-positive.
+        ValueError: If any consumption value is negative or energy_rate is non-positive when given.
     """
     if any(v < 0 for v in end_uses.values()):
         raise ValueError("All consumption values must be non-negative")
-    if energy_rate <= 0:
+    if energy_rate is not None and energy_rate <= 0:
         raise ValueError("energy_rate must be positive")
     total_kwh = sum(end_uses.values())
-    result = []
+    result: BreakdownList = BreakdownList()
     for category, kwh in end_uses.items():
         pct = end_use_percentage(kwh, total_kwh) if total_kwh > 0 else 0.0
         result.append(
             EndUseBreakdown(
                 category=category,
                 annual_kwh=round(kwh, 4),
-                annual_cost=round(kwh * energy_rate, 2),
+                annual_cost=round(kwh * energy_rate, 2) if energy_rate is not None else 0.0,
                 pct_of_total=pct,
             )
         )
