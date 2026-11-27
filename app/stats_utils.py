@@ -378,3 +378,52 @@ def weighted_average(values: Sequence[float], weights: Sequence[float]) -> float
     if total_w == 0:
         raise ValueError("Total weight must be greater than zero")
     return sum(v * w for v, w in zip(values, weights, strict=False)) / total_w
+
+
+def geometric_mean(values: Sequence[float]) -> float:
+    """Return the geometric mean of *values* (all must be positive).
+
+    Args:
+        values: Non-empty sequence of positive numbers.
+
+    Raises:
+        ValueError: If *values* is empty or any value is non-positive.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    if any(v <= 0 for v in values):
+        raise ValueError("all values must be positive for geometric mean")
+    log_sum = sum(math.log(v) for v in values)
+    return math.exp(log_sum / len(values))
+
+
+def harmonic_mean(values: Sequence[float]) -> float:
+    """Return the harmonic mean of *values* (all must be non-zero).
+
+    Args:
+        values: Non-empty sequence of non-zero numbers.
+
+    Raises:
+        ValueError: If *values* is empty or any value is zero.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    if any(v == 0 for v in values):
+        raise ValueError("all values must be non-zero for harmonic mean")
+    return len(values) / sum(1.0 / v for v in values)
+
+
+def zscore(value: float, mean_v: float, std_v: float) -> float:
+    """Return the z-score of a single value given population mean and std.
+
+    Args:
+        value: Observed value.
+        mean_v: Population mean.
+        std_v: Population standard deviation.
+
+    Returns:
+        0.0 if std_v is zero, otherwise (value - mean_v) / std_v.
+    """
+    if std_v == 0:
+        return 0.0
+    return (value - mean_v) / std_v
