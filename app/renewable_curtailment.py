@@ -37,6 +37,18 @@ class CurtailmentSummary:
     num_events: int
     events: list[CurtailmentEvent] = field(default_factory=list)
 
+    def to_dict(self) -> dict[str, float | int]:
+        """Return summary as a plain dict (without individual events)."""
+        return {
+            "total_available_kwh": self.total_available_kwh,
+            "total_generated_kwh": self.total_generated_kwh,
+            "total_curtailed_kwh": self.total_curtailed_kwh,
+            "curtailment_rate_pct": self.curtailment_rate_pct,
+            "total_revenue_lost": self.total_revenue_lost,
+            "co2_impact_kg": self.co2_impact_kg,
+            "num_events": self.num_events,
+        }
+
 
 def curtailed_energy(
     available_kw: float,

@@ -28,6 +28,17 @@ class HVACEstimate:
     hdd: float
     cdd: float
 
+    def to_dict(self) -> dict[str, float]:
+        """Return estimate as a plain dict."""
+        return {
+            "heating_kwh": self.heating_kwh,
+            "cooling_kwh": self.cooling_kwh,
+            "total_kwh": self.total_kwh,
+            "estimated_cost": self.estimated_cost,
+            "hdd": self.hdd,
+            "cdd": self.cdd,
+        }
+
 
 def heating_degree_days(
     daily_temps_c: list[float],
