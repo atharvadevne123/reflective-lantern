@@ -105,7 +105,7 @@ def main() -> int:
         for f in files:
             errs = validate_file(f)
             results.append({"file": f.name, "errors": errs})
-        logger.info(json.dumps(results, indent=2))
+        print(json.dumps(results, indent=2))
         has_errors = any(r["errors"] for r in results)
         return 1 if has_errors else 0
 
@@ -119,12 +119,12 @@ def main() -> int:
             all_errors.extend(errs)
         else:
             if args.verbose:
-                logger.info("  OK   %s", f.name)
+                print(f"  OK   {f.name}")
     if all_errors:
         logger.error("\n%d error(s) found.", len(all_errors))
         return 1
     if not args.verbose:
-        logger.info("All %d files valid.", len(files))
+        print(f"All {len(files)} files valid.")
     return 0
 
 

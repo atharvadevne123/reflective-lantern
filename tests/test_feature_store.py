@@ -8,7 +8,7 @@ from app.feature_store import FeatureSet, FeatureStore
 
 
 def _fs(name="energy", version="1.0.0", features=None) -> FeatureSet:
-    return FeatureSet(name=name, version=version, features=features or {"a": 1})
+    return FeatureSet(name=name, version=version, features=features if features is not None else {"a": 1})
 
 
 class TestFeatureSet:
