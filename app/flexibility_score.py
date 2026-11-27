@@ -23,6 +23,17 @@ class FlexibilityAssessment:
     response_time_minutes: int
     recommendation: str
 
+    def to_dict(self) -> dict[str, float | int | str]:
+        """Return flexibility assessment as a plain dict."""
+        return {
+            "asset_id": self.asset_id,
+            "flexibility_score": self.flexibility_score,
+            "shiftable_kwh": self.shiftable_kwh,
+            "controllable_kw": self.controllable_kw,
+            "response_time_minutes": self.response_time_minutes,
+            "recommendation": self.recommendation,
+        }
+
 
 def _clamp(value: float, low: float = MIN_SCORE, high: float = MAX_SCORE) -> float:
     return max(low, min(high, value))
