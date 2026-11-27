@@ -50,6 +50,13 @@ class InsulationUpgradeResult:
     simple_payback_years: float
     co2_saved_kg: float
 
+    @property
+    def payback_years(self) -> float | None:
+        """Alias for simple_payback_years; None if infinite."""
+        if self.simple_payback_years == float("inf"):
+            return None
+        return self.simple_payback_years
+
 
 def heat_loss_watts(
     u_value_w_per_m2k: float,
@@ -76,6 +83,24 @@ def heat_loss_watts(
     if delta_t_k < 0:
         raise ValueError("delta_t_k must be non-negative")
     return round(u_value_w_per_m2k * area_m2 * delta_t_k, 4)
+
+
+def heat_loss_rate(
+    area_m2: float,
+    u_value_w_per_m2k: float,
+    delta_t_k: float,
+) -> float:
+    """Alias for heat_loss_watts with area-first argument order.
+
+    Args:
+        area_m2: Element area in m².
+        u_value_w_per_m2k: Thermal transmittance in W/m²·K.
+        delta_t_k: Indoor-outdoor temperature difference in K.
+
+    Returns:
+        Heat loss in Watts.
+    """
+    return heat_loss_watts(u_value_w_per_m2k, area_m2, delta_t_k)
 
 
 def r_value_from_u(u_value: float) -> float:
@@ -160,10 +185,12 @@ def analyse_insulation_upgrade(
     existing_u: float,
     upgraded_u: float,
     delta_t_k: float,
-    installation_cost: float,
+    installation_cost: float = 0.0,
     energy_rate: float = 0.10,
     heating_hours: float = 4380.0,
     emission_factor_kg_per_kwh: float = 0.233,
+    *,
+    cost: float | None = None,
 ) -> InsulationUpgradeResult:
     """Analyse the cost-benefit of an insulation upgrade.
 
@@ -183,6 +210,8 @@ def analyse_insulation_upgrade(
     Raises:
         ValueError: If upgraded_u is not lower than existing_u.
     """
+    if cost is not None:
+        installation_cost = cost
     if upgraded_u >= existing_u:
         raise ValueError("upgraded_u must be lower than existing_u for improvement")
     existing_w = heat_loss_watts(existing_u, area_m2, delta_t_k)

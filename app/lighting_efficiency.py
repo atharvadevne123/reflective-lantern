@@ -35,6 +35,11 @@ class LightingAuditResult:
     upgrade_savings_kwh: float | None
     upgrade_payback_years: float | None
 
+    @property
+    def installed_power_w(self) -> float:
+        """Alias for installed_watts."""
+        return self.installed_watts
+
 
 def luminous_efficacy(
     lumens: float,

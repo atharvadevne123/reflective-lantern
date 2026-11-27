@@ -20,6 +20,11 @@ class ROIResult:
     lifetime_savings: float
     roi_percent: float
 
+    @property
+    def payback_years(self) -> float:
+        """Alias for simple_payback_years."""
+        return self.simple_payback_years
+
 
 def simple_payback(capex: float, annual_savings: float) -> float:
     """Compute simple payback period in years.
