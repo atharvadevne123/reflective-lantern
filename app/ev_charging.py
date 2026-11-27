@@ -112,7 +112,7 @@ def energy_to_charge(
 
 def charging_duration_hours(
     energy_kwh: float,
-    charger_level: "ChargerLevel | float",
+    charger_level: ChargerLevel | float,
 ) -> float:
     """Estimate charging duration for a given energy demand.
 

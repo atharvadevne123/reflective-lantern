@@ -184,7 +184,7 @@ def peak_shaving_threshold(
 
 
 def simulate_peak_shaving(
-    battery: "BatterySystem | Battery",
+    battery: BatterySystem | Battery,
     load_profile_kw: list[float],
     demand_threshold_kw: float,
     demand_charge_per_kw: float = 15.0,

@@ -94,20 +94,14 @@ def main() -> int | None:
         print("No history found.")
         return 0
 
-    print("%-30s %-12s %8s %-15s %6s" % ("Repo", "Date", "Commits", "Mode", "Tests"))
+    print(f"{'Repo':<30} {'Date':<12} {'Commits':>8} {'Mode':<15} {'Tests':>6}")
     print("-" * 75)
     for r in rows:
         tp = "✓" if r["tests_passed"] else ("✗" if r["tests_passed"] is False else "?")
         print(
-            "%-30s %-12s %8d %-15s %6s" % (
-                r["repo"],
-                r["date"],
-                r["commits"],
-                r["mode"],
-                tp,
-            )
+            f"{r['repo']:<30} {r['date']:<12} {r['commits']:>8} {r['mode']:<15} {tp:>6}"
         )
-    print("\n%d repos shown." % len(rows))
+    print(f"\n{len(rows)} repos shown.")
     return 0
 
 

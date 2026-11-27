@@ -159,8 +159,5 @@ def check_drift_before_retrain(
     # Cohen's d < 10 is considered a tolerable shift; prevents false positives
     # from small but statistically significant shifts with large N.
     pooled_std = math.sqrt((train_vals.std() ** 2 + ref_vals.std() ** 2) / 2.0)
-    if pooled_std > 0:
-        cohens_d = abs(train_vals.mean() - ref_vals.mean()) / pooled_std
-    else:
-        cohens_d = 0.0
+    cohens_d = abs(train_vals.mean() - ref_vals.mean()) / pooled_std if pooled_std > 0 else 0.0
     return bool(p_value < p_threshold and cohens_d >= 10.0)

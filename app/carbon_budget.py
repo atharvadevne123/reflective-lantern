@@ -60,7 +60,7 @@ def total_emissions(entries: list[EmissionEntry]) -> float:
 def emissions_by_scope(
     entries: list[EmissionEntry],
     scope: ScopeCategory | None = None,
-) -> "dict[ScopeCategory, float] | float":
+) -> dict[ScopeCategory, float] | float:
     """Sum emissions grouped by scope, or for a single scope.
 
     Args:

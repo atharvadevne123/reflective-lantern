@@ -679,7 +679,7 @@ def gini_coefficient(values: Sequence[float]) -> float:
     sorted_v = sorted(values)
     n = len(sorted_v)
     cum_sum = 0.0
-    for i, v in enumerate(sorted_v, start=1):
+    for _i, v in enumerate(sorted_v, start=1):
         cum_sum += v
     # Lorenz-based formula
     weighted = sum((2 * i - n - 1) * v for i, v in enumerate(sorted_v, start=1))
@@ -996,7 +996,7 @@ def percentile_rank(values: Sequence[float], value: float) -> float:
     return rank / n * 100.0
 
 
-def zscore(values_or_value: "float | Sequence[float]", value: float | None = None, std_v: float | None = None) -> "float | list[float]":
+def zscore(values_or_value: float | Sequence[float], value: float | None = None, std_v: float | None = None) -> float | list[float]:
     """Return z-score(s).
 
     Two calling forms:

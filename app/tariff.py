@@ -70,12 +70,12 @@ def flat_rate_cost(hourly_kwh: list[float], rate: float = DEFAULT_FLAT_RATE) -> 
 
 def time_of_use_cost(
     hourly_kwh: list[float],
-    start_hour_or_peak_hours: "int | tuple[int, ...] | list[int]" = 0,
+    start_hour_or_peak_hours: int | tuple[int, ...] | list[int] = 0,
     peak_hours: tuple[int, ...] = DEFAULT_PEAK_HOURS,
     peak_rate: float = DEFAULT_PEAK_RATE,
     off_peak_rate: float = DEFAULT_OFF_PEAK_RATE,
     *,
-    start_hour: "int | None" = None,
+    start_hour: int | None = None,
 ) -> float:
     """Price a consumption series under a time-of-use tariff.
 
