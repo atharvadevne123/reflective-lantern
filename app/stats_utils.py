@@ -893,6 +893,63 @@ def normalize_series(values: Sequence[float]) -> list[float]:
     return [(v - lo) / (hi - lo) for v in values]
 
 
+def median_absolute_deviation(values: Sequence[float]) -> float:
+    """Return the median absolute deviation (MAD) of *values*.
+
+    Args:
+        values: Non-empty sequence of numbers.
+
+    Returns:
+        MAD = median(|x_i - median(x)|).
+
+    Raises:
+        ValueError: If *values* is empty.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    med = median(values)
+    deviations = [abs(v - med) for v in values]
+    return median(deviations)
+
+
+def mode_count(values: Sequence[float]) -> int:
+    """Return the count of the most frequent value in *values*.
+
+    Args:
+        values: Non-empty sequence of numbers.
+
+    Raises:
+        ValueError: If *values* is empty.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    counts: dict[float, int] = {}
+    for v in values:
+        counts[v] = counts.get(v, 0) + 1
+    return max(counts.values())
+
+
+def percentile_rank(values: Sequence[float], value: float) -> float:
+    """Return the percentile rank of *value* within *values*.
+
+    Args:
+        values: Non-empty sequence of numbers.
+        value: The value whose rank is computed.
+
+    Returns:
+        Percentile rank in [0.0, 100.0].
+
+    Raises:
+        ValueError: If *values* is empty.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    n = len(values)
+    below = sum(1 for v in values if v < value)
+    equal = sum(1 for v in values if v == value)
+    return (below + 0.5 * equal) / n * 100.0
+
+
 def zscore(value: float, mean_v: float, std_v: float) -> float:
     """Return the z-score of a single value given population mean and std.
 
