@@ -59,29 +59,35 @@ def total_emissions(entries: list[EmissionEntry]) -> float:
 
 def emissions_by_scope(
     entries: list[EmissionEntry],
-    scope: ScopeCategory,
-) -> float:
-    """Sum emissions for a specific GHG Protocol scope.
+    scope: ScopeCategory | None = None,
+) -> "dict[ScopeCategory, float] | float":
+    """Sum emissions grouped by scope, or for a single scope.
 
     Args:
         entries: List of emission entries.
-        scope: Target scope category.
+        scope: If provided, return total for that scope only. If None, return a
+               dict mapping each ScopeCategory to its total.
 
     Returns:
-        Total emissions for the scope in kg CO₂e.
+        A float (single scope) or dict mapping scope -> kg CO₂e (all scopes).
     """
-    return round(sum(e.kg_co2e for e in entries if e.scope == scope), 4)
+    if scope is not None:
+        return round(sum(e.kg_co2e for e in entries if e.scope == scope), 4)
+    result: dict[ScopeCategory, float] = {}
+    for e in entries:
+        result[e.scope] = round(result.get(e.scope, 0.0) + e.kg_co2e, 4)
+    return result
 
 
 def reduction_target_kg(
     baseline_kg: float,
-    target_pct: float,
+    reduction_rate: float,
 ) -> float:
-    """Compute absolute reduction target from a percentage.
+    """Compute absolute target emissions after applying a reduction rate.
 
     Args:
         baseline_kg: Baseline annual emissions in kg CO₂e.
-        target_pct: Reduction target as a percentage (0–100).
+        reduction_rate: Fraction to reduce, in [0, 1] (e.g. 0.5 = 50% reduction).
 
     Returns:
         Target absolute emissions in kg CO₂e.
@@ -91,9 +97,9 @@ def reduction_target_kg(
     """
     if baseline_kg < 0:
         raise ValueError("baseline_kg must be non-negative")
-    if not (0 <= target_pct <= 100):
-        raise ValueError("target_pct must be in [0, 100]")
-    return round(baseline_kg * (1.0 - target_pct / 100.0), 4)
+    if not (0 <= reduction_rate <= 1):
+        raise ValueError("reduction_rate must be in [0, 1]")
+    return round(baseline_kg * (1.0 - reduction_rate), 4)
 
 
 def linear_reduction_pathway(
