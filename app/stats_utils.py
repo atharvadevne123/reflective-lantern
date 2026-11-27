@@ -748,6 +748,77 @@ def rolling_std(values: Sequence[float], window: int) -> list[float]:
     return result
 
 
+def compute_entropy(values: Sequence[float]) -> float:
+    """Return the Shannon entropy of a probability distribution.
+
+    Args:
+        values: Non-empty sequence of non-negative numbers that represent probabilities
+                or frequencies (automatically normalised if they don't sum to 1).
+
+    Returns:
+        Shannon entropy in nats (base-e log).
+
+    Raises:
+        ValueError: If *values* is empty or any value is negative.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    if any(v < 0 for v in values):
+        raise ValueError("all values must be non-negative")
+    total = sum(values)
+    if total == 0:
+        return 0.0
+    probs = [v / total for v in values if v > 0]
+    return -sum(p * math.log(p) for p in probs)
+
+
+def compute_correlation(x: Sequence[float], y: Sequence[float]) -> float:
+    """Return the Pearson correlation coefficient between two sequences.
+
+    Args:
+        x: First numeric sequence.
+        y: Second numeric sequence (same length as x).
+
+    Returns:
+        Pearson r in [-1, 1]; 0.0 when variance in either series is zero.
+
+    Raises:
+        ValueError: If lengths differ or sequences are empty.
+    """
+    if len(x) != len(y):
+        raise ValueError("x and y must have the same length")
+    if not x:
+        raise ValueError("sequences must not be empty")
+    n = len(x)
+    mx = sum(x) / n
+    my = sum(y) / n
+    cov = sum((xi - mx) * (yi - my) for xi, yi in zip(x, y, strict=False))
+    sx = math.sqrt(sum((xi - mx) ** 2 for xi in x))
+    sy = math.sqrt(sum((yi - my) ** 2 for yi in y))
+    if sx == 0 or sy == 0:
+        return 0.0
+    return cov / (sx * sy)
+
+
+def compute_skewness(values: Sequence[float]) -> float:
+    """Return the skewness of *values* (Fisher-Pearson standardised moment).
+
+    Args:
+        values: Sequence with at least 3 elements.
+
+    Raises:
+        ValueError: If fewer than 3 values or std is zero.
+    """
+    n = len(values)
+    if n < 3:
+        raise ValueError("skewness requires at least 3 values")
+    m = sum(values) / n
+    s = math.sqrt(sum((x - m) ** 2 for x in values) / n)
+    if s == 0:
+        raise ValueError("skewness is undefined when std is zero")
+    return sum(((x - m) / s) ** 3 for x in values) / n
+
+
 def zscore(value: float, mean_v: float, std_v: float) -> float:
     """Return the z-score of a single value given population mean and std.
 
