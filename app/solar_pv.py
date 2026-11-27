@@ -134,7 +134,7 @@ def specific_yield(annual_kwh_produced: float, installed_kwp: float) -> float:
         raise ValueError("annual_kwh_produced must be non-negative")
     if installed_kwp <= 0:
         raise ValueError("installed_kwp must be positive")
-    return round(annual_kwh_produced / installed_kwp, 2)
+    return round(annual_kwh_produced / installed_kwp, 4)
 
 
 def analyse_pv_system(

@@ -77,18 +77,24 @@ def thd_voltage(
     Raises:
         ValueError: If fundamental_v is non-positive.
     """
+    if not harmonics_v:
+        return 0.0
     if fundamental_v <= 0:
         raise ValueError("fundamental_v must be positive")
     harmonic_sum_sq = sum(h**2 for h in harmonics_v)
     return round(100.0 * math.sqrt(harmonic_sum_sq) / fundamental_v, 4)
 
 
-def crest_factor(peak_v: float, rms_v: float) -> float:
+def crest_factor(peak_v_or_samples: float | list[float], rms_v: float | None = None) -> float:
     """Compute waveform crest factor (peak-to-RMS ratio).
 
+    Accepts two calling conventions:
+    - (peak_v, rms_v): direct peak and RMS values
+    - (samples): list of waveform samples; peak and RMS computed internally
+
     Args:
-        peak_v: Peak voltage in V.
-        rms_v: RMS voltage in V.
+        peak_v_or_samples: Peak voltage in V, or list of waveform samples.
+        rms_v: RMS voltage in V (omit when passing samples list).
 
     Returns:
         Crest factor (dimensionless).
@@ -96,7 +102,17 @@ def crest_factor(peak_v: float, rms_v: float) -> float:
     Raises:
         ValueError: If rms_v is non-positive or peak < rms.
     """
-    if rms_v <= 0:
+    if isinstance(peak_v_or_samples, list):
+        samples = peak_v_or_samples
+        if not samples:
+            raise ValueError("samples must not be empty")
+        peak_v = max(abs(s) for s in samples)
+        rms_computed = math.sqrt(sum(s**2 for s in samples) / len(samples))
+        if rms_computed <= 0:
+            return 0.0
+        return round(peak_v / rms_computed, 4)
+    peak_v = peak_v_or_samples
+    if rms_v is None or rms_v <= 0:
         raise ValueError("rms_v must be positive")
     if peak_v < rms_v:
         raise ValueError("peak_v must be >= rms_v")
@@ -104,14 +120,18 @@ def crest_factor(peak_v: float, rms_v: float) -> float:
 
 
 def k_factor(
-    fundamental_a: float,
-    harmonics_a: list[float],
+    fundamental_a_or_harmonics: float | list[float],
+    harmonics_a: list[float] | None = None,
 ) -> float:
     """Compute K-factor for transformer derating with non-linear loads.
 
+    Accepts two calling conventions:
+    - (fundamental_a, harmonics_a): fundamental + list of harmonics
+    - (all_harmonics): single list treated as [I1, I2, I3, ...] by harmonic order
+
     Args:
-        fundamental_a: RMS fundamental current in A.
-        harmonics_a: RMS harmonic currents [2nd, 3rd, ...] in A.
+        fundamental_a_or_harmonics: RMS fundamental in A, or list of all harmonic currents.
+        harmonics_a: RMS harmonic currents [2nd, 3rd, ...] in A (omit when passing list).
 
     Returns:
         K-factor (dimensionless).
@@ -119,6 +139,18 @@ def k_factor(
     Raises:
         ValueError: If fundamental_a is non-positive.
     """
+    if isinstance(fundamental_a_or_harmonics, list):
+        all_currents = fundamental_a_or_harmonics
+        if not all_currents:
+            return 0.0
+        i_sq_sum = sum(i**2 for i in all_currents)
+        if i_sq_sum == 0:
+            return 0.0
+        weighted_sum = sum((i**2) * ((n + 1) ** 2) for n, i in enumerate(all_currents))
+        return round(weighted_sum / i_sq_sum, 4)
+    fundamental_a = fundamental_a_or_harmonics
+    if harmonics_a is None:
+        harmonics_a = []
     if fundamental_a <= 0:
         raise ValueError("fundamental_a must be positive")
     all_currents = [fundamental_a] + harmonics_a
