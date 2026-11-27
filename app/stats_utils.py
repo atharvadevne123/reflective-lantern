@@ -64,16 +64,19 @@ def mean(values: Sequence[float]) -> float:
     return sum(values) / len(values)
 
 
-def variance(values: Sequence[float], ddof: int = 0) -> float:
+def variance(values: Sequence[float], ddof: int = 0, population: bool | None = None) -> float:
     """Return population (ddof=0) or sample (ddof=1) variance.
 
     Args:
         values: Non-empty sequence of numbers.
         ddof: Delta degrees of freedom (0 for population, 1 for sample).
+        population: If explicitly True, use ddof=0; if False, ddof=1 (overrides ddof).
 
     Raises:
         ValueError: If the sequence is too short for the requested ddof.
     """
+    if population is not None:
+        ddof = 0 if population else 1
     n = len(values)
     if n <= ddof:
         raise ValueError(f"need more than {ddof} values for ddof={ddof}")
@@ -524,18 +527,21 @@ def coefficient_of_variation(values: Sequence[float]) -> float:
     """Return the coefficient of variation (std / mean) as a percentage.
 
     Args:
-        values: Non-empty sequence of numbers with non-zero mean.
+        values: Sequence of numbers with at least 2 elements.
+
+    Returns:
+        CV as a percentage; 0.0 if mean is zero.
 
     Raises:
-        ValueError: If *values* is empty or mean is zero.
+        ValueError: If fewer than 2 values.
     """
-    if not values:
-        raise ValueError("values must not be empty")
+    if len(values) < 2:
+        raise ValueError("coefficient_of_variation requires at least 2 values")
     n = len(values)
     m = sum(values) / n
-    if m == 0:
-        raise ValueError("mean is zero; coefficient of variation is undefined")
     s = math.sqrt(sum((x - m) ** 2 for x in values) / n)
+    if m == 0:
+        return 0.0
     return s / abs(m) * 100.0
 
 
@@ -572,13 +578,10 @@ def running_mean(values: Sequence[float]) -> list[float]:
     """Return the cumulative (running) mean at each position in *values*.
 
     Args:
-        values: Non-empty sequence of numbers.
-
-    Raises:
-        ValueError: If *values* is empty.
+        values: Sequence of numbers (may be empty, returns []).
     """
     if not values:
-        raise ValueError("values must not be empty")
+        return []
     result: list[float] = []
     total = 0.0
     for i, v in enumerate(values, start=1):
@@ -619,23 +622,26 @@ def interquartile_range(values: Sequence[float]) -> float:
     return q3 - q1
 
 
-def kurtosis(values: Sequence[float]) -> float:
-    """Return the excess kurtosis of *values* (Fisher's definition, normal = 0).
+def kurtosis(values: Sequence[float], excess: bool = True) -> float:
+    """Return the kurtosis of *values*.
 
     Args:
-        values: Sequence with at least 2 elements.
+        values: Sequence with at least 4 elements.
+        excess: If True (default), return excess kurtosis (normal = 0). If False,
+                return raw kurtosis (normal = 3).
 
     Raises:
-        ValueError: If fewer than 2 values or std is zero.
+        ValueError: If fewer than 4 values or zero variance.
     """
     n = len(values)
-    if n < 2:
-        raise ValueError("kurtosis requires at least 2 values")
+    if n < 4:
+        raise ValueError("kurtosis requires at least 4 values")
     m = sum(values) / n
     s = math.sqrt(sum((x - m) ** 2 for x in values) / n)
     if s == 0:
-        raise ValueError("kurtosis is undefined when std is zero")
-    return sum(((x - m) / s) ** 4 for x in values) / n - 3.0
+        raise ValueError("kurtosis is undefined when zero variance")
+    raw = sum(((x - m) / s) ** 4 for x in values) / n
+    return raw - 3.0 if excess else raw
 
 
 def gini_coefficient(values: Sequence[float]) -> float:
@@ -683,22 +689,22 @@ def log_return(prices: Sequence[float]) -> list[float]:
     return [math.log(prices[i] / prices[i - 1]) for i in range(1, len(prices))]
 
 
-def trimmed_mean(values: Sequence[float], proportion: float = 0.1) -> float:
-    """Return the trimmed mean of *values*, removing top and bottom *proportion* of data.
+def trimmed_mean(values: Sequence[float], trim_pct: float = 0.1) -> float:
+    """Return the trimmed mean of *values*, removing top and bottom *trim_pct* of data.
 
     Args:
         values: Non-empty sequence of numbers.
-        proportion: Fraction to trim from each end, in [0, 0.5).
+        trim_pct: Fraction to trim from each end, in [0, 0.5).
 
     Raises:
-        ValueError: If *values* is empty or *proportion* is out of range.
+        ValueError: If *values* is empty or *trim_pct* is out of range.
     """
     if not values:
         raise ValueError("values must not be empty")
-    if not (0 <= proportion < 0.5):
-        raise ValueError("proportion must be in [0, 0.5)")
+    if not (0 <= trim_pct < 0.5):
+        raise ValueError("trim_pct must be in [0, 0.5)")
     n = len(values)
-    k = int(n * proportion)
+    k = int(n * trim_pct)
     trimmed = sorted(values)[k : n - k] if k > 0 else sorted(values)
     if not trimmed:
         raise ValueError("trimming removed all values")
@@ -725,19 +731,31 @@ def exponential_moving_average(values: Sequence[float], alpha: float = 0.3) -> l
     return result
 
 
-def winsorize(values: Sequence[float], lower: float = 0.05, upper: float = 0.95) -> list[float]:
+def winsorize(
+    values: Sequence[float],
+    lower: float = 0.05,
+    upper: float = 0.95,
+    lower_pct: float | None = None,
+    upper_pct: float | None = None,
+) -> list[float]:
     """Replace extreme values by their winsorization bounds.
 
     Args:
         values: Non-empty sequence of numbers.
-        lower: Lower quantile bound (0 to upper).
-        upper: Upper quantile bound (lower to 1).
+        lower: Lower quantile bound in [0, 1) (overridden by lower_pct if provided).
+        upper: Upper quantile bound in (0, 1] (overridden by upper_pct if provided).
+        lower_pct: Alternative lower bound as a percentage, e.g. 5.0 means 5th percentile.
+        upper_pct: Alternative upper bound as a percentage, e.g. 95.0 means 95th percentile.
 
     Raises:
         ValueError: If *values* is empty or bounds are out of range.
     """
     if not values:
         raise ValueError("values must not be empty")
+    if lower_pct is not None:
+        lower = lower_pct / 100.0
+    if upper_pct is not None:
+        upper = upper_pct / 100.0
     if not (0 <= lower < upper <= 1):
         raise ValueError("lower and upper must satisfy 0 <= lower < upper <= 1")
     lo = percentile(values, lower * 100)
@@ -801,19 +819,19 @@ def compute_correlation(x: Sequence[float], y: Sequence[float]) -> float:
     """Return the Pearson correlation coefficient between two sequences.
 
     Args:
-        x: First numeric sequence.
+        x: First numeric sequence (at least 2 observations).
         y: Second numeric sequence (same length as x).
 
     Returns:
         Pearson r in [-1, 1]; 0.0 when variance in either series is zero.
 
     Raises:
-        ValueError: If lengths differ or sequences are empty.
+        ValueError: If lengths differ, fewer than 2 observations, or sequences are empty.
     """
     if len(x) != len(y):
         raise ValueError("x and y must have the same length")
-    if not x:
-        raise ValueError("sequences must not be empty")
+    if len(x) < 2:
+        raise ValueError("compute_correlation requires at least 2 observations")
     n = len(x)
     mx = sum(x) / n
     my = sum(y) / n
@@ -950,17 +968,33 @@ def percentile_rank(values: Sequence[float], value: float) -> float:
     return (below + 0.5 * equal) / n * 100.0
 
 
-def zscore(value: float, mean_v: float, std_v: float) -> float:
-    """Return the z-score of a single value given population mean and std.
+def zscore(values_or_value: "float | Sequence[float]", value: float | None = None, std_v: float | None = None) -> "float | list[float]":
+    """Return z-score(s).
+
+    Two calling forms:
+    - ``zscore(series, query_value)`` — returns the z-score of *query_value* within *series*.
+    - ``zscore(value, mean_v, std_v)`` — returns (value - mean_v) / std_v.
 
     Args:
-        value: Observed value.
-        mean_v: Population mean.
-        std_v: Population standard deviation.
+        values_or_value: A sequence of numbers, or a single float value.
+        value: Query value (second-form: population mean).
+        std_v: Population standard deviation (second-form only).
 
     Returns:
-        0.0 if std_v is zero, otherwise (value - mean_v) / std_v.
+        A single z-score float.
     """
-    if std_v == 0:
+    if isinstance(values_or_value, (int, float)) and std_v is not None:
+        # Three-argument form: zscore(value, mean_v, std_v)
+        if std_v == 0:
+            return 0.0
+        return (values_or_value - (value or 0.0)) / std_v
+    # Two-argument form: zscore(series, query_value)
+    series = list(values_or_value)  # type: ignore[arg-type]
+    if not series:
+        raise ValueError("series must not be empty")
+    n = len(series)
+    m = sum(series) / n
+    s = math.sqrt(sum((x - m) ** 2 for x in series) / n)
+    if s == 0:
         return 0.0
-    return (value - mean_v) / std_v
+    return ((value or 0.0) - m) / s
