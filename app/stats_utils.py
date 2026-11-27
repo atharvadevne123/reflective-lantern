@@ -413,6 +413,88 @@ def harmonic_mean(values: Sequence[float]) -> float:
     return len(values) / sum(1.0 / v for v in values)
 
 
+def mean_absolute_error(actual: list[float], predicted: list[float]) -> float:
+    """Return the mean absolute error between actual and predicted values.
+
+    Args:
+        actual: Ground-truth values.
+        predicted: Predicted values (same length as actual).
+
+    Raises:
+        ValueError: If lists have different lengths or are empty.
+    """
+    if len(actual) != len(predicted):
+        raise ValueError("actual and predicted must have the same length")
+    if not actual:
+        raise ValueError("actual must not be empty")
+    return sum(abs(a - p) for a, p in zip(actual, predicted, strict=False)) / len(actual)
+
+
+def root_mean_squared_error(actual: list[float], predicted: list[float]) -> float:
+    """Return the root mean squared error between actual and predicted values.
+
+    Args:
+        actual: Ground-truth values.
+        predicted: Predicted values (same length as actual).
+
+    Raises:
+        ValueError: If lists have different lengths or are empty.
+    """
+    if len(actual) != len(predicted):
+        raise ValueError("actual and predicted must have the same length")
+    if not actual:
+        raise ValueError("actual must not be empty")
+    mse = sum((a - p) ** 2 for a, p in zip(actual, predicted, strict=False)) / len(actual)
+    return math.sqrt(mse)
+
+
+def r_squared(actual: list[float], predicted: list[float]) -> float:
+    """Return the coefficient of determination (R²) between actual and predicted.
+
+    Args:
+        actual: Ground-truth values.
+        predicted: Predicted values.
+
+    Returns:
+        R² score; 1.0 means perfect fit, can be negative for very poor fits.
+
+    Raises:
+        ValueError: If lists have different lengths or are empty.
+    """
+    if len(actual) != len(predicted):
+        raise ValueError("actual and predicted must have the same length")
+    if not actual:
+        raise ValueError("actual must not be empty")
+    mean_a = sum(actual) / len(actual)
+    ss_tot = sum((a - mean_a) ** 2 for a in actual)
+    ss_res = sum((a - p) ** 2 for a, p in zip(actual, predicted, strict=False))
+    if ss_tot == 0:
+        return 1.0 if ss_res == 0 else 0.0
+    return 1.0 - ss_res / ss_tot
+
+
+def mape(actual: list[float], predicted: list[float]) -> float:
+    """Return the mean absolute percentage error (MAPE).
+
+    Args:
+        actual: Ground-truth values (must be non-zero).
+        predicted: Predicted values (same length as actual).
+
+    Returns:
+        MAPE as a percentage value (e.g. 5.0 for 5%).
+
+    Raises:
+        ValueError: If lists have different lengths, are empty, or any actual value is zero.
+    """
+    if len(actual) != len(predicted):
+        raise ValueError("actual and predicted must have the same length")
+    if not actual:
+        raise ValueError("actual must not be empty")
+    if any(a == 0 for a in actual):
+        raise ValueError("actual values must be non-zero for MAPE")
+    return 100.0 * sum(abs((a - p) / a) for a, p in zip(actual, predicted, strict=False)) / len(actual)
+
+
 def zscore(value: float, mean_v: float, std_v: float) -> float:
     """Return the z-score of a single value given population mean and std.
 
