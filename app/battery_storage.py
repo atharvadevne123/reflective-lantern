@@ -29,6 +29,27 @@ class BatterySystem:
 
 
 @dataclass
+class Battery:
+    """Alias for BatterySystem with input validation."""
+
+    capacity_kwh: float
+    max_charge_kw: float
+    max_discharge_kw: float
+    round_trip_efficiency: float = 0.90
+    initial_soc_pct: float = 50.0
+
+    def __post_init__(self) -> None:
+        if self.capacity_kwh <= 0:
+            raise ValueError("capacity_kwh must be positive")
+        if self.max_charge_kw <= 0:
+            raise ValueError("max_charge_kw must be positive")
+        if self.max_discharge_kw <= 0:
+            raise ValueError("max_discharge_kw must be positive")
+        if not (0.0 <= self.initial_soc_pct <= 100.0):
+            raise ValueError("initial_soc_pct must be in [0, 100]")
+
+
+@dataclass
 class DispatchResult:
     """Outcome of a battery dispatch simulation."""
 
@@ -158,7 +179,7 @@ def peak_shaving_threshold(
 
 
 def simulate_peak_shaving(
-    battery: BatterySystem,
+    battery: "BatterySystem | Battery",
     load_profile_kw: list[float],
     demand_threshold_kw: float,
     demand_charge_per_kw: float = 15.0,
