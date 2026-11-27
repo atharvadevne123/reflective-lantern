@@ -28,13 +28,18 @@ class ThermalComfortResult:
     category: ComfortCategory
     sensation: str
 
+    @property
+    def is_comfortable(self) -> bool:
+        """True when PMV is within the comfortable range (-0.5 to +0.5)."""
+        return -0.5 <= self.pmv <= 0.5
+
 
 SENSATION_LABELS: dict[int, str] = {
     -3: "Cold",
     -2: "Cool",
-    -1: "Slightly cool",
+    -1: "Slightly Cool",
     0: "Neutral",
-    1: "Slightly warm",
+    1: "Slightly Warm",
     2: "Warm",
     3: "Hot",
 }
@@ -142,6 +147,9 @@ def comfort_category(ppd_value: float) -> ComfortCategory:
     return ComfortCategory.OUT_OF_RANGE
 
 
+pmv_ashrae = pmv
+
+
 def sensation_label(pmv_value: float) -> str:
     """Convert a PMV value to a human-readable thermal sensation label.
 
@@ -151,8 +159,8 @@ def sensation_label(pmv_value: float) -> str:
     Returns:
         Sensation string from ASHRAE 55 7-point scale.
     """
-    rounded = max(-3, min(3, round(pmv_value)))
-    return SENSATION_LABELS.get(rounded, "Extreme")
+    truncated = max(-3, min(3, int(pmv_value)))
+    return SENSATION_LABELS.get(truncated, "Extreme")
 
 
 def assess_comfort(
