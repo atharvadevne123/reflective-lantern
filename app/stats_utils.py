@@ -543,6 +543,57 @@ def safe_divide(numerator: float, denominator: float, default: float = 0.0) -> f
     return numerator / denominator
 
 
+def running_mean(values: Sequence[float]) -> list[float]:
+    """Return the cumulative (running) mean at each position in *values*.
+
+    Args:
+        values: Non-empty sequence of numbers.
+
+    Raises:
+        ValueError: If *values* is empty.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    result: list[float] = []
+    total = 0.0
+    for i, v in enumerate(values, start=1):
+        total += v
+        result.append(total / i)
+    return result
+
+
+def sample_variance(values: Sequence[float]) -> float:
+    """Return the sample variance (Bessel-corrected, denominator N-1).
+
+    Args:
+        values: Sequence with at least 2 elements.
+
+    Raises:
+        ValueError: If fewer than 2 values are provided.
+    """
+    n = len(values)
+    if n < 2:
+        raise ValueError("sample_variance requires at least 2 values")
+    m = sum(values) / n
+    return sum((x - m) ** 2 for x in values) / (n - 1)
+
+
+def interquartile_range(values: Sequence[float]) -> float:
+    """Return the interquartile range (IQR = Q3 - Q1) of *values*.
+
+    Args:
+        values: Non-empty sequence of numbers.
+
+    Raises:
+        ValueError: If *values* is empty.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    q1 = percentile(values, 25)
+    q3 = percentile(values, 75)
+    return q3 - q1
+
+
 def zscore(value: float, mean_v: float, std_v: float) -> float:
     """Return the z-score of a single value given population mean and std.
 
