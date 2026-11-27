@@ -25,6 +25,11 @@ class PVSystemResult:
     capacity_factor: float
     co2_saved_kg: float
 
+    @property
+    def system_capacity_kwp(self) -> float:
+        """Alias for peak_power_kw."""
+        return self.peak_power_kw
+
 
 def array_power_kw(
     panel_count: int,

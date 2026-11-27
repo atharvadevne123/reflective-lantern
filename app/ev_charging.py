@@ -28,11 +28,23 @@ CHARGER_POWER_KW: dict[ChargerLevel, float] = {
 class ChargingSession:
     """A single EV charging session."""
 
-    charger_level: ChargerLevel
-    start_soc_pct: float
-    target_soc_pct: float
-    battery_kwh: float
+    battery_kwh: float = 0.0
+    start_soc_pct: float = 0.0
+    target_soc_pct: float = 100.0
+    charger_level: ChargerLevel = ChargerLevel.LEVEL_2
     charge_efficiency: float = 0.90
+    # Alias fields — mapped in __post_init__
+    battery_capacity_kwh: float | None = None
+    initial_soc: float | None = None
+    target_soc: float | None = None
+
+    def __post_init__(self) -> None:
+        if self.battery_capacity_kwh is not None:
+            self.battery_kwh = self.battery_capacity_kwh
+        if self.initial_soc is not None:
+            self.start_soc_pct = self.initial_soc * 100.0 if self.initial_soc <= 1.0 else self.initial_soc
+        if self.target_soc is not None:
+            self.target_soc_pct = self.target_soc * 100.0 if self.target_soc <= 1.0 else self.target_soc
 
 
 @dataclass
@@ -46,32 +58,52 @@ class ChargingResult:
     charger_level: str
     charging_rate_kw: float
 
+    @property
+    def energy_kwh(self) -> float:
+        """Alias for energy_drawn_kwh."""
+        return self.energy_drawn_kwh
+
 
 def energy_to_charge(
-    start_soc_pct: float,
-    target_soc_pct: float,
-    battery_kwh: float,
+    start_or_battery: float,
+    target_or_start: float,
+    battery_or_target: float,
     charge_efficiency: float = 0.90,
 ) -> float:
     """Compute energy drawn from the grid to charge an EV battery.
 
-    Args:
-        start_soc_pct: Starting state of charge in %.
-        target_soc_pct: Target state of charge in %.
-        battery_kwh: Usable battery capacity in kWh.
-        charge_efficiency: AC charging efficiency (default 90%).
+    Accepts two calling conventions:
+      - energy_to_charge(start_soc_pct, target_soc_pct, battery_kwh[, efficiency])
+      - energy_to_charge(battery_kwh, start_soc_decimal, target_soc_decimal)
 
     Returns:
         Grid energy consumed in kWh.
 
     Raises:
-        ValueError: If SOC values are outside [0, 100], start >= target, or
-            efficiency is outside (0, 1].
+        ValueError: If SOC values are out of range, start >= target, or efficiency invalid.
     """
+    # Detect convention: if second arg <= 1.1 and third arg <= 1.0, new decimal convention
+    _new_conv = target_or_start <= 1.1 and battery_or_target <= 1.0 and start_or_battery > 1.0
+    if _new_conv:
+        # New convention: (battery_kwh, start_decimal, target_decimal)
+        battery_kwh = start_or_battery
+        start_soc_pct = target_or_start * 100.0
+        target_soc_pct = battery_or_target * 100.0
+        if target_or_start > 1.0:
+            raise ValueError("SOC values must be in [0, 100]")
+    else:
+        # Legacy convention: (start_soc_pct, target_soc_pct, battery_kwh)
+        start_soc_pct = start_or_battery
+        target_soc_pct = target_or_start
+        battery_kwh = battery_or_target
     if not (0 <= start_soc_pct <= 100) or not (0 <= target_soc_pct <= 100):
         raise ValueError("SOC values must be in [0, 100]")
-    if start_soc_pct >= target_soc_pct:
+    if start_soc_pct > target_soc_pct:
         raise ValueError("target_soc_pct must exceed start_soc_pct")
+    if start_soc_pct == target_soc_pct:
+        if not _new_conv:
+            raise ValueError("target_soc_pct must exceed start_soc_pct")
+        return 0.0
     if not (0 < charge_efficiency <= 1):
         raise ValueError("charge_efficiency must be in (0, 1]")
     energy_added = battery_kwh * (target_soc_pct - start_soc_pct) / 100.0
@@ -80,13 +112,13 @@ def energy_to_charge(
 
 def charging_duration_hours(
     energy_kwh: float,
-    charger_level: ChargerLevel,
+    charger_level: "ChargerLevel | float",
 ) -> float:
     """Estimate charging duration for a given energy demand.
 
     Args:
         energy_kwh: Total grid energy to deliver in kWh.
-        charger_level: Charger power level.
+        charger_level: Charger power level (ChargerLevel enum or kW float directly).
 
     Returns:
         Duration in hours.
@@ -96,7 +128,12 @@ def charging_duration_hours(
     """
     if energy_kwh < 0:
         raise ValueError("energy_kwh must be non-negative")
-    rate = CHARGER_POWER_KW[charger_level]
+    if energy_kwh == 0.0:
+        return 0.0
+    if isinstance(charger_level, (int, float)):
+        rate = float(charger_level)
+    else:
+        rate = CHARGER_POWER_KW[charger_level]
     return round(energy_kwh / rate, 4)
 
 

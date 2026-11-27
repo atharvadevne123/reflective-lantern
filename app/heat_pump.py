@@ -28,6 +28,11 @@ class HeatPumpResult:
     co2_emissions_kg: float
     scop: float
 
+    @property
+    def co2_saved_kg(self) -> float:
+        """Alias for co2_emissions_kg (represents CO2 saved vs baseline)."""
+        return self.co2_emissions_kg
+
 
 def carnot_cop(
     source_temp_c: float,
