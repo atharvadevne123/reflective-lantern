@@ -232,3 +232,16 @@ def analyse_insulation_upgrade(
         simple_payback_years=payback,
         co2_saved_kg=co2_saved,
     )
+
+
+__all__ = [
+    "ConstructionType",
+    "InsulationUpgradeResult",
+    "analyse_insulation_upgrade",
+    "annual_heat_loss_kwh",
+    "combined_u_value",
+    "heat_loss_rate",
+    "heat_loss_watts",
+    "r_value_from_u",
+    "u_value_from_r",
+]

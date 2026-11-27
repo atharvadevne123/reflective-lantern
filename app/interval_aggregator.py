@@ -178,3 +178,14 @@ def detect_outliers_iqr(
     low_fence = q1 - multiplier * iqr
     high_fence = q3 + multiplier * iqr
     return [i for i, v in enumerate(values) if v < low_fence or v > high_fence]
+
+
+__all__ = [
+    "AggregatedInterval",
+    "aggregate",
+    "detect_outliers_iqr",
+    "percentile",
+    "resample_mean",
+    "resample_sum",
+    "rolling_average",
+]

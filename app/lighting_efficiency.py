@@ -204,3 +204,13 @@ def audit_space(
         upgrade_savings_kwh=saved_kwh,
         upgrade_payback_years=payback,
     )
+
+
+__all__ = [
+    "LightingAuditResult",
+    "annual_kwh",
+    "audit_space",
+    "luminous_efficacy",
+    "power_for_target_lux",
+    "upgrade_savings",
+]
