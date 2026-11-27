@@ -193,5 +193,31 @@ class PerKeyTokenBucket:
             bucket = self._buckets[key]
         return bucket.available() >= self.capacity
 
+    def reset(self, key: str | None = None) -> None:
+        """Remove bucket(s) so they refill from full capacity on next use.
+
+        Args:
+            key: If given, remove only that key's bucket. If None, clear all.
+        """
+        with self._lock:
+            if key is None:
+                self._buckets.clear()
+            else:
+                self._buckets.pop(key, None)
+
+    def __contains__(self, key: str) -> bool:
+        """Return True if key has an active bucket."""
+        with self._lock:
+            return key in self._buckets
+
+    def keys(self) -> list[str]:
+        """Return sorted list of keys that have been consumed against.
+
+        Returns:
+            Sorted list of key strings.
+        """
+        with self._lock:
+            return sorted(self._buckets.keys())
+
 
 __all__ = ["PerKeyTokenBucket", "TokenBucket"]
