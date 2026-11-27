@@ -28,6 +28,15 @@ class ThermalComfortResult:
     category: ComfortCategory
     sensation: str
 
+    def to_dict(self) -> dict[str, float | str]:
+        """Return thermal comfort result as a plain dict."""
+        return {
+            "pmv": self.pmv,
+            "ppd": self.ppd,
+            "category": str(self.category),
+            "sensation": self.sensation,
+        }
+
     @property
     def is_comfortable(self) -> bool:
         """True when PMV is within the comfortable range (-0.5 to +0.5)."""

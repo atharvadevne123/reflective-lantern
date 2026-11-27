@@ -20,6 +20,18 @@ class ROIResult:
     lifetime_savings: float
     roi_percent: float
 
+    def to_dict(self) -> dict[str, float | None]:
+        """Return ROI result as a plain dict."""
+        return {
+            "capex": self.capex,
+            "annual_savings": self.annual_savings,
+            "simple_payback_years": self.simple_payback_years,
+            "irr_percent": self.irr_percent,
+            "npv": self.npv,
+            "lifetime_savings": self.lifetime_savings,
+            "roi_percent": self.roi_percent,
+        }
+
     @property
     def payback_years(self) -> float:
         """Alias for simple_payback_years."""
