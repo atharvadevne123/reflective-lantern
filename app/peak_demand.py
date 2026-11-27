@@ -25,6 +25,17 @@ class PeakDemandResult:
     peak_index: int
     demand_charge_rate: float
 
+    def to_dict(self) -> dict[str, float | int]:
+        """Return peak demand result as a plain dict."""
+        return {
+            "peak_kw": self.peak_kw,
+            "average_kw": self.average_kw,
+            "load_factor": self.load_factor,
+            "demand_charge": self.demand_charge,
+            "peak_index": self.peak_index,
+            "demand_charge_rate": self.demand_charge_rate,
+        }
+
 
 def peak_kw(readings_kw: list[float]) -> float:
     """Return the maximum demand in kW from an interval readings list.

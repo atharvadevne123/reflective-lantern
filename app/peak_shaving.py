@@ -93,6 +93,18 @@ class PeakShavingResult:
     interval_loads_kw: list[float] = field(default_factory=list)
     interval_battery_kw: list[float] = field(default_factory=list)
 
+    def to_dict(self) -> dict[str, float]:
+        """Return peak shaving result as a plain dict (without interval lists)."""
+        return {
+            "original_peak_kw": self.original_peak_kw,
+            "shaved_peak_kw": self.shaved_peak_kw,
+            "peak_reduction_kw": self.peak_reduction_kw,
+            "peak_reduction_pct": self.peak_reduction_pct,
+            "total_demand_kwh": self.total_demand_kwh,
+            "battery_cycles": self.battery_cycles,
+            "demand_charge_saved": self.demand_charge_saved,
+        }
+
 
 def run_peak_shaving(
     load_profile_kw: list[float],
