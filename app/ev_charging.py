@@ -63,6 +63,17 @@ class ChargingResult:
         """Alias for energy_drawn_kwh."""
         return self.energy_drawn_kwh
 
+    def to_dict(self) -> dict[str, float | str]:
+        """Return charging result as a plain dict."""
+        return {
+            "energy_added_kwh": self.energy_added_kwh,
+            "energy_drawn_kwh": self.energy_drawn_kwh,
+            "duration_hours": self.duration_hours,
+            "cost": self.cost,
+            "charger_level": self.charger_level,
+            "charging_rate_kw": self.charging_rate_kw,
+        }
+
 
 def energy_to_charge(
     start_or_battery: float,

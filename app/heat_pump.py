@@ -33,6 +33,17 @@ class HeatPumpResult:
         """Alias for co2_emissions_kg (represents CO2 saved vs baseline)."""
         return self.co2_emissions_kg
 
+    def to_dict(self) -> dict[str, float]:
+        """Return heat pump result as a plain dict."""
+        return {
+            "cop": self.cop,
+            "heat_delivered_kwh": self.heat_delivered_kwh,
+            "electricity_consumed_kwh": self.electricity_consumed_kwh,
+            "running_cost": self.running_cost,
+            "co2_emissions_kg": self.co2_emissions_kg,
+            "scop": self.scop,
+        }
+
 
 def carnot_cop(
     source_temp_c: float,

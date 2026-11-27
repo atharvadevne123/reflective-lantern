@@ -44,6 +44,19 @@ class GeothermalPlantResult:
     annual_mwh: float
     co2_saved_kg: float
 
+    def to_dict(self) -> dict[str, float]:
+        """Return plant result as a plain dict."""
+        return {
+            "resource_temp_c": self.resource_temp_c,
+            "rejection_temp_c": self.rejection_temp_c,
+            "carnot_efficiency": self.carnot_efficiency,
+            "thermal_efficiency": self.thermal_efficiency,
+            "thermal_power_kw": self.thermal_power_kw,
+            "electrical_power_kw": self.electrical_power_kw,
+            "annual_mwh": self.annual_mwh,
+            "co2_saved_kg": self.co2_saved_kg,
+        }
+
 
 def reservoir_temperature(
     depth_m: float,
