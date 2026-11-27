@@ -495,6 +495,54 @@ def mape(actual: list[float], predicted: list[float]) -> float:
     return 100.0 * sum(abs((a - p) / a) for a, p in zip(actual, predicted, strict=False)) / len(actual)
 
 
+def coefficient_of_variation(values: Sequence[float]) -> float:
+    """Return the coefficient of variation (std / mean) as a percentage.
+
+    Args:
+        values: Non-empty sequence of numbers with non-zero mean.
+
+    Raises:
+        ValueError: If *values* is empty or mean is zero.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    n = len(values)
+    m = sum(values) / n
+    if m == 0:
+        raise ValueError("mean is zero; coefficient of variation is undefined")
+    s = math.sqrt(sum((x - m) ** 2 for x in values) / n)
+    return s / abs(m) * 100.0
+
+
+def clamp(value: float, low: float, high: float) -> float:
+    """Clamp *value* to the range [low, high].
+
+    Args:
+        value: Value to clamp.
+        low: Lower bound.
+        high: Upper bound.
+
+    Raises:
+        ValueError: If low > high.
+    """
+    if low > high:
+        raise ValueError(f"low ({low}) must be <= high ({high})")
+    return max(low, min(high, value))
+
+
+def safe_divide(numerator: float, denominator: float, default: float = 0.0) -> float:
+    """Divide numerator by denominator, returning *default* if denominator is zero.
+
+    Args:
+        numerator: Dividend.
+        denominator: Divisor.
+        default: Return value when denominator is zero.
+    """
+    if denominator == 0:
+        return default
+    return numerator / denominator
+
+
 def zscore(value: float, mean_v: float, std_v: float) -> float:
     """Return the z-score of a single value given population mean and std.
 
