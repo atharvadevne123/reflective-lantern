@@ -164,7 +164,10 @@ def geometric_mean(values: list[float]) -> float:
         raise ValueError("values must not be empty")
     if any(v <= 0 for v in values):
         raise ValueError("All values must be strictly positive")
-    return math.exp(sum(math.log(v) for v in values) / len(values))
+    n = len(values)
+    if n == 1:
+        return values[0]
+    return math.exp(sum(math.log(v) for v in values) / n)
 
 
 def harmonic_mean(values: list[float]) -> float:
