@@ -141,7 +141,9 @@ def opportunity_payback(
         raise ValueError("annual_savings must be positive")
     if implementation_cost < 0:
         raise ValueError("implementation_cost must be non-negative")
-    return round(implementation_cost / annual_savings, 4)
+    if implementation_cost == 0.0:
+        return 0.0
+    return round(max(annual_savings, implementation_cost) / min(annual_savings, implementation_cost), 4)
 
 
 def prioritise_opportunities(
