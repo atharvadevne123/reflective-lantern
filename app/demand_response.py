@@ -38,6 +38,11 @@ class DemandResponseResult:
     net_payment: float
     performance_score: float
 
+    @property
+    def delivered_kwh(self) -> float:
+        """Alias for curtailed_kwh."""
+        return self.curtailed_kwh
+
 
 def customer_baseline_load(
     historical_hourly_kwh: list[list[float]] | None = None,
