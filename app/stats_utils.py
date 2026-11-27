@@ -648,16 +648,16 @@ def gini_coefficient(values: Sequence[float]) -> float:
     """Return the Gini coefficient measuring inequality in *values*.
 
     Args:
-        values: Non-empty sequence of non-negative numbers.
+        values: Sequence of at least 2 non-negative numbers.
 
     Returns:
         Gini coefficient in [0, 1].
 
     Raises:
-        ValueError: If *values* is empty, any value is negative, or sum is zero.
+        ValueError: If fewer than 2 values, any value is negative, or sum is zero.
     """
-    if not values:
-        raise ValueError("values must not be empty")
+    if len(values) < 2:
+        raise ValueError("gini_coefficient requires at least 2 values")
     if any(v < 0 for v in values):
         raise ValueError("all values must be non-negative")
     total = sum(values)
@@ -758,8 +758,12 @@ def winsorize(
         upper = upper_pct / 100.0
     if not (0 <= lower < upper <= 1):
         raise ValueError("lower and upper must satisfy 0 <= lower < upper <= 1")
-    lo = percentile(values, lower * 100)
-    hi = percentile(values, upper * 100)
+    sorted_v = sorted(values)
+    n = len(sorted_v)
+    lo_idx = min(int(lower * n), n - 1)
+    hi_idx = min(int(upper * n), n - 1)
+    lo = sorted_v[lo_idx]
+    hi = sorted_v[hi_idx]
     return [max(lo, min(hi, v)) for v in values]
 
 
@@ -779,7 +783,7 @@ def rolling_std(values: Sequence[float], window: int) -> list[float]:
     if not values:
         raise ValueError("values must not be empty")
     if window < 2:
-        raise ValueError("window must be >= 2")
+        raise ValueError("window must be at least 2")
     result: list[float] = []
     for i in range(len(values)):
         if i < window - 1:
@@ -810,7 +814,7 @@ def compute_entropy(values: Sequence[float]) -> float:
         raise ValueError("all values must be non-negative")
     total = sum(values)
     if total == 0:
-        return 0.0
+        raise ValueError("compute_entropy requires positive values summing to > 0")
     probs = [v / total for v in values if v > 0]
     return -sum(p * math.log(p) for p in probs)
 
@@ -854,7 +858,7 @@ def compute_skewness(values: Sequence[float]) -> float:
     """
     n = len(values)
     if n < 3:
-        raise ValueError("skewness requires at least 3 values")
+        raise ValueError("compute_skewness requires at least 3 observations")
     m = sum(values) / n
     s = math.sqrt(sum((x - m) ** 2 for x in values) / n)
     if s == 0:
@@ -862,31 +866,38 @@ def compute_skewness(values: Sequence[float]) -> float:
     return sum(((x - m) / s) ** 3 for x in values) / n
 
 
-def rolling_percentile(values: Sequence[float], window: int, p: float) -> list[float]:
+def rolling_percentile(
+    values: Sequence[float],
+    window: int,
+    p: float | None = None,
+    pct: float | None = None,
+) -> list[float]:
     """Return rolling p-th percentile over a sliding window.
 
     Args:
         values: Non-empty sequence of numbers.
         window: Window size (>= 1).
-        p: Percentile in [0, 100].
+        p: Percentile in [0, 100] (use *pct* as alias).
+        pct: Alias for *p*.
 
     Returns:
         List of percentile values; first (window - 1) entries are computed on partial windows.
 
     Raises:
-        ValueError: If *values* is empty, window < 1, or p is out of range.
+        ValueError: If *values* is empty, window < 1, or percentile is out of range.
     """
     if not values:
         raise ValueError("values must not be empty")
     if window < 1:
         raise ValueError("window must be >= 1")
-    if not (0 <= p <= 100):
-        raise ValueError("p must be in [0, 100]")
+    pct_val = pct if pct is not None else (p if p is not None else 50.0)
+    if not (0 <= pct_val <= 100):
+        raise ValueError("percentile must be in [0, 100]")
     result: list[float] = []
     for i in range(len(values)):
         start = max(0, i - window + 1)
         w = list(values[start : i + 1])
-        result.append(percentile(w, p))
+        result.append(percentile(w, pct_val))
     return result
 
 
@@ -930,11 +941,14 @@ def median_absolute_deviation(values: Sequence[float]) -> float:
     return median(deviations)
 
 
-def mode_count(values: Sequence[float]) -> int:
-    """Return the count of the most frequent value in *values*.
+def mode_count(values: Sequence[float]) -> tuple[float, int]:
+    """Return the most frequent value and its count in *values*.
 
     Args:
         values: Non-empty sequence of numbers.
+
+    Returns:
+        (mode_value, count) tuple; ties broken by returning the smallest mode.
 
     Raises:
         ValueError: If *values* is empty.
@@ -944,7 +958,9 @@ def mode_count(values: Sequence[float]) -> int:
     counts: dict[float, int] = {}
     for v in values:
         counts[v] = counts.get(v, 0) + 1
-    return max(counts.values())
+    max_count = max(counts.values())
+    mode_val = min(k for k, c in counts.items() if c == max_count)
+    return (mode_val, max_count)
 
 
 def percentile_rank(values: Sequence[float], value: float) -> float:
