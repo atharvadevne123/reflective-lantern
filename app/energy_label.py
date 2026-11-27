@@ -45,6 +45,11 @@ class EnergyLabel:
     co2_kg_per_m2: float
     recommended_actions: list[str]
 
+    @property
+    def energy_class(self) -> EnergyClass:
+        """Alias for label."""
+        return self.label
+
 
 def classify_building(
     eui_kwh_per_m2: float,

@@ -37,9 +37,9 @@ class ThermalComfortResult:
 SENSATION_LABELS: dict[int, str] = {
     -3: "Cold",
     -2: "Cool",
-    -1: "Slightly Cool",
+    -1: "Slightly cool",
     0: "Neutral",
-    1: "Slightly Warm",
+    1: "Slightly warm",
     2: "Warm",
     3: "Hot",
 }
