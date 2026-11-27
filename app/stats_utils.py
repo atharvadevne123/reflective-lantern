@@ -594,6 +594,92 @@ def interquartile_range(values: Sequence[float]) -> float:
     return q3 - q1
 
 
+def kurtosis(values: Sequence[float]) -> float:
+    """Return the excess kurtosis of *values* (Fisher's definition, normal = 0).
+
+    Args:
+        values: Sequence with at least 2 elements.
+
+    Raises:
+        ValueError: If fewer than 2 values or std is zero.
+    """
+    n = len(values)
+    if n < 2:
+        raise ValueError("kurtosis requires at least 2 values")
+    m = sum(values) / n
+    s = math.sqrt(sum((x - m) ** 2 for x in values) / n)
+    if s == 0:
+        raise ValueError("kurtosis is undefined when std is zero")
+    return sum(((x - m) / s) ** 4 for x in values) / n - 3.0
+
+
+def gini_coefficient(values: Sequence[float]) -> float:
+    """Return the Gini coefficient measuring inequality in *values*.
+
+    Args:
+        values: Non-empty sequence of non-negative numbers.
+
+    Returns:
+        Gini coefficient in [0, 1].
+
+    Raises:
+        ValueError: If *values* is empty, any value is negative, or sum is zero.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    if any(v < 0 for v in values):
+        raise ValueError("all values must be non-negative")
+    total = sum(values)
+    if total == 0:
+        return 0.0
+    sorted_v = sorted(values)
+    n = len(sorted_v)
+    cum_sum = 0.0
+    for i, v in enumerate(sorted_v, start=1):
+        cum_sum += v
+    # Lorenz-based formula
+    weighted = sum((2 * i - n - 1) * v for i, v in enumerate(sorted_v, start=1))
+    return weighted / (n * total)
+
+
+def log_return(prices: Sequence[float]) -> list[float]:
+    """Return log returns for a price series: ln(p[t] / p[t-1]).
+
+    Args:
+        prices: Sequence of positive prices (at least 2 elements).
+
+    Raises:
+        ValueError: If fewer than 2 prices or any price is non-positive.
+    """
+    if len(prices) < 2:
+        raise ValueError("log_return requires at least 2 prices")
+    if any(p <= 0 for p in prices):
+        raise ValueError("all prices must be positive")
+    return [math.log(prices[i] / prices[i - 1]) for i in range(1, len(prices))]
+
+
+def trimmed_mean(values: Sequence[float], proportion: float = 0.1) -> float:
+    """Return the trimmed mean of *values*, removing top and bottom *proportion* of data.
+
+    Args:
+        values: Non-empty sequence of numbers.
+        proportion: Fraction to trim from each end, in [0, 0.5).
+
+    Raises:
+        ValueError: If *values* is empty or *proportion* is out of range.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    if not (0 <= proportion < 0.5):
+        raise ValueError("proportion must be in [0, 0.5)")
+    n = len(values)
+    k = int(n * proportion)
+    trimmed = sorted(values)[k : n - k] if k > 0 else sorted(values)
+    if not trimmed:
+        raise ValueError("trimming removed all values")
+    return sum(trimmed) / len(trimmed)
+
+
 def zscore(value: float, mean_v: float, std_v: float) -> float:
     """Return the z-score of a single value given population mean and std.
 
