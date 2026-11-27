@@ -74,6 +74,18 @@ class AuditReport:
     total_savings_potential_kwh: float
     total_savings_potential_cost: float
 
+    def to_dict(self) -> dict[str, object]:
+        """Return audit report summary as a plain dict (without nested lists)."""
+        return {
+            "building_id": self.building_id,
+            "audit_level": str(self.audit_level),
+            "total_annual_kwh": self.total_annual_kwh,
+            "total_annual_cost": self.total_annual_cost,
+            "energy_use_intensity_kwh_per_m2": self.energy_use_intensity_kwh_per_m2,
+            "total_savings_potential_kwh": self.total_savings_potential_kwh,
+            "total_savings_potential_cost": self.total_savings_potential_cost,
+        }
+
 
 def energy_use_intensity(
     annual_kwh: float,

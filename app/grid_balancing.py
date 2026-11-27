@@ -35,6 +35,18 @@ class FrequencyEvent:
     secondary_response_required: bool
     severity: str
 
+    def to_dict(self) -> dict[str, float | bool | str]:
+        """Return frequency event as a plain dict."""
+        return {
+            "nadir_hz": self.nadir_hz,
+            "rocof_hz_per_s": self.rocof_hz_per_s,
+            "steady_state_deviation_hz": self.steady_state_deviation_hz,
+            "nominal_hz": self.nominal_hz,
+            "primary_response_required": self.primary_response_required,
+            "secondary_response_required": self.secondary_response_required,
+            "severity": self.severity,
+        }
+
 
 @dataclass
 class AncillaryServiceBid:
