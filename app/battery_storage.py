@@ -61,6 +61,11 @@ class DispatchResult:
     cycle_count: float
     cost_saving: float
 
+    @property
+    def peak_reduction_kw(self) -> float:
+        """Alias for peak_shaved_kw."""
+        return self.peak_shaved_kw
+
 
 def usable_energy_kwh(
     battery: BatterySystem,
