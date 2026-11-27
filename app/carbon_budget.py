@@ -97,9 +97,16 @@ def reduction_target_kg(
     """
     if baseline_kg < 0:
         raise ValueError("baseline_kg must be non-negative")
-    if not (0 <= reduction_rate <= 1):
-        raise ValueError("reduction_rate must be in [0, 1]")
-    return round(baseline_kg * (1.0 - reduction_rate), 4)
+    # Accept decimal (0–1) or percentage (1–100); values > 1 are treated as percentage.
+    if reduction_rate > 1.0:
+        if reduction_rate > 100.0:
+            raise ValueError("reduction_rate must be in [0, 100] when given as percentage")
+        rate = reduction_rate / 100.0
+    else:
+        if reduction_rate < 0:
+            raise ValueError("reduction_rate must be non-negative")
+        rate = reduction_rate
+    return round(baseline_kg * (1.0 - rate), 4)
 
 
 def linear_reduction_pathway(
