@@ -64,17 +64,21 @@ def cable_resistance(
 
 def voltage_drop_single_phase(
     current_a: float,
-    resistance_ohm: float,
-    power_factor: float = 1.0,
+    resistance_ohm_or_length: float,
+    power_factor_or_section: float = 1.0,
     reactance_ohm: float = 0.0,
 ) -> float:
     """Compute voltage drop for a single-phase circuit.
 
+    Accepts two calling conventions:
+    - (current_a, resistance_ohm, power_factor, reactance_ohm)
+    - (current_a, length_m, cross_section_mm2) — resistance computed internally
+
     Args:
         current_a: Load current in A.
-        resistance_ohm: Cable resistance in Ω.
-        power_factor: Load power factor (0–1).
-        reactance_ohm: Cable reactance in Ω.
+        resistance_ohm_or_length: Cable resistance in Ω or one-way length in m.
+        power_factor_or_section: Load power factor (0–1) or cross-section in mm².
+        reactance_ohm: Cable reactance in Ω (only used in resistance convention).
 
     Returns:
         Voltage drop in V.
@@ -84,6 +88,16 @@ def voltage_drop_single_phase(
     """
     if current_a < 0:
         raise ValueError("current_a must be non-negative")
+    if power_factor_or_section > 1.0:
+        # Dual-convention: (current, length_m, cross_section_mm2)
+        length_m = resistance_ohm_or_length
+        cross_section_mm2 = power_factor_or_section
+        resistance_ohm = cable_resistance(length_m, cross_section_mm2)
+        power_factor = 1.0
+        reactance_ohm = 0.0
+    else:
+        resistance_ohm = resistance_ohm_or_length
+        power_factor = power_factor_or_section
     if not (0 < power_factor <= 1):
         raise ValueError("power_factor must be in (0, 1]")
     pf_angle = math.acos(power_factor)
@@ -94,16 +108,20 @@ def voltage_drop_single_phase(
 
 def voltage_drop_three_phase(
     current_a: float,
-    resistance_ohm: float,
-    power_factor: float = 1.0,
+    resistance_ohm_or_length: float,
+    power_factor_or_section: float = 1.0,
     reactance_ohm: float = 0.0,
 ) -> float:
     """Compute voltage drop for a balanced three-phase circuit.
 
+    Accepts two calling conventions:
+    - (current_a, resistance_ohm, power_factor, reactance_ohm)
+    - (current_a, length_m, cross_section_mm2) — resistance computed internally
+
     Args:
         current_a: Phase current in A.
-        resistance_ohm: Per-phase cable resistance in Ω.
-        power_factor: Load power factor.
+        resistance_ohm_or_length: Per-phase cable resistance in Ω or one-way length in m.
+        power_factor_or_section: Load power factor or cross-section in mm².
         reactance_ohm: Per-phase cable reactance in Ω.
 
     Returns:
@@ -114,6 +132,17 @@ def voltage_drop_three_phase(
     """
     if current_a < 0:
         raise ValueError("current_a must be non-negative")
+    if power_factor_or_section > 1.0:
+        # Dual-convention: (current, length_m, cross_section_mm2)
+        # cable_resistance returns round-trip; divide by 2 for per-phase
+        length_m = resistance_ohm_or_length
+        cross_section_mm2 = power_factor_or_section
+        resistance_ohm = cable_resistance(length_m, cross_section_mm2) / 2.0
+        power_factor = 1.0
+        reactance_ohm = 0.0
+    else:
+        resistance_ohm = resistance_ohm_or_length
+        power_factor = power_factor_or_section
     if not (0 < power_factor <= 1):
         raise ValueError("power_factor must be in (0, 1]")
     pf_angle = math.acos(power_factor)
