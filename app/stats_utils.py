@@ -819,6 +819,55 @@ def compute_skewness(values: Sequence[float]) -> float:
     return sum(((x - m) / s) ** 3 for x in values) / n
 
 
+def rolling_percentile(values: Sequence[float], window: int, p: float) -> list[float]:
+    """Return rolling p-th percentile over a sliding window.
+
+    Args:
+        values: Non-empty sequence of numbers.
+        window: Window size (>= 1).
+        p: Percentile in [0, 100].
+
+    Returns:
+        List of percentile values; first (window - 1) entries are computed on partial windows.
+
+    Raises:
+        ValueError: If *values* is empty, window < 1, or p is out of range.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    if window < 1:
+        raise ValueError("window must be >= 1")
+    if not (0 <= p <= 100):
+        raise ValueError("p must be in [0, 100]")
+    result: list[float] = []
+    for i in range(len(values)):
+        start = max(0, i - window + 1)
+        w = list(values[start : i + 1])
+        result.append(percentile(w, p))
+    return result
+
+
+def normalize_series(values: Sequence[float]) -> list[float]:
+    """Return min-max normalised values in [0, 1].
+
+    Args:
+        values: Non-empty sequence of numbers.
+
+    Returns:
+        List of values scaled to [0, 1]; all 0.5 if min == max.
+
+    Raises:
+        ValueError: If *values* is empty.
+    """
+    if not values:
+        raise ValueError("values must not be empty")
+    lo = min(values)
+    hi = max(values)
+    if hi == lo:
+        return [0.5] * len(values)
+    return [(v - lo) / (hi - lo) for v in values]
+
+
 def zscore(value: float, mean_v: float, std_v: float) -> float:
     """Return the z-score of a single value given population mean and std.
 
