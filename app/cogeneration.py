@@ -301,3 +301,16 @@ def annual_fuel_cost(
     if fuel_price_per_kwh <= 0:
         raise ValueError("fuel_price_per_kwh must be positive")
     return fuel_input_kw * operating_hours * fuel_price_per_kwh
+
+
+__all__ = [
+    "CHPResult",
+    "analyse_chp",
+    "annual_fuel_cost",
+    "chp_electrical_efficiency",
+    "chp_thermal_efficiency",
+    "co2_savings",
+    "heat_to_power_ratio",
+    "primary_energy_saving",
+    "total_cogeneration_efficiency",
+]

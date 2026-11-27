@@ -244,3 +244,16 @@ def simulate_peak_shaving(
         cycle_count=cycles,
         cost_saving=cost_saving,
     )
+
+
+__all__ = [
+    "Battery",
+    "BatteryState",
+    "BatterySystem",
+    "DispatchResult",
+    "charge_kwh",
+    "discharge_kwh",
+    "peak_shaving_threshold",
+    "simulate_peak_shaving",
+    "usable_energy_kwh",
+]

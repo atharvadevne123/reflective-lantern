@@ -267,3 +267,19 @@ def emissions_per_unit(total_kg: float, units: float) -> float:
     if units <= 0:
         raise ValueError("units must be positive")
     return total_kg / units
+
+
+__all__ = [
+    "CarbonBudgetResult",
+    "EmissionEntry",
+    "ScopeCategory",
+    "analyse_budget",
+    "carbon_intensity",
+    "emissions_by_scope",
+    "emissions_per_unit",
+    "linear_reduction_pathway",
+    "net_zero_year",
+    "reduction_target_kg",
+    "scope_breakdown_percentage",
+    "total_emissions",
+]
