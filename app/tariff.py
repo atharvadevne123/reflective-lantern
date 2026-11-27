@@ -70,10 +70,12 @@ def flat_rate_cost(hourly_kwh: list[float], rate: float = DEFAULT_FLAT_RATE) -> 
 
 def time_of_use_cost(
     hourly_kwh: list[float],
-    start_hour: int = 0,
+    start_hour_or_peak_hours: "int | tuple[int, ...] | list[int]" = 0,
     peak_hours: tuple[int, ...] = DEFAULT_PEAK_HOURS,
     peak_rate: float = DEFAULT_PEAK_RATE,
     off_peak_rate: float = DEFAULT_OFF_PEAK_RATE,
+    *,
+    start_hour: "int | None" = None,
 ) -> float:
     """Price a consumption series under a time-of-use tariff.
 
@@ -95,6 +97,13 @@ def time_of_use_cost(
         ValueError: If *start_hour* is outside 0-23, either rate is negative,
             or any consumption value is negative.
     """
+    # Allow second arg to be peak_hours directly (tuple/list)
+    if isinstance(start_hour_or_peak_hours, (tuple, list)):
+        _start_hour = 0 if start_hour is None else start_hour
+        peak_hours = tuple(start_hour_or_peak_hours)
+    else:
+        _start_hour = start_hour if start_hour is not None else int(start_hour_or_peak_hours)
+    start_hour = _start_hour  # type: ignore[assignment]
     if not 0 <= start_hour <= 23:
         raise ValueError(f"start_hour must be in 0-23, got {start_hour}")
     if peak_rate < 0 or off_peak_rate < 0:

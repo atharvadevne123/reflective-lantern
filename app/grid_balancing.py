@@ -13,7 +13,7 @@ NOMINAL_FREQUENCY_HZ: float = 50.0
 NOMINAL_FREQUENCY_HZ_US: float = 60.0
 """Nominal grid frequency in Hz (North American standard)."""
 
-PRIMARY_RESPONSE_DEADBAND_HZ: float = 0.015
+PRIMARY_RESPONSE_DEADBAND_HZ: float = 0.1
 """Typical primary response activation deadband in Hz."""
 
 SECONDARY_RESPONSE_DEADBAND_HZ: float = 0.10

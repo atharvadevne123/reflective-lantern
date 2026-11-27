@@ -31,6 +31,11 @@ class BatteryState:
         """State of charge as a fraction [0, 1]."""
         return self.soc_kwh / self.capacity_kwh
 
+    @property
+    def available_kw(self) -> float:
+        """Maximum discharge power available given current SOC and rate limits."""
+        return min(self.max_discharge_rate_kw, self.soc_kwh)
+
     def charge(self, power_kw: float, duration_h: float) -> float:
         """Charge the battery, respecting rate and capacity limits.
 
