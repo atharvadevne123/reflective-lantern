@@ -65,6 +65,20 @@ class DERUnit:
             return 0.0
         return round(max(0.0, self.rated_power_kw - self.current_output_kw), 4)
 
+    def to_dict(self) -> dict[str, object]:
+        """Return asset state as a plain dict."""
+        return {
+            "asset_id": self.asset_id,
+            "der_type": str(self.der_type),
+            "rated_power_kw": self.rated_power_kw,
+            "current_output_kw": self.current_output_kw,
+            "status": str(self.status),
+            "location_id": self.location_id,
+            "priority": self.priority,
+            "utilisation_pct": self.utilisation_pct,
+            "available_kw": self.available_kw,
+        }
+
 
 @dataclass
 class DERPortfolio:

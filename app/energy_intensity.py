@@ -38,6 +38,19 @@ class EUIResult:
     percent_above_benchmark: float
     rating: str
 
+    def to_dict(self) -> dict[str, float | str]:
+        """Return EUI analysis as a plain dict."""
+        return {
+            "annual_kwh": self.annual_kwh,
+            "floor_area_m2": self.floor_area_m2,
+            "eui_kwh_per_m2": self.eui_kwh_per_m2,
+            "sector": self.sector,
+            "sector_benchmark_kwh_per_m2": self.sector_benchmark_kwh_per_m2,
+            "performance_ratio": self.performance_ratio,
+            "percent_above_benchmark": self.percent_above_benchmark,
+            "rating": self.rating,
+        }
+
 
 @dataclass
 class SectorRanking:
@@ -50,6 +63,18 @@ class SectorRanking:
     rank: int
     total_peers: int
     energy_star_eligible: bool
+
+    def to_dict(self) -> dict[str, float | str | int | bool]:
+        """Return sector ranking as a plain dict."""
+        return {
+            "asset_id": self.asset_id,
+            "eui_kwh_per_m2": self.eui_kwh_per_m2,
+            "sector": self.sector,
+            "percentile": self.percentile,
+            "rank": self.rank,
+            "total_peers": self.total_peers,
+            "energy_star_eligible": self.energy_star_eligible,
+        }
 
 
 def energy_use_intensity(
