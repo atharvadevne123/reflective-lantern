@@ -184,3 +184,14 @@ def demand_response_savings(
         raise ValueError("curtailed_peak_kw cannot exceed original_peak_kw")
     reduction = original_peak_kw - curtailed_peak_kw
     return round(demand_charge(reduction, rate_per_kw), 2)
+
+
+__all__ = [
+    "PeakDemandResult",
+    "analyse_peak_demand",
+    "demand_charge",
+    "demand_response_savings",
+    "load_factor",
+    "peak_kw",
+    "ratchet_demand",
+]

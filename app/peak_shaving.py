@@ -278,3 +278,15 @@ def shaving_effectiveness(original_peak_kw: float, shaved_peak_kw: float) -> flo
     if shaved_peak_kw > original_peak_kw:
         raise ValueError("shaved_peak_kw cannot exceed original_peak_kw")
     return (original_peak_kw - shaved_peak_kw) / original_peak_kw
+
+
+__all__ = [
+    "BatteryState",
+    "PeakShavingResult",
+    "battery_cycles_per_year",
+    "demand_charge_reduction",
+    "optimal_threshold",
+    "revenue_from_peak_shaving",
+    "run_peak_shaving",
+    "shaving_effectiveness",
+]

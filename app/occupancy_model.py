@@ -265,3 +265,15 @@ def annual_occupied_hours(
     weekend_hours = sum(1 for f in weekend_schedule.values() if f >= threshold)
     weekend_days = 365 - weekdays_per_year
     return weekday_hours * weekdays_per_year + weekend_hours * weekend_days
+
+
+__all__ = [
+    "OFFICE_BASE_SCHEDULE",
+    "OccupancyProfile",
+    "RESIDENTIAL_BASE_SCHEDULE",
+    "annual_occupied_hours",
+    "apply_daytype_factor",
+    "build_occupancy_profile",
+    "energy_with_occupancy",
+    "occupancy_adjusted_setpoint",
+]

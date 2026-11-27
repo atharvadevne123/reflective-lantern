@@ -195,3 +195,15 @@ def validate_readings(
         issues=issues,
         outlier_count=outlier_count,
     )
+
+
+__all__ = [
+    "ValidationIssue",
+    "ValidationReport",
+    "ValidationStatus",
+    "check_negatives",
+    "check_upper_bound",
+    "check_zeros",
+    "detect_gaps",
+    "validate_readings",
+]
