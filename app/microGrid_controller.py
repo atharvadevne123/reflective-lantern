@@ -177,3 +177,14 @@ def dispatch_self_consumption(
         curtailed_pv_kw=round(curtailed, 4),
         unmet_load_kw=round(unmet, 4),
     )
+
+
+__all__ = [
+    "DispatchDecision",
+    "DispatchMode",
+    "MicrogridState",
+    "dispatch_self_consumption",
+    "net_load_kw",
+    "self_consumption_ratio",
+    "self_sufficiency_ratio",
+]

@@ -14,3 +14,6 @@ def get_version_info() -> dict[str, str]:
         "api_version": __api_version__,
         "description": __description__,
     }
+
+
+__all__ = ["get_version_info"]
