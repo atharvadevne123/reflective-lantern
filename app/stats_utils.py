@@ -519,7 +519,7 @@ def mape(actual: list[float], predicted: list[float]) -> float:
     if not actual:
         raise ValueError("actual must not be empty")
     if any(a == 0 for a in actual):
-        raise ValueError("actual values must be non-zero for MAPE")
+        raise ValueError("MAPE is undefined when actual values contain zero")
     return 100.0 * sum(abs((a - p) / a) for a, p in zip(actual, predicted, strict=False)) / len(actual)
 
 
@@ -606,8 +606,21 @@ def sample_variance(values: Sequence[float]) -> float:
     return sum((x - m) ** 2 for x in values) / (n - 1)
 
 
+def _linear_percentile(values: Sequence[float], p: float) -> float:
+    """Linear-interpolation percentile (numpy default style)."""
+    sorted_v = sorted(values)
+    n = len(sorted_v)
+    if n == 1:
+        return float(sorted_v[0])
+    idx = (p / 100.0) * (n - 1)
+    lo = int(idx)
+    hi = min(lo + 1, n - 1)
+    frac = idx - lo
+    return sorted_v[lo] + frac * (sorted_v[hi] - sorted_v[lo])
+
+
 def interquartile_range(values: Sequence[float]) -> float:
-    """Return the interquartile range (IQR = Q3 - Q1) of *values*.
+    """Return the interquartile range (IQR = Q3 - Q1) using linear interpolation.
 
     Args:
         values: Non-empty sequence of numbers.
@@ -617,8 +630,8 @@ def interquartile_range(values: Sequence[float]) -> float:
     """
     if not values:
         raise ValueError("values must not be empty")
-    q1 = percentile(values, 25)
-    q3 = percentile(values, 75)
+    q1 = _linear_percentile(values, 25)
+    q3 = _linear_percentile(values, 75)
     return q3 - q1
 
 
@@ -761,7 +774,7 @@ def winsorize(
     sorted_v = sorted(values)
     n = len(sorted_v)
     lo_idx = min(int(lower * n), n - 1)
-    hi_idx = min(int(upper * n), n - 1)
+    hi_idx = max(0, min(int(upper * n) - 1, n - 1))
     lo = sorted_v[lo_idx]
     hi = sorted_v[hi_idx]
     return [max(lo, min(hi, v)) for v in values]
@@ -889,10 +902,10 @@ def rolling_percentile(
     if not values:
         raise ValueError("values must not be empty")
     if window < 1:
-        raise ValueError("window must be >= 1")
+        raise ValueError("window must be at least 1")
     pct_val = pct if pct is not None else (p if p is not None else 50.0)
     if not (0 <= pct_val <= 100):
-        raise ValueError("percentile must be in [0, 100]")
+        raise ValueError(f"pct must be in [0, 100], got {pct_val}")
     result: list[float] = []
     for i in range(len(values)):
         start = max(0, i - window + 1)
@@ -918,7 +931,7 @@ def normalize_series(values: Sequence[float]) -> list[float]:
     lo = min(values)
     hi = max(values)
     if hi == lo:
-        return [0.5] * len(values)
+        return [0.0] * len(values)
     return [(v - lo) / (hi - lo) for v in values]
 
 
@@ -971,7 +984,7 @@ def percentile_rank(values: Sequence[float], value: float) -> float:
         value: The value whose rank is computed.
 
     Returns:
-        Percentile rank in [0.0, 100.0].
+        Percentile rank in (0.0, 100.0] as (rank / n) * 100.
 
     Raises:
         ValueError: If *values* is empty.
@@ -979,9 +992,8 @@ def percentile_rank(values: Sequence[float], value: float) -> float:
     if not values:
         raise ValueError("values must not be empty")
     n = len(values)
-    below = sum(1 for v in values if v < value)
-    equal = sum(1 for v in values if v == value)
-    return (below + 0.5 * equal) / n * 100.0
+    rank = sum(1 for v in values if v <= value)
+    return rank / n * 100.0
 
 
 def zscore(values_or_value: "float | Sequence[float]", value: float | None = None, std_v: float | None = None) -> "float | list[float]":
