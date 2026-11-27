@@ -1012,6 +1012,7 @@
     "file_count": 89,
     "test_count": 49,
     "coverage_pct": 100,
-    "note": "REPO_CREATION_BLOCKED: CCR proxy restricts /user/repos. Code stored in innovations/Support-Sage/. Run deploy.sh with GH_PAT to publish."
+    "note": "REPO_CREATION_BLOCKED: CCR proxy restricts /user/repos. Code stored in innovations/Support-Sage/. Run deploy.sh with GH_PAT to publish.",
+    "commits": 89
   }
 ]
