@@ -30,6 +30,19 @@ class DHWResult:
     technology: str
     cop_or_efficiency: float
 
+    def to_dict(self) -> dict[str, float | str]:
+        """Return DHW result as a plain dict."""
+        return {
+            "daily_litres": self.daily_litres,
+            "daily_kwh_useful": self.daily_kwh_useful,
+            "daily_kwh_consumed": self.daily_kwh_consumed,
+            "daily_cost": self.daily_cost,
+            "annual_kwh_consumed": self.annual_kwh_consumed,
+            "annual_cost": self.annual_cost,
+            "technology": self.technology,
+            "cop_or_efficiency": self.cop_or_efficiency,
+        }
+
 
 def energy_to_heat_water(
     litres: float,

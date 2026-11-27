@@ -37,6 +37,19 @@ class FuelCellResult:
     hydrogen_flow_mol_per_s: float
     heat_generated_kw: float
 
+    def to_dict(self) -> dict[str, float]:
+        """Return fuel cell result as a plain dict."""
+        return {
+            "cell_voltage_v": self.cell_voltage_v,
+            "stack_voltage_v": self.stack_voltage_v,
+            "current_a": self.current_a,
+            "power_kw": self.power_kw,
+            "efficiency_hhv": self.efficiency_hhv,
+            "efficiency_lhv": self.efficiency_lhv,
+            "hydrogen_flow_mol_per_s": self.hydrogen_flow_mol_per_s,
+            "heat_generated_kw": self.heat_generated_kw,
+        }
+
 
 def nernst_voltage(
     temperature_k: float,
