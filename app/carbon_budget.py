@@ -39,6 +39,18 @@ class CarbonBudgetResult:
     on_track: bool
     reduction_needed_pct: float
 
+    def to_dict(self) -> dict[str, float | bool]:
+        """Return budget result as a plain dict."""
+        return {
+            "total_kg_co2e": self.total_kg_co2e,
+            "scope_1_kg": self.scope_1_kg,
+            "scope_2_kg": self.scope_2_kg,
+            "scope_3_kg": self.scope_3_kg,
+            "budget_remaining_kg": self.budget_remaining_kg,
+            "on_track": self.on_track,
+            "reduction_needed_pct": self.reduction_needed_pct,
+        }
+
 
 def total_emissions(entries: list[EmissionEntry]) -> float:
     """Sum all emission entries in kg CO₂e.

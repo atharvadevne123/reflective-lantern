@@ -36,6 +36,22 @@ class CHPResult:
     annual_co2_savings_kg: float
     annual_fuel_cost: float
 
+    def to_dict(self) -> dict[str, float]:
+        """Return CHP analysis as a plain dict."""
+        return {
+            "fuel_input_kw": self.fuel_input_kw,
+            "electrical_output_kw": self.electrical_output_kw,
+            "heat_output_kw": self.heat_output_kw,
+            "electrical_efficiency": self.electrical_efficiency,
+            "thermal_efficiency": self.thermal_efficiency,
+            "total_efficiency": self.total_efficiency,
+            "power_to_heat_ratio": self.power_to_heat_ratio,
+            "annual_electrical_mwh": self.annual_electrical_mwh,
+            "annual_heat_mwh": self.annual_heat_mwh,
+            "annual_co2_savings_kg": self.annual_co2_savings_kg,
+            "annual_fuel_cost": self.annual_fuel_cost,
+        }
+
 
 def chp_electrical_efficiency(
     electrical_output_kw: float,
