@@ -36,6 +36,21 @@ class GridMetrics:
     is_voltage_normal: bool
     is_frequency_normal: bool
 
+    def to_dict(self) -> dict[str, float | bool]:
+        """Return grid metrics as a plain dict."""
+        return {
+            "voltage_v": self.voltage_v,
+            "frequency_hz": self.frequency_hz,
+            "active_power_kw": self.active_power_kw,
+            "reactive_power_kvar": self.reactive_power_kvar,
+            "apparent_power_kva": self.apparent_power_kva,
+            "power_factor": self.power_factor,
+            "thd_percent": self.thd_percent,
+            "voltage_unbalance_percent": self.voltage_unbalance_percent,
+            "is_voltage_normal": self.is_voltage_normal,
+            "is_frequency_normal": self.is_frequency_normal,
+        }
+
 
 def power_factor(
     active_kw: float,

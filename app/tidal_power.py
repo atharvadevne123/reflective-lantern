@@ -32,6 +32,17 @@ class TidalStreamResult:
     annual_mwh: float
     co2_saved_kg: float
 
+    def to_dict(self) -> dict[str, float]:
+        """Return tidal stream result as a plain dict."""
+        return {
+            "rotor_area_m2": self.rotor_area_m2,
+            "theoretical_power_kw": self.theoretical_power_kw,
+            "actual_power_kw": self.actual_power_kw,
+            "capacity_factor": self.capacity_factor,
+            "annual_mwh": self.annual_mwh,
+            "co2_saved_kg": self.co2_saved_kg,
+        }
+
 
 @dataclass
 class BarrageResult:
@@ -43,6 +54,17 @@ class BarrageResult:
     electrical_energy_kwh: float
     cycles_per_day: float
     annual_mwh: float
+
+    def to_dict(self) -> dict[str, float]:
+        """Return barrage result as a plain dict."""
+        return {
+            "basin_area_m2": self.basin_area_m2,
+            "tidal_range_m": self.tidal_range_m,
+            "potential_energy_kwh": self.potential_energy_kwh,
+            "electrical_energy_kwh": self.electrical_energy_kwh,
+            "cycles_per_day": self.cycles_per_day,
+            "annual_mwh": self.annual_mwh,
+        }
 
 
 def tidal_stream_power(
