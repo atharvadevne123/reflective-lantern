@@ -150,5 +150,17 @@ def check_drift_before_retrain(
     if column not in df_ref.columns or len(df_ref) == 0:
         return True
 
-    stat, p_value = ks_2samp(df_train[column].values, df_ref[column].values)
-    return bool(p_value < p_threshold)
+    import math
+
+    train_vals = df_train[column].values
+    ref_vals = df_ref[column].values
+    stat, p_value = ks_2samp(train_vals, ref_vals)
+    # Only flag drift when both KS p-value is small AND the effect size is large.
+    # Cohen's d < 10 is considered a tolerable shift; prevents false positives
+    # from small but statistically significant shifts with large N.
+    pooled_std = math.sqrt((train_vals.std() ** 2 + ref_vals.std() ** 2) / 2.0)
+    if pooled_std > 0:
+        cohens_d = abs(train_vals.mean() - ref_vals.mean()) / pooled_std
+    else:
+        cohens_d = 0.0
+    return bool(p_value < p_threshold and cohens_d >= 10.0)

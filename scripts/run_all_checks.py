@@ -47,7 +47,9 @@ def main() -> int:
     total = sum(e for _, _, e in results)
     passed = sum(1 for _, ok, _ in results if ok)
     failed = len(results) - passed
-    logger.info("\nTotal: %d passed, %d failed  [%.2fs]", passed, failed, total)
+    summary = f"\nTotal: {passed} passed, {failed} failed  [{total:.2f}s]"
+    logger.info(summary)
+    print(summary)
 
     return 0 if all(ok for _, ok, _ in results) else 1
 

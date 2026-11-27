@@ -72,7 +72,7 @@ def _collect_rows(history_dir: Path, filter_mode: str | None = None) -> list[dic
 def main() -> int | None:
     """Parse CLI arguments and print a tabular or JSON summary of run history."""
     parser = argparse.ArgumentParser(description="Summarize run history.")
-    parser.add_argument("--sort-by", choices=["commits", "date", "repo"], default="date")
+    parser.add_argument("--sort-by", choices=["commits", "date", "repo"], default="date", nargs="?")
     parser.add_argument("--json", action="store_true", dest="as_json")
     parser.add_argument("--filter-mode", default=None)
     args = parser.parse_args()
@@ -87,26 +87,27 @@ def main() -> int | None:
         rows.sort(key=lambda r: r["repo"])
 
     if args.as_json:
-        logger.info(json.dumps(rows, indent=2))
+        print(json.dumps(rows, indent=2))
         return 0
 
     if not rows:
-        logger.info("No history found.")
+        print("No history found.")
         return 0
 
-    logger.info("%-30s %-12s %8s %-15s %6s", "Repo", "Date", "Commits", "Mode", "Tests")
-    logger.info("-" * 75)
+    print("%-30s %-12s %8s %-15s %6s" % ("Repo", "Date", "Commits", "Mode", "Tests"))
+    print("-" * 75)
     for r in rows:
         tp = "✓" if r["tests_passed"] else ("✗" if r["tests_passed"] is False else "?")
-        logger.info(
-            "%-30s %-12s %8d %-15s %6s",
-            r["repo"],
-            r["date"],
-            r["commits"],
-            r["mode"],
-            tp,
+        print(
+            "%-30s %-12s %8d %-15s %6s" % (
+                r["repo"],
+                r["date"],
+                r["commits"],
+                r["mode"],
+                tp,
+            )
         )
-    logger.info("\n%d repos shown.", len(rows))
+    print("\n%d repos shown." % len(rows))
     return 0
 
 
