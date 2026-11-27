@@ -35,6 +35,18 @@ class LightingAuditResult:
     upgrade_savings_kwh: float | None
     upgrade_payback_years: float | None
 
+    def to_dict(self) -> dict[str, float | None]:
+        """Return audit result as a plain dict."""
+        return {
+            "installed_watts": self.installed_watts,
+            "annual_kwh": self.annual_kwh,
+            "annual_cost": self.annual_cost,
+            "lux_per_watt": self.lux_per_watt,
+            "efficacy_lm_per_w": self.efficacy_lm_per_w,
+            "upgrade_savings_kwh": self.upgrade_savings_kwh,
+            "upgrade_payback_years": self.upgrade_payback_years,
+        }
+
     @property
     def installed_power_w(self) -> float:
         """Alias for installed_watts."""

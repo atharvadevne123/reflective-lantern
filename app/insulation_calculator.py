@@ -50,6 +50,18 @@ class InsulationUpgradeResult:
     simple_payback_years: float
     co2_saved_kg: float
 
+    def to_dict(self) -> dict[str, float]:
+        """Return upgrade result as a plain dict."""
+        return {
+            "existing_heat_loss_w": self.existing_heat_loss_w,
+            "upgraded_heat_loss_w": self.upgraded_heat_loss_w,
+            "heat_loss_reduction_w": self.heat_loss_reduction_w,
+            "annual_energy_saved_kwh": self.annual_energy_saved_kwh,
+            "annual_cost_saved": self.annual_cost_saved,
+            "simple_payback_years": self.simple_payback_years,
+            "co2_saved_kg": self.co2_saved_kg,
+        }
+
     @property
     def payback_years(self) -> float | None:
         """Alias for simple_payback_years; None if infinite."""
