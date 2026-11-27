@@ -37,6 +37,20 @@ class DegradationResult:
     eol_reached: bool
     remaining_cycles: float
 
+    def to_dict(self) -> dict[str, float | bool]:
+        """Return degradation state as a plain dict."""
+        return {
+            "cycles_completed": self.cycles_completed,
+            "calendar_years": self.calendar_years,
+            "capacity_fraction": self.capacity_fraction,
+            "capacity_kwh": self.capacity_kwh,
+            "cycle_degradation": self.cycle_degradation,
+            "calendar_degradation": self.calendar_degradation,
+            "total_degradation": self.total_degradation,
+            "eol_reached": self.eol_reached,
+            "remaining_cycles": self.remaining_cycles,
+        }
+
 
 def rainflow_cycle_depth_factor(depth_of_discharge: float) -> float:
     """Cycle depth correction factor using simplified Rainflow weighting.

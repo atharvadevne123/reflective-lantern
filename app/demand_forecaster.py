@@ -29,6 +29,16 @@ class ForecastResult:
     rmse: float
     horizon: int
 
+    def to_dict(self) -> dict[str, object]:
+        """Return forecast result as a plain dict."""
+        return {
+            "method": str(self.method),
+            "forecast_values": self.forecast_values,
+            "mae": self.mae,
+            "rmse": self.rmse,
+            "horizon": self.horizon,
+        }
+
 
 def naive_forecast(
     historical: list[float],
